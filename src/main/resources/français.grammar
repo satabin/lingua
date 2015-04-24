@@ -1,0 +1,93 @@
+categories
+
+// majeures
+nom as N
+verbe as V
+préposition as P
+adjectif as Adj
+adverbe as Adv
+flexion as I
+
+// mineures
+déterminant as Det
+auxiliaire as Aux
+conjonction as Conj
+complémenteur as C
+négation as Neg
+
+tags
+
+clitique as Cl
+commun as Comm
+interrogratif as Qu
+
+être as E
+féminin as Fem
+singulier as Sing
+
+// modes
+mode {
+  indicatif as Ind
+  impératif as Imper
+  subjonctif as Subj
+  conditionnel as Cond
+}
+
+// temps
+temps {
+  présent as Prés
+  passé as Pass
+  futur as Fut
+  imparfait as Imp
+  plus-que-parfait as Pqp
+}
+
+// rôles thématiques
+role {
+  agent as Ag
+  thème as Th
+  patient as Pat
+  psy-chose as Psy
+  instrument as Inst
+  locatif as Loc
+  but as But
+  source as Src
+}
+
+sentence = SI ;
+
+// phrase
+SI = [ SN | SC ] I' (SAdv) (SP) ;
+
+// I est abstrait et est composé des traits `mode' et `temps' du syntagme SV qui lui succède
+I' = I <-{mode, temps}- SV ;
+
+// syntagme nominal
+SN = (Det) N' (SP) (SC);
+
+N' = (SA) N (SP) ;
+
+// syntagme verbal
+SV = (SAdv) V' (SP) (SC) (SAdv) ;
+
+V' = (Aux) V ([SN | SA]) (SP) ;
+
+// syntagme prépositionnel
+SP = P' ;
+
+P' = P ([SN | SC]) ;
+
+// syntagme adverbial
+SAdv = (SAdv) Adv' ;
+
+Adv' = Adv ;
+
+// syntagme adjectival
+SA = (SAdv) Adj' (SP) ;
+
+Adj' = Adj (SP) ;
+
+// complétive
+SC = ([ SN | SP | SAdv ]) C' ;
+
+C' = (C) SI ;

@@ -1,0 +1,148 @@
+alphabet
+
+a à b c ç d e é è ê ë f g h i ï j k l m n o p q r s t u ü ù v w x y z
+A à B C Ç D E É È Ê Ë F G H I ï J K L M N O P Q R S T U Ü Ù V W X Y Z
+- ' ;
+
+categories
+
+nom as N
+verbe as V
+préposition as P
+adjectif as Adj
+adverbe as Adv
+déterminant as Det
+auxiliaire as Aux
+conjonction as Conj
+complémenteur as C
+négation as Neg
+
+tags
+
+clitique as Cl
+commun as Comm
+interrogratif as Qu
+
+être as E
+masculin as Masc
+féminin as Fém
+singulier as Sg
+pluriel as Pl
+
+// modes
+mode {
+  indicatif as Ind
+  impératif as Imper
+  subjonctif as Subj
+  conditionnel as Cond
+}
+
+// temps
+temps {
+  présent as Prés
+  passé-simple as PassSimp
+  passé-composé as PacsComp
+  futur as Fut
+  imparfait as Imp
+  plus-que-parfait as Pqp
+}
+
+// rôles thématiques
+role {
+  agent as Ag
+  thème as Th
+  patient as Pat
+  psy-chose as Psy
+  instrument as Inst
+  locatif as Loc
+  but as But
+  source as Src
+}
+
+premier-groupe as G1
+deuxième-groupe as G2
+troisième-groupe as G3
+
+première-personne as 1er
+deuxième-personne as 2ème
+troisième-personne as 3ème
+
+main = Français ;
+
+lexikon Français {
+
+  manger VG1 ;
+  tracer VG1 ;
+  danser VG1 ;
+
+}
+
+lexikon Genre {
+  _/+Masc ;
+  _/+Fém ;
+}
+
+lexikon VG1 is V +G1 {
+
+  ai _/+Fut _/+Ind Sg1 ;
+  as _/+Fut _/+Ind Sg2 ;
+  a _/+Fut _/+Ind Sg3 ;
+  ons _/+Fut _/+Ind Pl1 ;
+  ez _/+Fut _/+Ind Pl2 ;
+  ont _/+Fut _/+Ind Pl3 ;
+
+  rewrite présent-indicatif is +Prés +Ind {
+    case r Sg1 <=> _ ;
+    case r Sg2 <=> s ;
+    case r Sg3 <=> _ ;
+    case ger Pl1 <=> geons ;
+    case cer Pl1 <=> çons ;
+    case er Pl1 <=> ons ;
+    case r Pl2 <=> z ;
+    case r Pl3 <=> nt ;
+  }
+
+  rewrite passé-simple-indicatif is +PassSimp +Ind {
+    case ger Sg1 <=> geai ;
+    case cer Sg1 <=> çai ;
+    case er Sg1 <=> ai
+    case ger Sg2 <=> geas ;
+    case cer Sg2 <=> ças ;
+    case er Sg2 <=> as ;
+    case ger Sg3 <=> gea ;
+    case cer Sg3 <=> ça ;
+    case er Sg3 <=> a ;
+    case ger Pl1 <=> geâmes ;
+    case cer Pl1 <=> çâmes ;
+    case er Pl1 <=> âmes ;
+    case ger Pl2 <=> geâtes ;
+    case cer Pl2 <=> çâtes ;
+    case er Pl2 <=> âtes ;
+    case er Pl3 <=> èrent ;
+  }
+
+  rewrite imparfait-indicatif is +Imp +Ind {
+    case ger Sg1 <=> geais ;
+    case cer Sg1 <=> çais ;
+    case er Sg1 <=> ais
+    case ger Sg2 <=> geais ;
+    case cer Sg2 <=> çais ;
+    case er Sg2 <=> ais ;
+    case ger Sg3 <=> geait ;
+    case cer Sg3 <=> çait ;
+    case er Sg3 <=> ait ;
+    case er Pl1 <=> ions ;
+    case er Pl2 <=> iez ;
+    case ger Pl3 <=> geaient ;
+    case cer Pl3 <=> çaient ;
+    case er Pl3 <=> aient ;
+  }
+
+}
+
+lexikon Sg1 is _/+Sg _/+1er ;
+lexikon Sg2 is _/+Sg _/+2ème ;
+lexikon Sg3 is _/+Sg _/+3ème ;
+lexikon Pl1 is _/+Pl _/+1er ;
+lexikon Pl2 is _/+Pl _/+2ème ;
+lexikon Pl3 is _/+Pl _/+3ème ;
