@@ -1,7 +1,6 @@
 alphabet
 
-a à b c ç d e é è ê ë f g h i ï j k l m n o p q r s t u ü ù v w x y z
-A à B C Ç D E É È Ê Ë F G H I ï J K L M N O P Q R S T U Ü Ù V W X Y Z
+a â à b c ç d e é è ê ë f g h i ï j k l m n o p q r s t u ü ù v w x y z
 - ' ;
 
 categories
@@ -63,7 +62,7 @@ premier-groupe as G1
 deuxième-groupe as G2
 troisième-groupe as G3
 
-première-personne as 1er
+première-personne as 1ère
 deuxième-personne as 2ème
 troisième-personne as 3ème
 
@@ -71,78 +70,98 @@ main = Français ;
 
 lexikon Français {
 
-  manger VG1 ;
-  tracer VG1 ;
-  danser VG1 ;
+  manger &VG1 ;
+  tracer &VG1 ;
+  danser &VG1 ;
 
 }
 
 lexikon Genre {
-  _/+Masc ;
-  _/+Fém ;
+  +Masc ;
+  +Fém ;
 }
 
-lexikon VG1 is V +G1 {
+// `@V` signifie que la catégorie `V` est affectée au mot en entrée de ce lexique
+lexikon VG1 @V +G1 {
 
-  ai _/+Fut _/+Ind Sg1 ;
-  as _/+Fut _/+Ind Sg2 ;
-  a _/+Fut _/+Ind Sg3 ;
-  ons _/+Fut _/+Ind Pl1 ;
-  ez _/+Fut _/+Ind Pl2 ;
-  ont _/+Fut _/+Ind Pl3 ;
+  // transitions ajoutées à la fin du Fts précédent
+  // VG1 suit `manger` par exemple, donc `mangerai` est annoté (une fois `Sg1` expansé)
+  // `manger{V +G1}ai{+Fut +Ind +Sg +1ère}`
+  ai +Fut +Ind &Sg1 ;
+  as +Fut +Ind &Sg2 ;
+  a +Fut +Ind &Sg3 ;
+  ons +Fut +Ind &Pl1 ;
+  ez +Fut +Ind &Pl2 ;
+  ont +Fut +Ind &Pl3 ;
 
-  rewrite présent-indicatif is +Prés +Ind {
-    case r Sg1 <=> _ ;
-    case r Sg2 <=> s ;
-    case r Sg3 <=> _ ;
-    case ger Pl1 <=> geons ;
-    case cer Pl1 <=> çons ;
-    case er Pl1 <=> ons ;
-    case r Pl2 <=> z ;
-    case r Pl3 <=> nt ;
+  rewrite présent-indicatif +Prés +Ind {
+    // ce cas signifie que le suffixe `r` (noté `>r`, un préfixe est noté `r<`)
+    // est remplacé par une transition vide
+    // qui ajoute les traits +Sg et +1ère
+    // ainsi `mange` est annoté comme suit:
+    // `manger{V +G1 +Fut +Ind +Sg +1ère}`
+    // cette règle est équivalente à la suite de transitions suivante :
+    // `mange _/r @V +G1 +Fut +Ind +Sg +1ère`
+    rule >r => _ &Sg1 ;
+    rule >r => s &Sg2 ;
+    // avec cette règle nous voyons que `mange` est annoté comme
+    // {V +G1 +Prés +Ind +Sg +1ère} et comme
+    // {V +G1 +Prés +Ind +Sg +3er}
+    rule >r => >_ &Sg3 ;
+    // ici nous écrivons un patron plus complexe avec des sous-cas
+    // les sous-cas sont appliqués en séquence, et le premier qui correspond
+    // est choisi. Si aucun ne correspond la règle ne s'applique pas ici.
+    // contrairement aux `rule`s dont l'ordre n'a pas d'importance, il faut veiller
+    // ici à correctement ordonner les cas afin que les plus spécifiques arrivent avant
+    // les plus généraux
+    rule >ger => >geons &Pl1
+       | >cer => >çons &Pl1
+       | >er => >ons &Pl1 ;
+    rule >r => >z &Pl2 ;
+    rule >r => >nt &Pl3 ;
   }
 
-  rewrite passé-simple-indicatif is +PassSimp +Ind {
-    case ger Sg1 <=> geai ;
-    case cer Sg1 <=> çai ;
-    case er Sg1 <=> ai
-    case ger Sg2 <=> geas ;
-    case cer Sg2 <=> ças ;
-    case er Sg2 <=> as ;
-    case ger Sg3 <=> gea ;
-    case cer Sg3 <=> ça ;
-    case er Sg3 <=> a ;
-    case ger Pl1 <=> geâmes ;
-    case cer Pl1 <=> çâmes ;
-    case er Pl1 <=> âmes ;
-    case ger Pl2 <=> geâtes ;
-    case cer Pl2 <=> çâtes ;
-    case er Pl2 <=> âtes ;
-    case er Pl3 <=> èrent ;
+  rewrite passé-simple-indicatif +PassSimp +Ind {
+    rule >ger => >geai &Sg1
+       | >cer => >çai &Sg1
+       | >er => >ai &Sg1 ;
+    rule >ger => >geas &Sg2
+       | >cer => >ças &Sg2
+       | >er => >as &Sg2 ;
+    rule >ger => >gea &Sg3
+       | >cer => >ça &Sg3
+       | >er => >a &Sg3 ;
+    rule >ger => >geâmes &Pl1
+       | >cer => >çâmes &Pl1
+       | >er => >âmes &Pl1 ;
+    rule >ger => >geâtes &Pl2
+       | >cer => >çâtes &Pl2
+       | >er => >âtes &Pl2 ;
+    rule >er => >èrent &Pl3 ;
   }
 
-  rewrite imparfait-indicatif is +Imp +Ind {
-    case ger Sg1 <=> geais ;
-    case cer Sg1 <=> çais ;
-    case er Sg1 <=> ais
-    case ger Sg2 <=> geais ;
-    case cer Sg2 <=> çais ;
-    case er Sg2 <=> ais ;
-    case ger Sg3 <=> geait ;
-    case cer Sg3 <=> çait ;
-    case er Sg3 <=> ait ;
-    case er Pl1 <=> ions ;
-    case er Pl2 <=> iez ;
-    case ger Pl3 <=> geaient ;
-    case cer Pl3 <=> çaient ;
-    case er Pl3 <=> aient ;
+  rewrite imparfait-indicatif +Imp +Ind {
+    rule >ger => >geais &Sg1
+       | >cer => >çais &Sg1
+       | >er => >ais &Sg1 ;
+    rule >ger => >geais &Sg2
+       | >cer => >çais &Sg2
+       | >er => >ais &Sg2 ;
+    rule >ger => >geait &Sg3
+       | >cer => >çait &Sg3
+       | >er => >ait &Sg3 ;
+    rule >er => >ions &Pl1 ;
+    rule >er => >iez &Pl2 ;
+    rule >ger => >geaient &Pl3
+       | >cer => >çaient &Pl3
+       | >er => >aient &Pl3 ;
   }
 
 }
 
-lexikon Sg1 is _/+Sg _/+1er ;
-lexikon Sg2 is _/+Sg _/+2ème ;
-lexikon Sg3 is _/+Sg _/+3ème ;
-lexikon Pl1 is _/+Pl _/+1er ;
-lexikon Pl2 is _/+Pl _/+2ème ;
-lexikon Pl3 is _/+Pl _/+3ème ;
+lexikon Sg1 +Sg +1ère ;
+lexikon Sg2 +Sg +2ème ;
+lexikon Sg3 +Sg +3ème ;
+lexikon Pl1 +Pl +1ère ;
+lexikon Pl2 +Pl +2ème ;
+lexikon Pl3 +Pl +3ème ;

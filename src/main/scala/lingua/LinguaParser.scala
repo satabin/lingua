@@ -43,8 +43,10 @@ trait LinguaParser extends Parser {
   implicit def wspStr(s: String): Rule0 =
     rule(str(s) ~ zeroOrMore(WhiteSpace))
 
-  def keyword(kwd: String): Rule0 = rule(
-    atomic(kwd) | fail(s"keyword `$kwd'"))
+  def keywords: Set[String]
+
+  def keyword(kwd: String): Rule0 =
+    rule(atomic(kwd))
 
   def category: Rule1[Category] = rule(
     push(cursor) ~ name ~ keyword("as") ~ name ~> ((idx: Int, n: String, a: String) => Category(n, a)(pos(idx, cursor))))
@@ -59,7 +61,8 @@ trait LinguaParser extends Parser {
     push(cursor) ~ name ~ keyword("as") ~ name ~> ((idx: Int, n: String, a: String) => Tag(n, a, g)(pos(idx, cursor))))
 
   def name: Rule1[String] = rule(
-    capture(atomic(from(_.isLetterOrDigit) ~ zeroOrMore(optional(ch('-')) ~ from(_.isLetterOrDigit)) ~ zeroOrMore(str("'")))) ~ zeroOrMore(WhiteSpace))
+    (capture(atomic(oneOrMore(oneOrMore(from(_.isLetterOrDigit))).separatedBy(optional(ch('-'))) ~ zeroOrMore(str("'")))) ~ zeroOrMore(WhiteSpace) ~> ((name: String) => if (keywords.contains(name)) MISMATCH else push(name))
+      | ch('`') ~ capture(zeroOrMore(!ch('`') ~ ANY)) ~ ch('`') ~ zeroOrMore(WhiteSpace)))
 
   def alpha: Rule1[String] =
     rule(ch(''') ~ name)

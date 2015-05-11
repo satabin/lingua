@@ -16,6 +16,8 @@ class GrammarParser(val filename: String, val input: ParserInput) extends Lingua
   def this(file: File) =
     this(file.getCanonicalPath, Source.fromFile(file).mkString)
 
+  val keywords = Set("as", "categories", "sentence", "tags")
+
   def grammar: Rule1[Grammar] = rule(
     keyword("categories") ~ oneOrMore(category)
       ~!~ keyword("tags") ~!~ tags
