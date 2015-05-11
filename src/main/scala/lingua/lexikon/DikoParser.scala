@@ -21,12 +21,13 @@ class DikoParser(val filename: String, val input: ParserInput) extends LinguaPar
   val keywords =
     Set("alphabet", "as", "categories", "lexikon", "main", "rewrite", "rule", "tags")
 
-  def dico = rule(
+  def dico: Rule1[Diko] = rule(
     keyword("alphabet") ~ zeroOrMore(!";" ~ capture(ANY) ~> (_(0)) ~ zeroOrMore(WhiteSpace)) ~ ";"
-      ~> ((alphabet: Seq[Char]) => keyword("categories") ~!~ zeroOrMore(category)
+      ~> ((alphabet: Seq[Char]) => push(alphabet)
+        ~!~ keyword("categories") ~!~ zeroOrMore(category)
         ~!~ keyword("tags") ~ tags
         ~!~ keyword("main") ~ "=" ~ name ~ ";"
-        ~!~ zeroOrMore(lexikon(alphabet.toSet))) ~ EOI)
+        ~!~ zeroOrMore(lexikon(alphabet.toSet))) ~ EOI ~> Diko)
 
   def lexikon(alphabet: Set[Char]): Rule1[Lexikon] = rule(
     keyword("lexikon") ~ name ~ default ~ "{" ~ zeroOrMore(oneOrMore(transition(alphabet)) ~ ";" ~> Transitions | rewrite(alphabet)) ~ "}" ~> Lexikon
