@@ -1,7 +1,9 @@
 alphabet
 
-a â à b c ç d e é è ê ë f g h i ï j k l m n o p q r s t u ü ù v w x y z
-- ' ;
+// l'alphabet recouvre l'ensemble des lettres qui peuvent composer un mot en français,
+// par ordre alphabétique pour cette langue
+// les diacritiques apparaissent dans l'ordre : aigu, grave, circonflexe puis tréma
+a à â æ b c ç d e é è ê ë f g h i î ï j k l m n o ô œ p q r s t u ù û ü v w x y ÿ zi - ;
 
 categories
 
