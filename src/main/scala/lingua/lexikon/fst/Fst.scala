@@ -2,7 +2,9 @@ package lingua
 package lexikon
 package fst
 
-abstract class Fst[In, Out](val initials: Set[State], val finals: Set[State]) {
+import scala.annotation.tailrec
+
+abstract class Fst[In, Out](val states: Set[State], val initials: Set[State], val finals: Set[State]) {
 
   def isFinal(state: State): Boolean =
     finals.contains(state)
@@ -10,15 +12,27 @@ abstract class Fst[In, Out](val initials: Set[State], val finals: Set[State]) {
   def isInitial(state: State): Boolean =
     initials.contains(state)
 
+  def toDot(transitions: Iterable[String]): String = {
+    f"""digraph {
+       |  ${
+      states.map { s =>
+        val shape = if (finals.contains(s)) "doublecircle" else "circle"
+        f"q$s[shape=$shape]"
+      }.mkString(";\n  ")
+    }
+       |  ${transitions.mkString(";\n  ")}
+       |}""".stripMargin
+  }
+
 }
 
-class NFst[In, Out] private (initials: Set[State], finals: Set[State], maps: (Map[(State, In), Set[State]], Map[(State, In, State), Seq[Out]])) extends Fst(initials, finals) {
+class NFst[In, Out] private (states: Set[State], initials: Set[State], finals: Set[State], maps: (Map[(State, In), Set[State]], Map[(State, In, State), Seq[Out]])) extends Fst(states, initials, finals) {
 
-  def this(initials: Set[State], finals: Set[State], transitions: Map[(State, In), Set[State]], outputs: Map[(State, In, State), Seq[Out]]) =
-    this(initials, finals, (transitions, outputs))
+  def this(states: Set[State], initials: Set[State], finals: Set[State], transitions: Map[(State, In), Set[State]], outputs: Map[(State, In, State), Seq[Out]]) =
+    this(states, initials, finals, (transitions, outputs))
 
-  def this(initials: Set[State], finals: Set[State], transitions: Set[Transition[In, Out]]) =
-    this(initials, finals, transitions.foldLeft(
+  def this(states: Set[State], initials: Set[State], finals: Set[State], transitions: Set[Transition[In, Out]]) =
+    this(states, initials, finals, transitions.foldLeft(
       (Map.empty[(State, In), Set[State]],
         Map.empty[(State, In, State), Seq[Out]])) {
         case ((transAcc, outAcc), (origin, input, output, target)) =>
@@ -42,54 +56,107 @@ class NFst[In, Out] private (initials: Set[State], finals: Set[State], maps: (Ma
     outputMap.getOrElse((origin, in, target), Seq.empty)
 
   def determinize: PSubFst[In, Out] = {
-    def loop(queue: Set[(State, Set[(State, Seq[Out])])], nextState: State, finalsAcc: Set[State], transitionsAcc: Map[(State, In), State], outputAcc: Map[(State, In), Seq[Out]], finalOutputsAcc: Map[State, Set[Seq[Out]]]) =
-      if (queue.isEmpty) {
-        new PSubFst(0, finalsAcc, transitionsAcc, outputAcc, finalOutputsAcc)
-      } else {
-        val (stateId, states) = queue.head
-        val (finalsAcc1, finalOutputsAcc1) =
-          states.foldLeft((finalsAcc, finalOutputsAcc)) {
-            case ((finalsAcc, finalOutputsAcc), (st1, out1)) if finals.contains(st1) =>
-              val finalOutputsAcc1 =
-                finalOutputsAcc.updated(stateId, finalOutputsAcc.getOrElse(stateId, Set.empty) + out1)
-              (finalsAcc + stateId, finalOutputsAcc1)
-            case (acc, _) =>
-              acc
-          }
-        val newTransitions = for {
-          (st, a) <- transitionMap.keys
-          (_, w) <- states.find(_._1 == st)
-        } yield (st, a, w)
-        val (queue1, nextState1, transitionsAcc1, outputAcc1) =
-          newTransitions.foldLeft((queue, nextState, transitionsAcc, outputAcc)) {
-            case ((queue, nextState, transitionsAcc, outputAcc), (q, a, w)) =>
-              val qs = delta(q, a)
-              val outputAcc1 =
-                outputAcc.updated((stateId, a), lcp(w, lcp(qs.map(sigma(q, a, _)))))
-              val transitionsAcc1 =
-                transitionsAcc.updated((stateId, a), nextState)
-              val queue1 = ???
-              val nextState1 = nextState + 1
-              (queue1, nextState1, transitionsAcc1, outputAcc1)
-          }
-        ???
+
+    import scala.collection.{ mutable => mu }
+
+    val f2 = mu.Set.empty[State]
+    val output2 = new mu.HashMap[State, mu.Set[Seq[Out]]] with mu.MultiMap[State, Seq[Out]]
+
+    val delta2 = mu.Map.empty[(State, In), State]
+    val sigma2 = mu.Map.empty[(State, In), Seq[Out]]
+
+    val queue = mu.Queue.empty[(State, Set[(State, Seq[Out])])]
+
+    val initial = initials.map((_, Seq.empty[Out]))
+
+    queue.enqueue((0, initial))
+
+    val newStates = mu.Map[Set[State], State](initial.map(_._1) -> 0)
+    var nextStateId = 1
+
+    while (queue.nonEmpty) {
+
+      val (q2id, q2) = queue.dequeue
+
+      def j1(a: In) =
+        for {
+          (st, b) <- transitionMap.keys
+          if a == b
+          (_, w) <- q2.find(_._1 == st)
+        } yield (st, w)
+
+      def j2(a: In) =
+        for {
+          (st, b) <- transitionMap.keys
+          if a == b
+          (_, w) <- q2.find(_._1 == st).toSet
+          st1 <- delta(st, a)
+        } yield (st, w, st1)
+
+      for {
+        (q, w) <- q2
+        if this.finals.contains(q)
+      } {
+        f2 + q2id
+        output2.addBinding(q2id, w)
       }
-    val initial = (0, initials.map((_, Seq.empty[Out])))
-    loop(Set(initial), 1, Set.empty, Map.empty, Map.empty, Map.empty)
+
+      for {
+        (q, w) <- q2
+        (q_, a) <- transitionMap.keys
+        if q == q_
+      } {
+
+        sigma2((q2id, a)) = lcp(
+          for ((q, w) <- j1(a))
+            yield w ++ lcp(
+            for (q_ <- delta(q, a))
+              yield sigma(q, a, q_)))
+
+        val nextState =
+          (for ((q, w, q_) <- j2(a))
+            yield (q_, (w ++ sigma(q, a, q_)).drop(sigma2((q2id, a)).size))).toSet
+
+        val nextId = newStates.get(nextState.map(_._1)) match {
+          case Some(id) =>
+            id
+          case None =>
+            newStates += (nextState.map(_._1) -> nextStateId)
+            queue.enqueue((nextStateId, nextState))
+            nextStateId += 1
+            nextStateId - 1
+        }
+
+        delta2((q2id, a)) = nextId
+      }
+
+    }
+
+    new PSubFst(newStates.values.toSet, 0, f2.toSet, delta2.toMap, sigma2.toMap, output2.mapValues(_.toSet).toMap)
+  }
+
+  def toDot: String = {
+    val trans = for {
+      ((s1, in), ss2) <- transitionMap
+      s2 <- ss2
+      out = outputMap.getOrElse((s1, in, s2), Seq()).mkString
+    } yield f"""q$s1->q$s2[label="$in:$out"]"""
+    toDot(trans)
   }
 
 }
 
-class PSubFst[In, Out] private (initial: State,
+class PSubFst[In, Out] private (states: Set[State],
+    initial: State,
     finals: Set[State],
     maps: (Map[(State, In), State], Map[(State, In), Seq[Out]]),
-    finalOutputs: Map[State, Set[Seq[Out]]]) extends Fst(Set(initial), finals) {
+    finalOutputs: Map[State, Set[Seq[Out]]]) extends Fst(states, Set(initial), finals) {
 
-  def this(initial: State, finals: Set[State], transitions: Map[(State, In), State], outputs: Map[(State, In), Seq[Out]], finalOutputs: Map[State, Set[Seq[Out]]]) =
-    this(initial, finals, (transitions, outputs), finalOutputs)
+  def this(states: Set[State], initial: State, finals: Set[State], transitions: Map[(State, In), State], outputs: Map[(State, In), Seq[Out]], finalOutputs: Map[State, Set[Seq[Out]]]) =
+    this(states, initial, finals, (transitions, outputs), finalOutputs)
 
-  def this(initial: State, finals: Set[State], transitions: Set[Transition[In, Out]], finalOutputs: Map[State, Set[Seq[Out]]]) =
-    this(initial, finals, transitions.foldLeft(
+  def this(states: Set[State], initial: State, finals: Set[State], transitions: Set[Transition[In, Out]], finalOutputs: Map[State, Set[Seq[Out]]]) =
+    this(states, initial, finals, transitions.foldLeft(
       (Map.empty[(State, In), State],
         Map.empty[(State, In), Seq[Out]])) {
         case ((transAcc, outAcc), (origin, input, output, target)) =>
@@ -113,5 +180,16 @@ class PSubFst[In, Out] private (initial: State,
 
   def phi(state: State): Set[Seq[Out]] =
     finalOutputs.getOrElse(state, Set.empty)
+
+  def toDot: String = {
+    val trans = for {
+      ((s1, in), s2) <- transitionMap
+      out = outputMap.getOrElse((s1, in), Seq()).mkString
+    } yield f"""q$s1->q$s2[label="$in:$out"]"""
+    val out = for {
+      (s1, out) <- finalOutputs
+    } yield f"""q$s1->out[label="${out.map(_.mkString).mkString}"]"""
+    toDot(trans ++ out)
+  }
 
 }
