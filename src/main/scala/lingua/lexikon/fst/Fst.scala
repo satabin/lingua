@@ -175,8 +175,23 @@ class PSubFst[In, Out] private (states: Set[State],
   def delta(state: State, in: In): Option[State] =
     transitionMap.get((state, in))
 
+  def delta(state: State, ins: Seq[In]): Option[State] =
+    if (ins.isEmpty)
+      Some(state)
+    else
+      delta(state, ins.head).flatMap(s => delta(s, ins.tail))
+
   def sigma(origin: State, in: In): Seq[Out] =
     outputMap.getOrElse((origin, in), Seq.empty)
+
+  def sigma(state: State, ins: Seq[In]): Seq[Out] =
+    if (ins.isEmpty)
+      Seq.empty[Out]
+    else
+      delta(state, ins.head) match {
+        case Some(q) => sigma(state, ins.head) ++ sigma(q, ins.tail)
+        case None    => Seq.empty[Out]
+      }
 
   def phi(state: State): Set[Seq[Out]] =
     finalOutputs.getOrElse(state, Set.empty)
