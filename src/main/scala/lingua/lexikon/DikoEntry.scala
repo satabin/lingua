@@ -15,11 +15,8 @@
 package lingua
 package lexikon
 
-import fst.NFst
+sealed trait DikoEntry
 
-case class Diko(alphabet: Seq[Char], categories: Seq[Category], tags: Seq[Tag], main: String, lexika: Seq[Lexikon]) {
+case class CharacterEntry(c: Char, tags: Set[(Boolean, String)]) extends DikoEntry
 
-  def fst: NFst[Char, DikoEntry] =
-    ???
-
-}
+case class CategoryEntry(c: String, tags: Set[(Boolean, String)]) extends DikoEntry

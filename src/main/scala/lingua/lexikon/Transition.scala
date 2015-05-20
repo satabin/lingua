@@ -21,11 +21,15 @@ final case class Transitions(transitions: Seq[Transition]) extends Entry
 
 sealed trait Transition
 
+final case class GroupTransition(transitions: Seq[Transition]) extends Transition
+
+final case class CaptureTransition(n: Int) extends Transition
+
 final case class SimpleTransition(word: String) extends Transition
 
-final case class InOutTransition(in: Option[Char], out: Option[Char], category: Option[String]) extends Transition
+final case class InOutTransition(in: Option[Char], out: Option[Char], category: Option[String], tags: Seq[(Boolean, String)]) extends Transition
 
-final case class TagTransition(present: Boolean, tag: String) extends Transition
+final case class TagTransition(category: Option[String], tags: Seq[(Boolean, String)]) extends Transition
 
 final case class LexikonTransition(name: String) extends Transition
 

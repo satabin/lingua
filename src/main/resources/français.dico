@@ -3,7 +3,7 @@ alphabet
 // l'alphabet recouvre l'ensemble des lettres qui peuvent composer un mot en français,
 // par ordre alphabétique pour cette langue
 // les diacritiques apparaissent dans l'ordre : aigu, grave, circonflexe puis tréma
-a à â æ b c ç d e é è ê ë f g h i î ï j k l m n o ô œ p q r s t u ù û ü v w x y ÿ zi - ;
+a à â æ b c ç d e é è ê ë f g h i î ï j k l m n o ô œ p q r s t u ù û ü v w x y ÿ z - ;
 
 categories
 
@@ -23,6 +23,17 @@ tags
 clitique as Cl
 commun as Comm
 interrogratif as Qu
+
+// pour les noms composés, les traits indiquent comment ils sont faits
+nom-composé {
+  verbe-nom as VN
+  verbe-nom-indénombrable as VNI
+  nom-nom as NN
+  nom-nom-indénombrable as NNI
+  nom-adjectif as NAdj
+  adjectif-nom as AdjN
+  adverbe-nom as AdvN
+}
 
 être as E
 masculin as Masc
@@ -72,15 +83,47 @@ main = Français ;
 
 lexikon Français {
 
-  manger &VG1 ;
-  tracer &VG1 ;
-  danser &VG1 ;
+  manger -> VG1 ;
+  tracer -> VG1 ;
+  danser -> VG1 ;
 
 }
 
 lexikon Genre {
-  +Masc ;
-  +Fém ;
+  / +Masc ;
+  / +Fém ;
+}
+
+lexikon Nom-Composé @N {
+
+  chasse-neige / +Masc +VNI ;
+  tire-bouchon / +Masc +VN ;
+  chou-fleur / +Masc +NN ;
+  timbre-poste / +Masc +NNI ;
+  grand-mère / +Fém +AdjN ;
+  coffre-fort / +Masc +NAdj ;
+  micro-onde / +Masc +AdjN ;
+  arrière-boutique / +Fém +AdvN ;
+  pince-sans-rire -> Genre ;
+
+  // pour les noms composés d'un verbe et d'un nom, seul le nom prend la marque
+  // du pluriel s'il est dénombrable, sinon le nom reste invariable
+  rewrite pluriel +Pl {
+    // avant la flèche, le "\1" indique "n'importe quelle séquence qui est capturée et numérotée 1"
+    // après la flèche, le "\1" indique la première étoile avant la flèche
+    rule \1-\2 / +VNI => \1-\2
+       | \1-\2 / +VN  => \1-[\2->Pluriel];
+
+    rule \1-\2 / +NNI => \1->Pluriel-\2
+       | \1-\2 / +NN => \1->Pluriel-[\2->Pluriel] ;
+
+    rule >o-\1 / +AdjN => >o-[\2->Pluriel]
+       | \1-\2 / +AdjN  => \1->Pluriel-[\2->Pluriel]
+       | \1-\2 / +NAdj  => \1->Pluriel-[\2->Pluriel] ;
+
+    rule \1-\2 / +AdvN => \1-[\2->Pluriel] ;
+  }
+
 }
 
 // `@V` signifie que la catégorie `V` est affectée au mot en entrée de ce lexique
@@ -89,12 +132,12 @@ lexikon VG1 @V +G1 {
   // transitions ajoutées à la fin du Fts précédent
   // VG1 suit `manger` par exemple, donc `mangerai` est annoté (une fois `Sg1` expansé)
   // `manger{V +G1}ai{+Fut +Ind +Sg +1ère}`
-  ai +Fut +Ind &Sg1 ;
-  as +Fut +Ind &Sg2 ;
-  a +Fut +Ind &Sg3 ;
-  ons +Fut +Ind &Pl1 ;
-  ez +Fut +Ind &Pl2 ;
-  ont +Fut +Ind &Pl3 ;
+  ai / +Fut +Ind -> Sg1 ;
+  as / +Fut +Ind -> Sg2 ;
+  a / +Fut +Ind -> Sg3 ;
+  ons / +Fut +Ind -> Pl1 ;
+  ez / +Fut +Ind -> Pl2 ;
+  ont / +Fut +Ind -> Pl3 ;
 
   rewrite présent-indicatif +Prés +Ind {
     // ce cas signifie que le suffixe `r` (noté `>r`, un préfixe est noté `r<`)
@@ -104,59 +147,59 @@ lexikon VG1 @V +G1 {
     // `manger{V +G1 +Fut +Ind +Sg +1ère}`
     // cette règle est équivalente à la suite de transitions suivante :
     // `mange _/r @V +G1 +Fut +Ind +Sg +1ère`
-    rule >r => _ &Sg1 ;
-    rule >r => s &Sg2 ;
+    rule >r => >_ -> Sg1 ;
+    rule >r => >s -> Sg2 ;
     // avec cette règle nous voyons que `mange` est annoté comme
     // {V +G1 +Prés +Ind +Sg +1ère} et comme
     // {V +G1 +Prés +Ind +Sg +3er}
-    rule >r => >_ &Sg3 ;
+    rule >r => >_ -> Sg3 ;
     // ici nous écrivons un patron plus complexe avec des sous-cas
     // les sous-cas sont appliqués en séquence, et le premier qui correspond
     // est choisi. Si aucun ne correspond la règle ne s'applique pas ici.
     // contrairement aux `rule`s dont l'ordre n'a pas d'importance, il faut veiller
     // ici à correctement ordonner les cas afin que les plus spécifiques arrivent avant
     // les plus généraux
-    rule >ger => >geons &Pl1
-       | >cer => >çons &Pl1
-       | >er => >ons &Pl1 ;
-    rule >r => >z &Pl2 ;
-    rule >r => >nt &Pl3 ;
+    rule >ger => >geons -> Pl1
+       | >cer => >çons -> Pl1
+       | >er => >ons -> Pl1 ;
+    rule >r => >z -> Pl2 ;
+    rule >r => >nt -> Pl3 ;
   }
 
   rewrite passé-simple-indicatif +PassSimp +Ind {
-    rule >ger => >geai &Sg1
-       | >cer => >çai &Sg1
-       | >er => >ai &Sg1 ;
-    rule >ger => >geas &Sg2
-       | >cer => >ças &Sg2
-       | >er => >as &Sg2 ;
-    rule >ger => >gea &Sg3
-       | >cer => >ça &Sg3
-       | >er => >a &Sg3 ;
-    rule >ger => >geâmes &Pl1
-       | >cer => >çâmes &Pl1
-       | >er => >âmes &Pl1 ;
-    rule >ger => >geâtes &Pl2
-       | >cer => >çâtes &Pl2
-       | >er => >âtes &Pl2 ;
-    rule >er => >èrent &Pl3 ;
+    rule >ger => >geai -> Sg1
+       | >cer => >çai -> Sg1
+       | >er => >ai -> Sg1 ;
+    rule >ger => >geas -> Sg2
+       | >cer => >ças -> Sg2
+       | >er => >as -> Sg2 ;
+    rule >ger => >gea -> Sg3
+       | >cer => >ça -> Sg3
+       | >er => >a -> Sg3 ;
+    rule >ger => >geâmes -> Pl1
+       | >cer => >çâmes -> Pl1
+       | >er => >âmes -> Pl1 ;
+    rule >ger => >geâtes -> Pl2
+       | >cer => >çâtes -> Pl2
+       | >er => >âtes -> Pl2 ;
+    rule >er => >èrent -> Pl3 ;
   }
 
   rewrite imparfait-indicatif +Imp +Ind {
-    rule >ger => >geais &Sg1
-       | >cer => >çais &Sg1
-       | >er => >ais &Sg1 ;
-    rule >ger => >geais &Sg2
-       | >cer => >çais &Sg2
-       | >er => >ais &Sg2 ;
-    rule >ger => >geait &Sg3
-       | >cer => >çait &Sg3
-       | >er => >ait &Sg3 ;
-    rule >er => >ions &Pl1 ;
-    rule >er => >iez &Pl2 ;
-    rule >ger => >geaient &Pl3
-       | >cer => >çaient &Pl3
-       | >er => >aient &Pl3 ;
+    rule >ger => >geais -> Sg1
+       | >cer => >çais -> Sg1
+       | >er => >ais -> Sg1 ;
+    rule >ger => >geais -> Sg2
+       | >cer => >çais -> Sg2
+       | >er => >ais -> Sg2 ;
+    rule >ger => >geait -> Sg3
+       | >cer => >çait -> Sg3
+       | >er => >ait -> Sg3 ;
+    rule >er => >ions -> Pl1 ;
+    rule >er => >iez -> Pl2 ;
+    rule >ger => >geaient -> Pl3
+       | >cer => >çaient -> Pl3
+       | >er => >aient -> Pl3 ;
   }
 
 }

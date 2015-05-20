@@ -44,15 +44,17 @@ class DikoParser(val filename: String, val input: ParserInput) extends LinguaPar
         ~!~ zeroOrMore(lexikon(alphabet.toSet))) ~ EOI ~> Diko)
 
   def lexikon(alphabet: Set[Char]): Rule1[Lexikon] = rule(
-    keyword("lexikon") ~ name ~ default ~ "{" ~ zeroOrMore(oneOrMore(transition(alphabet)) ~ ";" ~> Transitions | rewrite(alphabet)) ~ "}" ~> Lexikon
+    keyword("lexikon") ~ name ~ default ~ "{" ~ zeroOrMore(rewrite(alphabet) | oneOrMore(transition(alphabet)) ~ ";" ~> Transitions) ~ "}" ~> Lexikon
       | keyword("lexikon") ~ name ~ default ~ ";" ~> ((name: String, dflt: Default) => Lexikon(name, dflt, Seq())))
 
   def transition(alphabet: Set[Char]): Rule1[Transition] = rule(
-    "&" ~ name ~> LexikonTransition
-      | tagEmission ~> ((t: (Boolean, String)) => TagTransition(t._1, t._2))
-      | char(alphabet) ~ "/" ~ char(alphabet) ~ optional("@" ~ name) ~> InOutTransition
+    "[" ~ oneOrMore(transition(alphabet)) ~ "]" ~> GroupTransition
+      | "->" ~ name ~> LexikonTransition
+      | ch('\\') ~ integer ~> CaptureTransition
+      | "/" ~ optional("@" ~ name) ~ oneOrMore(tagEmission) ~> TagTransition
+      | char(alphabet) ~ "/" ~ char(alphabet) ~ optional("@" ~ name) ~ zeroOrMore(tagEmission) ~> InOutTransition
       | capture(CharPredicate(alphabet) ~ oneOrMore(CharPredicate(alphabet)) ~ zeroOrMore(WhiteSpace)) ~> SimpleTransition
-      | char(alphabet) ~> ((in: Option[Char]) => InOutTransition(in, None, None)))
+      | char(alphabet) ~> ((in: Option[Char]) => InOutTransition(in, None, None, Seq())))
 
   def rewrite(alphabet: Set[Char]): Rule1[RewriteRules] = rule(
     keyword("rewrite") ~ name ~ default ~ "{" ~ oneOrMore(rewriteRule(alphabet)) ~ "}" ~> RewriteRules)
@@ -75,6 +77,10 @@ class DikoParser(val filename: String, val input: ParserInput) extends LinguaPar
 
   def char(alphabet: Set[Char]): Rule1[Option[Char]] = rule(
     "_" ~ push(None)
-      | capture(CharPredicate(alphabet)) ~ zeroOrMore(WhiteSpace) ~> ((s: String) => Some(s(0))))
+      | capture(CharPredicate(alphabet)) ~ zeroOrMore(WhiteSpace) ~> ((s: String) => Some(s(0)))
+      | ch('\\') ~ capture(anyOf(" @[]/")) ~ zeroOrMore(WhiteSpace) ~> ((s: String) => Some(s(0))))
+
+  def integer: Rule1[Int] = rule(
+    capture(oneOrMore(anyOf("0123456789"))) ~ zeroOrMore(WhiteSpace) ~> ((s: String) => s.toInt))
 
 }
