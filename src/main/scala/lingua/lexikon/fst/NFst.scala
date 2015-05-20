@@ -136,4 +136,3 @@ class NFst[In, Out] private (states: Set[State], initials: Set[State], finals: S
   }
 
 }
-
