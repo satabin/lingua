@@ -8715,7 +8715,7 @@ Error message and password prompt
 <div modified="20150806153342712" title="$:/state/toc/Diko-Syntaxe de Diko-2007659389">
 <pre>close</pre>
 </div>
-<div list="Introduction Lexikon Diko [[Les traits]]" title="$:/StoryList">
+<div list="Introduction Lexikon Diko [[Syntaxe de Diko]] ReplacementRailroad" title="$:/StoryList">
 <pre></pre>
 </div>
 <div plugin-type="info" title="$:/temp/info-plugin" type="application/json">
@@ -9162,8 +9162,14 @@ La section `alphabet`permet de spécifier les lettres utilisées dans la langue 
 
 L'alphabet contient les lettres et pas les séparateurs (tel que le //-// en français) qui sont déclarés [[dans leur propre section|Les séparateurs]]. Ainsi les séparateurs ne participent pas à l'ordre lexicographique.</pre>
 </div>
-<div created="20150806105350973" modified="20150806152855833" tags="Diko" title="Le point d'entrée" toc="6">
-<pre></pre>
+<div created="20150806105350973" modified="20150807160208082" tags="Diko" title="Le point d'entrée" toc="6">
+<pre>! Syntaxe
+
+{{EntryPointRailroad}}
+
+! Description
+
+Le langage [[Diko]] permet de décrire des plusieurs lexiques composant le dictionnaire. Le point d'entrée donne le lexique qui est le point de départ du dictionnaire à construire et qui référence les sous lexiques.</pre>
 </div>
 <div created="20150806105321946" modified="20150807130034378" tags="Diko" title="Les catégories" toc="4">
 <pre>! Syntaxe
@@ -9174,8 +9180,20 @@ L'alphabet contient les lettres et pas les séparateurs (tel que le //-// en fra
 
 La section `categories` permet de définir les [[catégories|Categories]] de la langue du dictionnaire.</pre>
 </div>
-<div created="20150806105404861" modified="20150806152911675" tags="Diko" title="Les lexiques" toc="7">
-<pre></pre>
+<div created="20150806105404861" modified="20150807160125136" tags="Diko" title="Les lexiques" toc="7">
+<pre>! Syntaxe
+
+{{LexikonRailroad}}
+
+! Description
+
+Un lexique définit des entrées à ajouter au dictionnaire. Les entrées d'un dictionnaire peuvent avoir des annotations ([[catégorie|Categories]] et [[traits|Traits]]) par défaut qui sont spécifiées juste après le nom du lexique. Si une catégorie par défaut existe, elle ne peux être changées par les entrées du lexique.
+
+! Les entrées
+
+&lt;div class=&quot;tc-table-of-contents&quot;&gt;
+&lt;&lt;toc-expandable &quot;Les lexiques&quot; &quot;!tag[railroad]sort[toc]&quot;&gt;&gt;
+&lt;/div&gt;</pre>
 </div>
 <div created="20150806105414361" modified="20150806153627730" tags="[[Les lexiques]]" title="Les mots" toc="1">
 <pre></pre>
@@ -9238,8 +9256,8 @@ Pour couvrir ces besoins, nous définissons un langage de description de diction
 <div created="20150806142300502" modified="20150806145042250" tags="[[Syntaxe de Diko]] railroad" title="PatternRailroad" type="text/vnd.tiddlywiki.railroad">
 <pre>[: &quot;&gt;&quot; ] { (&quot;.&quot; | [[char|CharRailroad]] |: &quot;\&quot; [[number|NumberRailroad]])} [: &quot;&lt;&quot; ] [: &quot;/&quot; [[default|DefaultRailroad]] ]</pre>
 </div>
-<div created="20150806144418843" modified="20150807115525359" tags="[[Syntaxe de Diko]] railroad" title="ReplacementRailroad" type="text/vnd.tiddlywiki.railroad">
-<pre>[: &quot;&gt;&quot; ] { ([[char|CharRailroad]] |: &quot;\&quot; [[number|NumberRailroad]]) } [: &quot;&lt;&quot; ] [: &quot;/&quot; { (&quot;+&quot; [[name|NameRailroad]] |: &quot;-&quot; [[name|NameRailroad]]) } ]</pre>
+<div created="20150806144418843" modified="20150807160843079" tags="[[Syntaxe de Diko]] railroad" title="ReplacementRailroad" type="text/vnd.tiddlywiki.railroad">
+<pre>[: &quot;&gt;&quot; ] [{: ([[char|CharRailroad]] |: &quot;\&quot; [[number|NumberRailroad]]) }] [: &quot;&lt;&quot; ] [: &quot;/&quot; { (&quot;+&quot; [[name|NameRailroad]] |: &quot;-&quot; [[name|NameRailroad]]) } ] [: &quot;-&gt;&quot; [[long-name|LongNameRailroad]] ]</pre>
 </div>
 <div created="20150806132104256" modified="20150806145148191" tags="[[Syntaxe de Diko]] railroad" title="RewriteRuleRailroad" type="text/vnd.tiddlywiki.railroad">
 <pre> &quot;rewrite&quot; [[long-name|LongNameRailroad]]  [[default|DefaultRailroad]] &quot;{&quot;  { &quot;rule&quot; [[pattern|PatternRailroad]] &quot;=&gt;&quot; [[replacement|ReplacementRailroad]] &quot;;&quot; } &quot;}&quot;</pre>
@@ -9289,8 +9307,8 @@ Voici la liste des étiqeuttes de chaque langue construite pour [[lingua|Introdu
 <pre>Le français possède les traits suivantes :
 </pre>
 </div>
-<div created="20150807070108806" modified="20150807070620713" tags="railroad [[Syntaxe de Diko]]" title="WordRailroad" type="text/vnd.tiddlywiki.railroad">
-<pre>[{: [[char|CharRailroad]] }] [: &quot;/&quot; [[default|DefaultRailroad]] ] &quot;;&quot;</pre>
+<div created="20150807070108806" modified="20150807160718852" tags="railroad [[Syntaxe de Diko]]" title="WordRailroad" type="text/vnd.tiddlywiki.railroad">
+<pre>[{: [[char|CharRailroad]] }] [: &quot;/&quot; [[default|DefaultRailroad]] ] [: &quot;-&gt;&quot; [[long-name|LongNameRailroad]] ] &quot;;&quot;</pre>
 </div>
 
 </div>
