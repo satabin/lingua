@@ -1,0 +1,81 @@
+<!doctype html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="generator" content="TiddlyWiki" />
+<meta name="tiddlywiki-version" content="5.1.9" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="format-detection" content="telephone=no">
+<link id="faviconLink" rel="shortcut icon" href="favicon.ico">
+<link rel="stylesheet" href="static.css">
+<title>Syntaxe de Diko: Design de Lingua — Choix de design d'un bibliothèque de linguistique et grammaires génératives</title>
+</head>
+<body class="tc-body">
+
+<section class="tc-story-river">
+
+<p><div class="tc-tiddler-frame tc-tiddler-view-frame tc-tiddler-exists   tc-tagged-Annexes"><div class="tc-tiddler-title">
+<div class="tc-titlebar">
+<span class="tc-tiddler-controls">
+<span class=" tc-reveal"><button aria-label="more" class="tc-btn-invisible" title="More actions">
+
+
+</button><div class=" tc-reveal" hidden="true"></div></span><span class=" tc-reveal" hidden="true"></span><span class=" tc-reveal" hidden="true"></span><span class=" tc-reveal" hidden="true"></span><span class=" tc-reveal" hidden="true"></span><span class=" tc-reveal" hidden="true"></span><span class=" tc-reveal"><button aria-label="edit" class="tc-btn-invisible" title="Edit this tiddler">
+
+
+</button></span><span class=" tc-reveal" hidden="true"></span><span class=" tc-reveal" hidden="true"></span><span class=" tc-reveal" hidden="true"></span><span class=" tc-reveal" hidden="true"></span><span class=" tc-reveal"><button aria-label="close" class="tc-btn-invisible" title="Close this tiddler">
+
+
+</button></span>
+</span>
+
+<span>
+
+<span class="tc-tiddler-title-icon" style="fill:;">
+
+</span>
+
+
+
+<h2 class="tc-title">
+Syntaxe de Diko
+</h2>
+
+</span>
+
+</div>
+
+<div class="tc-tiddler-info tc-popup-handle tc-reveal" hidden="true"></div>
+</div><div class="tc-subtitle">
+<a class="tc-tiddlylink tc-tiddlylink-missing" href=".html">
+
+</a> 8 hours ago
+</div>
+<div class="tc-tags-wrapper"><span class="tc-tag-list-item">
+
+
+<button class="tc-btn-invisible tc-tag-label" style="background-color:;
+fill:#333333;
+color:#333333;">
+ Annexes
+</button>
+<span class=" tc-reveal" hidden="true"></span>
+
+
+</span>
+</div>
+
+<div class="tc-tiddler-body"><p>Toutes les règles de syntaxe du langage <a class="tc-tiddlylink tc-tiddlylink-resolves" href="Diko.html">Diko</a> sont données ci-dessous au format <a class="tc-tiddlylink-external" href="https://en.wikipedia.org/wiki/Syntax_diagram" target="_blank">railroad</a>.</p><dl><dt><a class="tc-tiddlylink tc-tiddlylink-resolves" href="AlphabetRailroad.html">AlphabetRailroad</a></dt></dl><p>&quot;alphabet&quot; { <a class="tc-tiddlylink tc-tiddlylink-resolves" href="CharRailroad.html">char</a> } &quot;;&quot;</p><dl><dt><a class="tc-tiddlylink tc-tiddlylink-resolves" href="CategoriesRailroad.html">CategoriesRailroad</a></dt></dl><p>&quot;categories&quot; { <a class="tc-tiddlylink tc-tiddlylink-resolves" href="LongNameRailroad.html">long-name</a> &quot;as&quot; <a class="tc-tiddlylink tc-tiddlylink-resolves" href="NameRailroad.html">name</a> &quot;;&quot; }</p><dl><dt><a class="tc-tiddlylink tc-tiddlylink-resolves" href="DefaultRailroad.html">DefaultRailroad</a></dt></dl><p>[: &quot;@&quot; <a class="tc-tiddlylink tc-tiddlylink-resolves" href="NameRailroad.html">name</a> ] { (&quot;+&quot; <a class="tc-tiddlylink tc-tiddlylink-resolves" href="NameRailroad.html">name</a> |: &quot;-&quot; <a class="tc-tiddlylink tc-tiddlylink-resolves" href="NameRailroad.html">name</a>) }</p><dl><dt><a class="tc-tiddlylink tc-tiddlylink-resolves" href="EntryPointRailroad.html">EntryPointRailroad</a></dt></dl><p>&quot;main&quot; &quot;=&quot; <a class="tc-tiddlylink tc-tiddlylink-resolves" href="LongNameRailroad.html">long-name</a> &quot;;&quot; </p><dl><dt><a class="tc-tiddlylink tc-tiddlylink-resolves" href="EntryRailroad.html">EntryRailroad</a></dt></dl><p>(<a class="tc-tiddlylink tc-tiddlylink-resolves" href="WordRailroad.html">word</a> |: <a class="tc-tiddlylink tc-tiddlylink-resolves" href="RewriteRuleRailroad.html">rewrite-rule</a>)</p><dl><dt><a class="tc-tiddlylink tc-tiddlylink-resolves" href="LexikonRailroad.html">LexikonRailroad</a></dt></dl><p>&quot;lexikon&quot; <a class="tc-tiddlylink tc-tiddlylink-resolves" href="LongNameRailroad.html">long-name</a> <a class="tc-tiddlylink tc-tiddlylink-missing" href="DefaultRailRoad.html">default</a> &quot;{&quot; { <a class="tc-tiddlylink tc-tiddlylink-resolves" href="EntryRailroad.html">entry</a> } &quot;}&quot;</p><dl><dt><a class="tc-tiddlylink tc-tiddlylink-resolves" href="PatternRailroad.html">PatternRailroad</a></dt></dl><p>[: &quot;&gt;&quot; ] { (&quot;.&quot; | <a class="tc-tiddlylink tc-tiddlylink-resolves" href="CharRailroad.html">char</a> |: &quot;\&quot; <a class="tc-tiddlylink tc-tiddlylink-missing" href="NumberRailroad.html">number</a>)} [: &quot;&lt;&quot; ] [: &quot;/&quot; <a class="tc-tiddlylink tc-tiddlylink-resolves" href="DefaultRailroad.html">default</a> ]</p><dl><dt><a class="tc-tiddlylink tc-tiddlylink-resolves" href="ReplacementRailroad.html">ReplacementRailroad</a></dt></dl><p>[: &quot;&gt;&quot; ] { (<a class="tc-tiddlylink tc-tiddlylink-resolves" href="CharRailroad.html">char</a> |: &quot;\&quot; <a class="tc-tiddlylink tc-tiddlylink-missing" href="NumberRailroad.html">number</a>) } [: &quot;&lt;&quot; ] [: &quot;/&quot; { (&quot;+&quot; <a class="tc-tiddlylink tc-tiddlylink-resolves" href="NameRailroad.html">name</a> |: &quot;-&quot; <a class="tc-tiddlylink tc-tiddlylink-resolves" href="NameRailroad.html">name</a>) } ]</p><dl><dt><a class="tc-tiddlylink tc-tiddlylink-resolves" href="RewriteRuleRailroad.html">RewriteRuleRailroad</a></dt></dl><p>&quot;rewrite&quot; <a class="tc-tiddlylink tc-tiddlylink-resolves" href="LongNameRailroad.html">long-name</a>  <a class="tc-tiddlylink tc-tiddlylink-resolves" href="DefaultRailroad.html">default</a> &quot;{&quot;  { &quot;rule&quot; <a class="tc-tiddlylink tc-tiddlylink-resolves" href="PatternRailroad.html">pattern</a> &quot;=&gt;&quot; <a class="tc-tiddlylink tc-tiddlylink-resolves" href="ReplacementRailroad.html">replacement</a> &quot;;&quot; } &quot;}&quot;</p><dl><dt><a class="tc-tiddlylink tc-tiddlylink-resolves" href="SeparatorsRailroad.html">SeparatorsRailroad</a></dt></dl><p>&quot;separators&quot; { <a class="tc-tiddlylink tc-tiddlylink-resolves" href="CharRailroad.html">char</a> } &quot;;&quot;</p><dl><dt><a class="tc-tiddlylink tc-tiddlylink-resolves" href="TagsRailroad.html">TagsRailroad</a></dt></dl><p>&quot;tags&quot; { (<a class="tc-tiddlylink tc-tiddlylink-resolves" href="LongNameRailroad.html">long-name</a> &quot;as&quot; <a class="tc-tiddlylink tc-tiddlylink-resolves" href="NameRailroad.html">name</a> &quot;;&quot;
+|: &quot;group&quot; <a class="tc-tiddlylink tc-tiddlylink-resolves" href="LongNameRailroad.html">long-name</a> &quot;{&quot; { <a class="tc-tiddlylink tc-tiddlylink-resolves" href="LongNameRailroad.html">long-name</a> &quot;as&quot; <a class="tc-tiddlylink tc-tiddlylink-resolves" href="NameRailroad.html">name</a> &quot;;&quot; } &quot;}&quot;) }</p><dl><dt><a class="tc-tiddlylink tc-tiddlylink-resolves" href="WordRailroad.html">WordRailroad</a></dt></dl><p>[{: <a class="tc-tiddlylink tc-tiddlylink-resolves" href="CharRailroad.html">char</a> }] [: &quot;/&quot; <a class="tc-tiddlylink tc-tiddlylink-resolves" href="DefaultRailroad.html">default</a> ] &quot;;&quot;</p></div>
+
+
+
+</div>
+
+</p>
+
+</section>
+</body>
+</html>
