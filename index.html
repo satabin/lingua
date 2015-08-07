@@ -117,6 +117,8 @@ Error message and password prompt
 
 <p>This <a class="tc-tiddlylink-external" href="http://tiddlywiki.com" target="_blank">TiddlyWiki</a> contains the following tiddlers:</p><p><ul>
 
+<li>$:/config/Plugins/Disabled/$:/plugins/tiddlywiki/github-fork-ribbon</li>
+
 <li>$:/core</li>
 
 <li>$:/DefaultTiddlers</li>
@@ -126,6 +128,8 @@ Error message and password prompt
 <li>$:/language</li>
 
 <li>$:/languages/fr-FR</li>
+
+<li>$:/plugins/tiddlywiki/github-fork-ribbon</li>
 
 <li>$:/plugins/tiddlywiki/highlight</li>
 
@@ -153,11 +157,19 @@ Error message and password prompt
 
 <li>$:/state/add-plugin-info/$:/temp/ServerConnection/http://tiddlywiki.com/library/v5.1.9/index.html/$:/temp/RemoteAssetInfo/http://tiddlywiki.com/library/v5.1.9/index.html/$:/plugins/tiddlywiki/stacked-view</li>
 
+<li>$:/state/plugin-info--896887961-$:/plugins/tiddlywiki/github-fork-ribbon</li>
+
+<li>$:/state/plugin-info--896887961-$:/plugins/tiddlywiki/github-fork-ribbon---896887961</li>
+
 <li>$:/state/plugin-info--896887961-$:/plugins/tiddlywiki/railroad</li>
 
 <li>$:/state/showeditpreview</li>
 
 <li>$:/state/sidebar</li>
+
+<li>$:/state/tab--1498284803</li>
+
+<li>$:/state/tab--2112689675</li>
 
 <li>$:/state/tab-1342078386</li>
 
@@ -176,6 +188,8 @@ Error message and password prompt
 <li>$:/status/UserName</li>
 
 <li>$:/StoryList</li>
+
+<li>$:/temp/advancedsearch</li>
 
 <li>$:/temp/info-plugin</li>
 
@@ -273,6 +287,8 @@ Error message and password prompt
 
 <li>$:/temp/RemoteAssetSearch/$:/config/OfficialPluginLibrary</li>
 
+<li>$:/temp/search</li>
+
 <li>$:/temp/ServerConnection/http://tiddlywiki.com/library/v5.1.9/index.html</li>
 
 <li>$:/themes/tiddlywiki/snowwhite</li>
@@ -298,6 +314,8 @@ Error message and password prompt
 <li>EntryPointRailroad</li>
 
 <li>EntryRailroad</li>
+
+<li>Footer</li>
 
 <li>Introduction</li>
 
@@ -357,6 +375,9 @@ Error message and password prompt
 <!--~~ Ordinary tiddlers ~~-->
 
 <div id="storeArea" style="display:none;">
+<div modified="20150807163252220" modifier="lucas" title="$:/config/Plugins/Disabled/$:/plugins/tiddlywiki/github-fork-ribbon">
+<pre>yes</pre>
+</div>
 <div author="JeremyRuston" core-version="&gt;=5.0.0" dependents="" description="TiddlyWiki5 core" list="readme" plugin-priority="0" plugin-type="plugin" title="$:/core" type="application/json" version="5.1.9">
 <pre>{
     &quot;tiddlers&quot;: {
@@ -8530,6 +8551,25 @@ Error message and password prompt
     }
 }</pre>
 </div>
+<div author="Simon Whitaker, adapted for TiddlyWiki by JeremyRuston" dependents="" description="Corner ribbon" list="readme usage" plugin-type="plugin" title="$:/plugins/tiddlywiki/github-fork-ribbon" type="application/json" version="5.1.9">
+<pre>{
+    &quot;tiddlers&quot;: {
+        &quot;$:/plugins/tiddlywiki/github-fork-ribbon/readme&quot;: {
+            &quot;title&quot;: &quot;$:/plugins/tiddlywiki/github-fork-ribbon/readme&quot;,
+            &quot;text&quot;: &quot;This plugin provides a diagonal ribbon across the corner of the window. It resembles the design used by ~GitHub for their \&quot;Fork me on ~GitHub\&quot; ribbons.\n\nThe ribbon can be positioned over any corner, and can incorporate user defined text, colours and a link.\n\nThe CSS stylesheet is adapted from work by Simon Whitaker:\n\nhttps://github.com/simonwhitaker/github-fork-ribbon-css/\n\n[[Source code|https://github.com/Jermolene/TiddlyWiki5/blob/master/plugins/tiddlywiki/github-fork-ribbon]]\n&quot;
+        },
+        &quot;$:/plugins/tiddlywiki/github-fork-ribbon/styles&quot;: {
+            &quot;title&quot;: &quot;$:/plugins/tiddlywiki/github-fork-ribbon/styles&quot;,
+            &quot;tags&quot;: &quot;[[$:/tags/Stylesheet]]&quot;,
+            &quot;text&quot;: &quot;/* Left will inherit from right (so we don't need to duplicate code */\n.github-fork-ribbon {\n  /* The right and left lasses determine the side we attach our banner to */\n  position: absolute;\n\n  /* Add a bit of padding to give some substance outside the \&quot;stitching\&quot; */\n  padding: 2px 0;\n\n  /* Set the base colour */\n  background-color: #a00;\n\n  /* Set a gradient: transparent black at the top to almost-transparent black at the bottom */\n  background-image: -webkit-gradient(linear, left top, left bottom, from(rgba(0, 0, 0, 0.00)), to(rgba(0, 0, 0, 0.15)));\n  background-image: -webkit-linear-gradient(top, rgba(0, 0, 0, 0.00), rgba(0, 0, 0, 0.15));\n  background-image: -moz-linear-gradient(top, rgba(0, 0, 0, 0.00), rgba(0, 0, 0, 0.15));\n  background-image: -o-linear-gradient(top, rgba(0, 0, 0, 0.00), rgba(0, 0, 0, 0.15));\n  background-image: -ms-linear-gradient(top, rgba(0, 0, 0, 0.00), rgba(0, 0, 0, 0.15));\n  background-image: linear-gradient(top, rgba(0, 0, 0, 0.00), rgba(0, 0, 0, 0.15));\n  filter: progid:DXImageTransform.Microsoft.gradient(GradientType=0,StartColorStr='#000000', EndColorStr='#000000');\n\n  /* Add a drop shadow */\n  -webkit-box-shadow: 0px 2px 3px 0px rgba(0, 0, 0, 0.5);\n  box-shadow: 0px 2px 3px 0px rgba(0, 0, 0, 0.5);\n\n  z-index: 999;\n  pointer-events: auto;\n}\n\n.github-fork-ribbon a, .github-fork-ribbon a.tc-tiddlylink,\n.github-fork-ribbon a:hover, .github-fork-ribbon a.tc-tiddlylink:hover  {\n  /* Set the font */\n  font-family: \&quot;Helvetica Neue\&quot;, Helvetica, Arial, sans-serif;\n  font-size: 13px;\n  font-weight: 700;\n  color: white;\n\n  /* Set the text properties */\n  text-decoration: none;\n  text-shadow: 0 -1px rgba(0,0,0,0.5);\n  text-align: center;\n\n  /* Set the geometry. If you fiddle with these you'll also need to tweak the top and right values in #github-fork-ribbon. */\n  width: 200px;\n  line-height: 20px;\n\n  /* Set the layout properties */\n  display: inline-block;\n  padding: 2px 0;\n\n  /* Add \&quot;stitching\&quot; effect */\n  border-width: 1px 0;\n  border-style: dotted;\n  border-color: rgba(255,255,255,0.7);\n}\n\n.github-fork-ribbon-wrapper {\n  width: 150px;\n  height: 150px;\n  position: absolute;\n  overflow: hidden;\n  top: 0;\n  z-index: 999;\n  pointer-events: none;\n}\n\n.github-fork-ribbon-wrapper.fixed {\n  position: fixed;\n}\n\n.github-fork-ribbon-wrapper.left {\n  left: 0;\n}\n\n.github-fork-ribbon-wrapper.right {\n  right: 0;\n}\n\n.github-fork-ribbon-wrapper.left-bottom {\n  position: fixed;\n  top: inherit;\n  bottom: 0;\n  left: 0;\n}\n\n.github-fork-ribbon-wrapper.right-bottom {\n  position: fixed;\n  top: inherit;\n  bottom: 0;\n  right: 0;\n}\n\n.github-fork-ribbon-wrapper.right .github-fork-ribbon {\n  top: 42px;\n  right: -43px;\n\n  /* Rotate the banner 45 degrees */\n  -webkit-transform: rotate(45deg);\n  -moz-transform: rotate(45deg);\n  -o-transform: rotate(45deg);\n  transform: rotate(45deg);\n}\n\n.github-fork-ribbon-wrapper.left .github-fork-ribbon {\n  top: 42px;\n  left: -43px;\n\n  /* Rotate the banner -45 degrees */\n  -webkit-transform: rotate(-45deg);\n  -moz-transform: rotate(-45deg);\n  -o-transform: rotate(-45deg);\n  transform: rotate(-45deg);\n}\n\n\n.github-fork-ribbon-wrapper.left-bottom .github-fork-ribbon {\n  top: 80px;\n  left: -43px;\n\n  /* Rotate the banner -45 degrees */\n  -webkit-transform: rotate(45deg);\n  -moz-transform: rotate(45deg);\n  -o-transform: rotate(45deg);\n  transform: rotate(45deg);\n}\n\n.github-fork-ribbon-wrapper.right-bottom .github-fork-ribbon {\n  top: 80px;\n  right: -43px;\n\n  /* Rotate the banner -45 degrees */\n  -webkit-transform: rotate(-45deg);\n  -moz-transform: rotate(-45deg);\n  -o-transform: rotate(-45deg);\n  transform: rotate(-45deg);\n}\n&quot;
+        },
+        &quot;$:/plugins/tiddlywiki/github-fork-ribbon/usage&quot;: {
+            &quot;title&quot;: &quot;$:/plugins/tiddlywiki/github-fork-ribbon/usage&quot;,
+            &quot;text&quot;: &quot;```\n&lt;!-- TOP RIGHT RIBBON: START COPYING HERE --&gt;\n&lt;div class=\&quot;github-fork-ribbon-wrapper right\&quot;&gt;&lt;div class=\&quot;github-fork-ribbon\&quot;&gt;&lt;a href=\&quot;https://github.com/simonwhitaker/github-fork-ribbon-css\&quot;&gt;Fork me on ~GitHub&lt;/a&gt;&lt;/div&gt;\n&lt;/div&gt;\n&lt;!-- TOP RIGHT RIBBON: END COPYING HERE --&gt;\n\n&lt;!-- TOP LEFT RIBBON: START COPYING HERE --&gt;\n&lt;div class=\&quot;github-fork-ribbon-wrapper left\&quot;&gt;&lt;div class=\&quot;github-fork-ribbon\&quot;&gt;&lt;a href=\&quot;https://github.com/simonwhitaker/github-fork-ribbon-css\&quot;&gt;Fork me on ~GitHub&lt;/a&gt;&lt;/div&gt;\n&lt;/div&gt;\n&lt;!-- TOP LEFT RIBBON: END COPYING HERE --&gt;\n\n\n&lt;!-- BOTTOM RIGHT RIBBON: START COPYING HERE --&gt;\n&lt;div class=\&quot;github-fork-ribbon-wrapper right-bottom\&quot;&gt;&lt;div class=\&quot;github-fork-ribbon\&quot;&gt;&lt;a href=\&quot;https://github.com/simonwhitaker/github-fork-ribbon-css\&quot;&gt;Fork me on ~GitHub&lt;/a&gt;&lt;/div&gt;\n&lt;/div&gt;\n&lt;!-- BOTTOM RIGHT RIBBON: END COPYING HERE --&gt;\n\n&lt;!-- BOTTOM LEFT RIBBON: START COPYING HERE --&gt;\n&lt;div class=\&quot;github-fork-ribbon-wrapper left-bottom\&quot;&gt;&lt;div class=\&quot;github-fork-ribbon\&quot;&gt;&lt;a href=\&quot;https://github.com/simonwhitaker/github-fork-ribbon-css\&quot;&gt;Fork me on ~GitHub&lt;/a&gt;&lt;/div&gt;\n&lt;/div&gt;\n&lt;!-- BOTTOM LEFT RIBBON: END COPYING HERE --&gt;\n```\n&quot;
+        }
+    }
+}</pre>
+</div>
 <div author="JoaoBolila" core-version="&gt;=5.0.0" dependents="" description="Highlight.js: syntax highlighting" list="readme usage license" plugin-type="plugin" title="$:/plugins/tiddlywiki/highlight" type="application/json" version="5.1.9">
 <pre>{
     &quot;tiddlers&quot;: {
@@ -8665,16 +8705,16 @@ Error message and password prompt
 <div created="20150806085506863" modified="20150807161335882" title="$:/SiteTitle">
 <pre>Lingua</pre>
 </div>
-<div modified="20150806115109171" title="$:/state/add-plugin-info/$:/temp/ServerConnection/http://tiddlywiki.com/library/v5.1.9/index.html/$:/temp/RemoteAssetInfo/http://tiddlywiki.com/library/v5.1.9/index.html/$:/plugins/tiddlywiki/browser-sniff">
+<div modified="20150807165621987" modifier="lucas" title="$:/state/add-plugin-info/$:/temp/ServerConnection/http://tiddlywiki.com/library/v5.1.9/index.html/$:/temp/RemoteAssetInfo/http://tiddlywiki.com/library/v5.1.9/index.html/$:/plugins/tiddlywiki/browser-sniff">
 <pre>no</pre>
 </div>
-<div modified="20150806115229144" title="$:/state/add-plugin-info/$:/temp/ServerConnection/http://tiddlywiki.com/library/v5.1.9/index.html/$:/temp/RemoteAssetInfo/http://tiddlywiki.com/library/v5.1.9/index.html/$:/plugins/tiddlywiki/cecily">
-<pre>yes</pre>
+<div modified="20150807165642796" modifier="lucas" title="$:/state/add-plugin-info/$:/temp/ServerConnection/http://tiddlywiki.com/library/v5.1.9/index.html/$:/temp/RemoteAssetInfo/http://tiddlywiki.com/library/v5.1.9/index.html/$:/plugins/tiddlywiki/cecily">
+<pre>no</pre>
 </div>
 <div modified="20150806115121516" title="$:/state/add-plugin-info/$:/temp/ServerConnection/http://tiddlywiki.com/library/v5.1.9/index.html/$:/temp/RemoteAssetInfo/http://tiddlywiki.com/library/v5.1.9/index.html/$:/plugins/tiddlywiki/github-fork-ribbon">
 <pre>no</pre>
 </div>
-<div modified="20150806115129528" title="$:/state/add-plugin-info/$:/temp/ServerConnection/http://tiddlywiki.com/library/v5.1.9/index.html/$:/temp/RemoteAssetInfo/http://tiddlywiki.com/library/v5.1.9/index.html/$:/plugins/tiddlywiki/help">
+<div modified="20150807165615629" modifier="lucas" title="$:/state/add-plugin-info/$:/temp/ServerConnection/http://tiddlywiki.com/library/v5.1.9/index.html/$:/temp/RemoteAssetInfo/http://tiddlywiki.com/library/v5.1.9/index.html/$:/plugins/tiddlywiki/help">
 <pre>no</pre>
 </div>
 <div modified="20150806115139490" title="$:/state/add-plugin-info/$:/temp/ServerConnection/http://tiddlywiki.com/library/v5.1.9/index.html/$:/temp/RemoteAssetInfo/http://tiddlywiki.com/library/v5.1.9/index.html/$:/plugins/tiddlywiki/katex">
@@ -8683,7 +8723,7 @@ Error message and password prompt
 <div modified="20150806115150422" title="$:/state/add-plugin-info/$:/temp/ServerConnection/http://tiddlywiki.com/library/v5.1.9/index.html/$:/temp/RemoteAssetInfo/http://tiddlywiki.com/library/v5.1.9/index.html/$:/plugins/tiddlywiki/markdown">
 <pre>no</pre>
 </div>
-<div modified="20150806115159119" title="$:/state/add-plugin-info/$:/temp/ServerConnection/http://tiddlywiki.com/library/v5.1.9/index.html/$:/temp/RemoteAssetInfo/http://tiddlywiki.com/library/v5.1.9/index.html/$:/plugins/tiddlywiki/powered-by-tiddlywiki">
+<div modified="20150807165633459" modifier="lucas" title="$:/state/add-plugin-info/$:/temp/ServerConnection/http://tiddlywiki.com/library/v5.1.9/index.html/$:/temp/RemoteAssetInfo/http://tiddlywiki.com/library/v5.1.9/index.html/$:/plugins/tiddlywiki/powered-by-tiddlywiki">
 <pre>no</pre>
 </div>
 <div modified="20150806115211950" title="$:/state/add-plugin-info/$:/temp/ServerConnection/http://tiddlywiki.com/library/v5.1.9/index.html/$:/temp/RemoteAssetInfo/http://tiddlywiki.com/library/v5.1.9/index.html/$:/plugins/tiddlywiki/railroad">
@@ -8692,8 +8732,14 @@ Error message and password prompt
 <div modified="20150806115221270" title="$:/state/add-plugin-info/$:/temp/ServerConnection/http://tiddlywiki.com/library/v5.1.9/index.html/$:/temp/RemoteAssetInfo/http://tiddlywiki.com/library/v5.1.9/index.html/$:/plugins/tiddlywiki/stacked-view">
 <pre>no</pre>
 </div>
-<div modified="20150806115625651" title="$:/state/plugin-info--896887961-$:/plugins/tiddlywiki/railroad">
-<pre>yes</pre>
+<div modified="20150807163301501" modifier="lucas" title="$:/state/plugin-info--896887961-$:/plugins/tiddlywiki/github-fork-ribbon">
+<pre>no</pre>
+</div>
+<div modified="20150807162552278" modifier="lucas" title="$:/state/plugin-info--896887961-$:/plugins/tiddlywiki/github-fork-ribbon---896887961">
+<pre>usage</pre>
+</div>
+<div modified="20150807161755850" modifier="lucas" title="$:/state/plugin-info--896887961-$:/plugins/tiddlywiki/railroad">
+<pre>no</pre>
 </div>
 <div modified="20150806093434780" title="$:/state/showeditpreview">
 <pre>yes</pre>
@@ -8701,11 +8747,17 @@ Error message and password prompt
 <div modified="20150807161328854" title="$:/state/sidebar">
 <pre>yes</pre>
 </div>
-<div modified="20150806115102943" title="$:/state/tab-1342078386">
+<div modified="20150807163817545" modifier="lucas" title="$:/state/tab--1498284803">
+<pre>$:/core/ui/AdvancedSearch/Shadows</pre>
+</div>
+<div modified="20150807161806267" modifier="lucas" title="$:/state/tab--2112689675">
+<pre>$:/core/ui/ControlPanel/Advanced</pre>
+</div>
+<div modified="20150807165552762" modifier="lucas" title="$:/state/tab-1342078386">
 <pre>$:/core/ui/ControlPanel/Plugins/Add/Plugins</pre>
 </div>
-<div modified="20150807161332436" title="$:/state/tab-1749438307">
-<pre>$:/core/ui/ControlPanel/Info</pre>
+<div modified="20150807161923730" modifier="lucas" title="$:/state/tab-1749438307">
+<pre>$:/core/ui/ControlPanel/Plugins</pre>
 </div>
 <div modified="20150806100748319" title="$:/state/tab/moresidebar-401116514">
 <pre>$:/core/ui/MoreSideBar/Tags</pre>
@@ -8725,8 +8777,11 @@ Error message and password prompt
 <div created="20150807161345648" creator="l" modified="20150807161345965" modifier="luca" title="$:/status/UserName">
 <pre>lucas</pre>
 </div>
-<div list="$:/ControlPanel Introduction" title="$:/StoryList">
+<div list="Footer Introduction" title="$:/StoryList">
 <pre></pre>
+</div>
+<div created="20150807163142894" creator="lucas" modified="20150807163820076" modifier="lucas" title="$:/temp/advancedsearch">
+<pre>PageT</pre>
 </div>
 <div plugin-type="info" title="$:/temp/info-plugin" type="application/json">
 <pre>{
@@ -8742,7 +8797,7 @@ Error message and password prompt
     }
 }</pre>
 </div>
-<div created="20150806092323727" modified="20150807070350600" title="$:/temp/NewTagName">
+<div created="20150806092323727" creator="lucas" modified="20150807182612999" modifier="lucas" title="$:/temp/NewTagName">
 <pre></pre>
 </div>
 <div author="Paco Rivière" core-version="&gt;=5.0.0" created="20150806114956465" dependents="" description="Catalan (Spain)" icon="data:image/svg+xml,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22UTF-8%22%3F%3E%0A%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22810%22%20height%3D%22540%22%3E%0A%3Crect%20width%3D%22810%22%20height%3D%22540%22%20fill%3D%22%23FCDD09%22%2F%3E%0A%3Cpath%20stroke%3D%22%23DA121A%22%20stroke-width%3D%2260%22%20d%3D%22M0%2C90H810m0%2C120H0m0%2C120H810m0%2C120H0%22%2F%3E%0A%3C%2Fsvg%3E" modified="20150806114956465" name="ca-ES" original-plugin-type="language" original-tags="" original-title="$:/languages/ca-ES" original-type="application/json" server-url="http://tiddlywiki.com/library/v5.1.9/index.html" tags="$:/tags/RemoteAssetInfo" title="$:/temp/RemoteAssetInfo/http://tiddlywiki.com/library/v5.1.9/index.html/$:/languages/ca-ES" type="text/vnd.tiddlywiki" version="5.1.9">
@@ -8975,10 +9030,13 @@ At this point it is largely for experimentation by @zooko.
 <div author="JeremyRuston" core-version="&gt;=5.0.0" created="20150806114956465" dependents="" description="Basic theme" modified="20150806114956465" name="Vanilla" original-plugin-type="theme" original-tags="" original-title="$:/themes/tiddlywiki/vanilla" original-type="application/json" server-url="http://tiddlywiki.com/library/v5.1.9/index.html" tags="$:/tags/RemoteAssetInfo" title="$:/temp/RemoteAssetInfo/http://tiddlywiki.com/library/v5.1.9/index.html/$:/themes/tiddlywiki/vanilla" type="text/vnd.tiddlywiki" version="5.1.9">
 <pre></pre>
 </div>
-<div created="20150806114959306" modified="20150806115059347" title="$:/temp/RemoteAssetSearch/$:/config/OfficialPluginLibrary">
+<div created="20150806114959306" creator="lucas" modified="20150807165553922" modifier="lucas" title="$:/temp/RemoteAssetSearch/$:/config/OfficialPluginLibrary">
 <pre></pre>
 </div>
-<div created="20150806115050471" modified="20150806115050471" tags="$:/tags/ServerConnection" title="$:/temp/ServerConnection/http://tiddlywiki.com/library/v5.1.9/index.html" url="http://tiddlywiki.com/library/v5.1.9/index.html">
+<div created="20150807162104009" creator="lucas" modified="20150807182755337" modifier="lucas" title="$:/temp/search">
+<pre>Foo</pre>
+</div>
+<div created="20150807161931373" creator="lucas" modified="20150807161931373" modifier="lucas" tags="$:/tags/ServerConnection" title="$:/temp/ServerConnection/http://tiddlywiki.com/library/v5.1.9/index.html" url="http://tiddlywiki.com/library/v5.1.9/index.html">
 <pre>loaded</pre>
 </div>
 <div author="JeremyRuston" core-version="&gt;=5.0.0" dependents="$:/themes/tiddlywiki/vanilla" description="Emphasises individual tiddlers" name="Snow White" plugin-type="theme" title="$:/themes/tiddlywiki/snowwhite" type="application/json" version="5.1.9">
@@ -9154,8 +9212,13 @@ Un dictionnaire consiste en plusieurs parties décrites dans cette section.
 <div created="20150806131920030" modified="20150807070510865" tags="[[Syntaxe de Diko]] railroad" title="EntryRailroad" type="text/vnd.tiddlywiki.railroad">
 <pre>([[word|WordRailroad]] |: [[rewrite-rule|RewriteRuleRailroad]])</pre>
 </div>
-<div created="20150806085603114" modified="20150807120048600" tags="" title="Introduction">
-<pre>[[lingua|https://github.com/satabin/lingua]] est une bibliothèque de traitement linguistique.
+<div created="20150807182608418" creator="lucas" modified="20150807182821922" modifier="lucas" tags="$:/tags/BelowStory" title="Footer">
+<pre>Copyright &amp;copy; 2015 Lucas Satabin
+
+&lt;a rel=&quot;license&quot; href=&quot;http://creativecommons.org/licenses/by-sa/4.0/&quot;&gt;&lt;img alt=&quot;Creative Commons License&quot; style=&quot;border-width:0&quot; src=&quot;https://i.creativecommons.org/l/by-sa/4.0/88x31.png&quot; /&gt;&lt;/a&gt;&lt;br /&gt;This work is licensed under a &lt;a rel=&quot;license&quot; href=&quot;http://creativecommons.org/licenses/by-sa/4.0/&quot;&gt;Creative Commons Attribution-ShareAlike 4.0 International License&lt;/a&gt;.</pre>
+</div>
+<div created="20150806085603114" creator="lucas" modified="20150807162319611" modifier="lucas" tags="" title="Introduction">
+<pre>[[Lingua|https://github.com/satabin/lingua]] est une bibliothèque de traitement linguistique.
 Elle est composée de plusieurs modules :
 
 * un module de [[génération de dictionnaire|Lexikon]] pour une langue donnée
