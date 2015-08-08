@@ -185,6 +185,10 @@ Error message and password prompt
 
 <li>$:/state/toc/Diko-Syntaxe de Diko-2007659389</li>
 
+<li>$:/state/toc/Les lexiques-Les mots-2007659389</li>
+
+<li>$:/state/toc/Les lexiques-Les règles de réécriture-2007659389</li>
+
 <li>$:/status/UserName</li>
 
 <li>$:/StoryList</li>
@@ -327,11 +331,15 @@ Error message and password prompt
 
 <li>Les lexiques</li>
 
+<li>Les motifs</li>
+
 <li>Les mots</li>
 
 <li>Les règles de réécriture</li>
 
 <li>Les séparateurs</li>
+
+<li>Les textes de remplacement</li>
 
 <li>Les traits</li>
 
@@ -8744,7 +8752,7 @@ Error message and password prompt
 <div modified="20150806093434780" title="$:/state/showeditpreview">
 <pre>yes</pre>
 </div>
-<div modified="20150807161328854" title="$:/state/sidebar">
+<div modified="20150808164022784" modifier="lucas" title="$:/state/sidebar">
 <pre>yes</pre>
 </div>
 <div modified="20150807163817545" modifier="lucas" title="$:/state/tab--1498284803">
@@ -8768,16 +8776,22 @@ Error message and password prompt
 <div modified="20150806153343814" title="$:/state/toc/Diko-Annexes-2007659389">
 <pre>open</pre>
 </div>
-<div modified="20150806153238990" title="$:/state/toc/Diko-Les lexiques-2007659389">
+<div modified="20150807210616578" modifier="lucas" title="$:/state/toc/Diko-Les lexiques-2007659389">
 <pre>open</pre>
 </div>
 <div modified="20150806153342712" title="$:/state/toc/Diko-Syntaxe de Diko-2007659389">
 <pre>close</pre>
 </div>
+<div modified="20150807210617455" modifier="lucas" title="$:/state/toc/Les lexiques-Les mots-2007659389">
+<pre>open</pre>
+</div>
+<div modified="20150807210618463" modifier="lucas" title="$:/state/toc/Les lexiques-Les règles de réécriture-2007659389">
+<pre>open</pre>
+</div>
 <div created="20150807161345648" creator="l" modified="20150807161345965" modifier="luca" title="$:/status/UserName">
 <pre>lucas</pre>
 </div>
-<div list="Footer Introduction" title="$:/StoryList">
+<div list="Introduction Lexikon Categories Diko [[Les motifs]]" title="$:/StoryList">
 <pre></pre>
 </div>
 <div created="20150807163142894" creator="lucas" modified="20150807163820076" modifier="lucas" title="$:/temp/advancedsearch">
@@ -9033,8 +9047,8 @@ At this point it is largely for experimentation by @zooko.
 <div created="20150806114959306" creator="lucas" modified="20150807165553922" modifier="lucas" title="$:/temp/RemoteAssetSearch/$:/config/OfficialPluginLibrary">
 <pre></pre>
 </div>
-<div created="20150807162104009" creator="lucas" modified="20150807182755337" modifier="lucas" title="$:/temp/search">
-<pre>Foo</pre>
+<div created="20150807162104009" creator="lucas" modified="20150808163129101" modifier="lucas" title="$:/temp/search">
+<pre></pre>
 </div>
 <div created="20150807161931373" creator="lucas" modified="20150807161931373" modifier="lucas" tags="$:/tags/ServerConnection" title="$:/temp/ServerConnection/http://tiddlywiki.com/library/v5.1.9/index.html" url="http://tiddlywiki.com/library/v5.1.9/index.html">
 <pre>loaded</pre>
@@ -9154,7 +9168,7 @@ At this point it is largely for experimentation by @zooko.
 &lt;&lt;toc-expandable &quot;Annexes&quot; &quot;!tag[railroad]sort[toc]&quot;&gt;&gt;
 &lt;/div&gt;</pre>
 </div>
-<div created="20150806091529486" modified="20150806095950928" title="Categories">
+<div created="20150806091529486" creator="lucas" modified="20150808164030864" modifier="lucas" title="Categories">
 <pre>Une catégorie classifie une entrée du dictionnaire. Un mot représente une ou plusieurs entrées, chacune ayant sa propre catégories.
 
 Une catégorie doit avoir un nom complet et une version courte pour faciliter son utilisation dans la description des entrées du dictionnaire.
@@ -9268,11 +9282,40 @@ Un lexique définit des entrées à ajouter au dictionnaire. Les entrées d'un d
 &lt;&lt;toc-expandable &quot;Les lexiques&quot; &quot;!tag[railroad]sort[toc]&quot;&gt;&gt;
 &lt;/div&gt;</pre>
 </div>
-<div created="20150806105414361" modified="20150806153627730" tags="[[Les lexiques]]" title="Les mots" toc="1">
-<pre></pre>
+<div created="20150807210440549" creator="lucas" modified="20150807210504479" modifier="lucas" tags="[[Les règles de réécriture]]" title="Les motifs">
+<pre>! Syntaxe
+
+{{PatternRailroad}}
+
+! Description
+</pre>
 </div>
-<div created="20150806105431010" modified="20150806153615320" tags="[[Les lexiques]]" title="Les règles de réécriture" toc="2">
-<pre></pre>
+<div created="20150806105414361" creator="lucas" modified="20150808163237727" modifier="lucas" tags="[[Les lexiques]]" title="Les mots" toc="1">
+<pre>! Syntaxe
+
+{{WordRailroad}}
+
+! Description
+
+Une entrée de type mot définit une séquence de lettre au sens de l'[[alphabet|L'alphabet]] et de [[séparateurs|Les séparateurs]] suivie potentiellement d'une liste d'[[annotations|Les annotations]] puis d'un potentiel autre lexique, indiqué par `-&gt;`.
+Si un lexique suit une entrée du dictionnaire, les entrées de ce lexique sont ajoutées à celle qui vient d'être définie, et ne la remplace pas.</pre>
+</div>
+<div created="20150806105431010" creator="lucas" modified="20150808163903229" modifier="lucas" tags="[[Les lexiques]]" title="Les règles de réécriture" toc="2">
+<pre>! Syntaxe
+
+{{RewriteRuleRailroad}}
+
+! Description
+
+Une section `rewrite` une règle de réécriture qui contient un ensemble de cas. Chacun de ces cas se compose d'un motif qui indique à quelles entrées il s'applique. Les entrées considérées sont celle définies par le lexique courant. Après la flèche `=&gt;` est spécifié le remplacement pour le motif. Ce remplacement permet de définir une nouvelle entrée lorsque le motif correspond à une entrée du lexique.
+
+A l'intérieur d'une règle de réécriture, au plus un cas est sélectionné ; le premier dont le motif correspond à un mot est choisi et le motif est remplacé par la partie droite. Ainsi, l'ordre dans lequel les cas à l'intérieur d'une règle sont définis est important. Si aucun motif ne correspond à une entrée, la règle ne s'applique tout simplement pas.
+
+Un lexique peut comporter plusieurs règles de réécriture. Toutes les règles s'appliquent et leur ordre n'a aucune importance.
+
+&lt;div class=&quot;tc-table-of-contents&quot;&gt;
+&lt;&lt;toc-expandable &quot;Les règles de réécriture&quot; &quot;!tag[railroad]sort[toc]&quot;&gt;&gt;
+&lt;/div&gt;</pre>
 </div>
 <div created="20150806105305286" modified="20150807120653239" tags="Diko" title="Les séparateurs" toc="3">
 <pre>! Syntaxe
@@ -9282,6 +9325,13 @@ Un lexique définit des entrées à ajouter au dictionnaire. Les entrées d'un d
 ! Description
 
 La section `separators` permet de définir les caractères qui composent un mot mais ne sont pas des lettres, comme le trait d'union en français. Contrairement à l'[[alphabet|L'alphabet]], l'ordre de déclaration des séparateurs n'a aucune importance.</pre>
+</div>
+<div created="20150807210509537" creator="lucas" modified="20150807210528451" modifier="lucas" tags="[[Les règles de réécriture]]" title="Les textes de remplacement">
+<pre>! Syntaxe
+
+{{ReplacementRailroad}}
+
+! Description</pre>
 </div>
 <div created="20150806105339881" modified="20150807130118067" tags="Diko" title="Les traits" toc="5">
 <pre>! Syntaxe
@@ -9332,8 +9382,8 @@ Pour couvrir ces besoins, nous définissons un langage de description de diction
 <div created="20150806144418843" modified="20150807160843079" tags="[[Syntaxe de Diko]] railroad" title="ReplacementRailroad" type="text/vnd.tiddlywiki.railroad">
 <pre>[: &quot;&gt;&quot; ] [{: ([[char|CharRailroad]] |: &quot;\&quot; [[number|NumberRailroad]]) }] [: &quot;&lt;&quot; ] [: &quot;/&quot; { (&quot;+&quot; [[name|NameRailroad]] |: &quot;-&quot; [[name|NameRailroad]]) } ] [: &quot;-&gt;&quot; [[long-name|LongNameRailroad]] ]</pre>
 </div>
-<div created="20150806132104256" modified="20150806145148191" tags="[[Syntaxe de Diko]] railroad" title="RewriteRuleRailroad" type="text/vnd.tiddlywiki.railroad">
-<pre> &quot;rewrite&quot; [[long-name|LongNameRailroad]]  [[default|DefaultRailroad]] &quot;{&quot;  { &quot;rule&quot; [[pattern|PatternRailroad]] &quot;=&gt;&quot; [[replacement|ReplacementRailroad]] &quot;;&quot; } &quot;}&quot;</pre>
+<div created="20150806132104256" creator="lucas" modified="20150808163923398" modifier="lucas" tags="[[Syntaxe de Diko]] railroad" title="RewriteRuleRailroad" type="text/vnd.tiddlywiki.railroad">
+<pre> &quot;rewrite&quot; [[long-name|LongNameRailroad]]  [[default|DefaultRailroad]] &quot;{&quot;  { &quot;case&quot; [[pattern|PatternRailroad]] &quot;=&gt;&quot; [[replacement|ReplacementRailroad]] &quot;;&quot; } &quot;}&quot;</pre>
 </div>
 <div created="20150806130650696" modified="20150806142011777" tags="[[Syntaxe de Diko]] railroad" title="SeparatorsRailroad" type="text/vnd.tiddlywiki.railroad">
 <pre>&quot;separators&quot; { [[char|CharRailroad]] } &quot;;&quot;</pre>
