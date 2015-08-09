@@ -8756,8 +8756,8 @@ Error message and password prompt
 <div modified="20150806093434780" title="$:/state/showeditpreview">
 <pre>yes</pre>
 </div>
-<div modified="20150808164138552" modifier="lucas" title="$:/state/sidebar">
-<pre>yes</pre>
+<div modified="20150808164639999" modifier="lucas" title="$:/state/sidebar">
+<pre>no</pre>
 </div>
 <div modified="20150807163817545" modifier="lucas" title="$:/state/tab--1498284803">
 <pre>$:/core/ui/AdvancedSearch/Shadows</pre>
@@ -8798,7 +8798,7 @@ Error message and password prompt
 <div created="20150807161345648" creator="l" modified="20150807161345965" modifier="luca" title="$:/status/UserName">
 <pre>lucas</pre>
 </div>
-<div list="Introduction" title="$:/StoryList">
+<div list="Introduction Lexikon Diko [[Les textes de remplacement]]" title="$:/StoryList">
 <pre></pre>
 </div>
 <div created="20150807163142894" creator="lucas" modified="20150807163820076" modifier="lucas" title="$:/temp/advancedsearch">
@@ -9205,15 +9205,17 @@ Voici la liste des catégories de chaque langue construite pour [[lingua|Introdu
 <div created="20150806131217225" modified="20150807123849971" tags="[[Syntaxe de Diko]] railroad" title="CategoriesRailroad" type="text/vnd.tiddlywiki.railroad">
 <pre>&quot;categories&quot; { [[long-name|LongNameRailroad]] &quot;as&quot; [[name|NameRailroad]] &quot;;&quot; }</pre>
 </div>
-<div created="20150806145204148" modified="20150806150430164" tags="railroad" title="CharRailroad" type="text/vnd.tiddlywiki.railroad">
+<div created="20150806145204148" creator="lucas" modified="20150808170112478" modifier="lucas" tags="railroad" title="CharRailroad" type="text/vnd.tiddlywiki.railroad">
 <pre>\start none
 \end none
 (&quot;\;&quot;
 | &quot;\.&quot;
 | &quot;\&lt;&quot;
 | &quot;\&gt;&quot;
+| &quot;\/&quot;
+| &quot;\\&quot;
 | &quot;\␣&quot;
-|:&quot;any unicode character but ';', '.', '&lt;', '&gt;' or  ' '&quot;
+|:&quot;any unicode character but ';', '.', '&lt;', '&gt;', '/', ' \' or  ' '&quot;
 )</pre>
 </div>
 <div created="20150806131620385" modified="20150806144622775" tags="[[Syntaxe de Diko]] railroad" title="DefaultRailroad" type="text/vnd.tiddlywiki.railroad">
@@ -9289,13 +9291,22 @@ Un lexique définit des entrées à ajouter au dictionnaire. Les entrées d'un d
 &lt;&lt;toc-expandable &quot;Les lexiques&quot; &quot;!tag[railroad]sort[toc]&quot;&gt;&gt;
 &lt;/div&gt;</pre>
 </div>
-<div created="20150807210440549" creator="lucas" modified="20150807210504479" modifier="lucas" tags="[[Les règles de réécriture]]" title="Les motifs">
+<div created="20150807210440549" creator="lucas" modified="20150808165214182" modifier="lucas" tags="[[Les règles de réécriture]]" title="Les motifs">
 <pre>! Syntaxe
 
 {{PatternRailroad}}
 
 ! Description
-</pre>
+
+Un motif définit l'ensemble des entrées d'un lexique qui correspondent à un cas. Ce motif peut décrire un mot complet, un préfixe (suivi de `&lt;`), un suffixe (précédé de `&gt;`) ou un radical (entre `&gt;` et `&lt;`).
+
+Le motif est une séquence de plusieurs sélecteurs :
+
+* `.` sélectionne une lettre quelconque de l'alphabet ; les séparateurs ne sont pas sélectionnés.
+* `char` sélectionne le caractère en question (y-compris un séparateur)
+* `\&lt;n&gt;` sélectionne la plus longue séquence possible de lettres de l'alphabet (sans séparateur). La séquence sélectionnée est enregistrée avec le numéro `&lt;n&gt;` spécifié.
+
+Après la séquence de sélecteurs il est possible de spécifier un ensemble d'annotations ([[catégorie|Categories]] et [[traits|Traits]]) que l'entrée doit posséder ou non pour être sélectionnée.</pre>
 </div>
 <div created="20150806105414361" creator="lucas" modified="20150808163237727" modifier="lucas" tags="[[Les lexiques]]" title="Les mots" toc="1">
 <pre>! Syntaxe
@@ -9333,12 +9344,17 @@ Un lexique peut comporter plusieurs règles de réécriture. Toutes les règles 
 
 La section `separators` permet de définir les caractères qui composent un mot mais ne sont pas des lettres, comme le trait d'union en français. Contrairement à l'[[alphabet|L'alphabet]], l'ordre de déclaration des séparateurs n'a aucune importance.</pre>
 </div>
-<div created="20150807210509537" creator="lucas" modified="20150807210528451" modifier="lucas" tags="[[Les règles de réécriture]]" title="Les textes de remplacement">
+<div created="20150807210509537" creator="lucas" modified="20150809110750344" modifier="lucas" tags="[[Les règles de réécriture]]" title="Les textes de remplacement">
 <pre>! Syntaxe
 
 {{ReplacementRailroad}}
 
-! Description</pre>
+! Description
+
+Le texte de remplacement d'une règle de réécriture est similaire aux entrées [[mots|Les mots]] à ceci près :
+
+* l'utilisation d'affixes (préfixe ou suffixe) permet de modifier une entrée existante
+* l'utilisation des séquence capturées par le [[motif|Les motifs]] permet de paramétrer la texte de remplacement par l'entrée sélectionnée.</pre>
 </div>
 <div created="20150806105339881" modified="20150807130118067" tags="Diko" title="Les traits" toc="5">
 <pre>! Syntaxe
