@@ -112,22 +112,22 @@ lexikon Nom @N {
   // pour les noms composés d'un verbe et d'un nom, seul le nom prend la marque
   // du pluriel s'il est dénombrable, sinon le nom reste invariable
   rewrite pluriel +Pl {
-    rule >al / -NC => >aux / +Pl
-       | >eau / -NC => >eaux / +Pl
-       | >_ / -NC => >s / +Pl ;
+    rule >al / -NC => >aux
+       | >eau / -NC => >eaux
+       | >_ / -NC => >s ;
     // avant la flèche, le "\1" indique "n'importe quelle séquence qui est capturée et numérotée 1"
     // après la flèche, le "\1" indique la première étoile avant la flèche
-    rule \1-\2 / +VNI => \1-\2 / +Pl
+    rule \1-\2 / +VNI => \1-\2
        | \1-\2 / +VN  => \1-[\2->pluriel];
 
-    rule \1-\2 / +NNI => \1->pluriel-\2 / +Pl
-       | \1-\2 / +NN => \1->pluriel-[\2->pluriel] / +Pl ;
+    rule \1-\2 / +NNI => \1->pluriel-\2
+       | \1-\2 / +NN => \1->pluriel-[\2->pluriel] ;
 
-    rule >o-\1 / +AdjN => >o-[\2->pluriel] / +Pl
-       | \1-\2 / +AdjN  => \1->pluriel-[\2->pluriel] / +Pl
-       | \1-\2 / +NAdj  => \1->pluriel-[\2->pluriel] / +Pl ;
+    rule >o-\1 / +AdjN => >o-[\2->pluriel]
+       | \1-\2 / +AdjN  => \1->pluriel-[\2->pluriel]
+       | \1-\2 / +NAdj  => \1->pluriel-[\2->pluriel] ;
 
-    rule \1-\2 / +AdvN => \1-[\2->pluriel] / +Pl ;
+    rule \1-\2 / +AdvN => \1-[\2->pluriel] ;
   }
 
 }
