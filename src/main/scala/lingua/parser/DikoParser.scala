@@ -1,0 +1,113 @@
+/* Copyright (c) 2015 Lucas Satabin
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package lingua
+package parser
+
+class DikoParser {
+
+  val keywords =
+    Set("alphabet", "as", "categories", "lexikon", "main", "rewrite", "rule", "separators", "tags")
+
+  val utils = new LinguaParser(keywords)
+
+  import fastparse.noApi._
+  import utils._
+  import lexical._
+  import WsApi._
+
+  val diko: P[Diko] = P(
+    (keyword("alphabet") ~ (!";" ~ AnyChar.!.map(_(0))).rep(min = 0) ~ ";"
+      ~ (keyword("separators") ~ (!";" ~ AnyChar.!.map(_(0))).rep(min = 1) ~ ";").?.map(_.getOrElse(Seq.empty[Char]))
+      ~ (keyword("categories") ~ category.rep(min = 1)).?.map(_.getOrElse(Seq.empty[Category]))
+      ~ (keyword("tags") ~ tag.rep(min = 1)).?.map(_.getOrElse(Seq.empty[Tag]))
+      ~ lexikon.rep(min = 0)).map {
+        case (alphabet, separators, cats, tags, lexika) =>
+          Diko(alphabet, separators, cats, tags, lexika)
+      })
+
+  val lexikon: P[Lexikon] = P(
+    (keyword("lexikon") ~ name ~ annotation ~ "{" ~/ (rewrite | word).rep(min = 0) ~/ "}").map {
+      case (name, (cat, tags), entries) => Lexikon(name, cat, tags, entries)
+    })
+
+  val word: P[Word] = P(
+    (char.rep(min = 0) ~ ("/" ~ annotation).?.map(_.getOrElse((None, Seq.empty[TagEmission]))) ~ ";").map {
+      case (chars, (cat, tags)) => Word(chars, cat, tags)
+    })
+
+  val rewrite: P[Rewrite] = P(
+    (keyword("rewrite") ~ name ~ annotation ~ "{" ~/ rule.rep(min = 1) ~ "}").map {
+      case (name, (cat, tags), rules) => Rewrite(name, cat, tags, rules)
+    })
+
+  val rule: P[Rule] = P(
+    keyword("rule") ~/ (pattern ~ "=>" ~/ replacement).rep(min = 1, sep = "|" ~/ Pass) ~ ";")
+
+  val pattern: P[Pattern] = P(
+    (">".!.?.map(_.isDefined)
+      ~ ("\\" ~/ integer.map(CapturePattern)
+        | P("_").map(_ => EmptyPattern)
+        | !"=>" ~ char.map(CharPattern)).rep(min = 0)
+        ~ "<".!.?.map(_.isDefined)
+        ~ ("/" ~ annotation).?.map(_.getOrElse((None, Seq.empty[TagEmission])))).map {
+          case (pre, seq, suf, (cat, tags)) =>
+            if (pre && suf)
+              Pattern(Infix, seq, cat, tags)
+            else if (pre)
+              Pattern(Prefix, seq, cat, tags)
+            else if (suf)
+              Pattern(Suffix, seq, cat, tags)
+            else
+              Pattern(NoAffix, seq, cat, tags)
+        })
+
+  val replacement: P[Replacement] = P(
+    (">".!.?.map(_.isDefined)
+      ~ replacementText.rep(min = 0)
+      ~ "<".!.?.map(_.isDefined)
+      ~ ("/" ~ tagEmission.rep(min = 1)).?.map(_.getOrElse(Seq.empty[TagEmission]))).map {
+        case (pre, seq, suf, tags) =>
+          if (pre && suf)
+            Replacement(Infix, seq, tags)
+          else if (pre)
+            Replacement(Prefix, seq, tags)
+          else if (suf)
+            Replacement(Suffix, seq, tags)
+          else
+            Replacement(NoAffix, seq, tags)
+      })
+
+  val replacementText: P[CaseReplacement] = P(
+    "[" ~ (replacementText.rep(min = 1) ~ "]").map(GroupReplacement)
+      | "->" ~ name.map(NextReplacement)
+      | P("_").map(_ => DropReplacement)
+      | char.map(CharReplacement)
+      | "\\" ~ integer.map(CaptureReplacement))
+
+  val annotation: P[(Option[String], Seq[TagEmission])] = P(
+    ("@" ~ name).? ~ tagEmission.rep(min = 0))
+
+  val tagEmission: P[TagEmission] = P(
+    (("+" | "-").! ~ name).map {
+      case (pres, name) => (pres == "+", name)
+    }).opaque("<tag emission>")
+
+  val char: P[Char] = P(
+    (!CharIn("{}[];.<>/\\| _") ~ AnyChar).!.map(_(0))).opaque("<character>")
+
+  val integer: P[Int] = P(
+    CharIn("0123456789").rep(min = 1).!.map(_.toInt)).opaque("<integer>")
+
+}

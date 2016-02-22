@@ -14,4 +14,9 @@
  */
 package lingua
 
-case class Tag(fullname: String, alias: String, group: Option[String])(val pos: Position)
+package object parser {
+
+  type Rule = Seq[(Pattern, Replacement)]
+
+}
+
