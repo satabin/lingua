@@ -52,18 +52,18 @@ class LinguaParser(keywords: Set[String]) {
   import WsApi._
 
   val category: P[Category] = P(
-    (name ~ keyword("as").opaque("as") ~ name ~ ";").map {
-      case (n, a) => Category(n, a)
+    (Index ~ name ~ keyword("as").opaque("as") ~ name ~ ";").map {
+      case (idx, n, a) => Category(n, a)(idx)
     })
 
   val tag: P[Tag] = P(
-    (name ~ keyword("as") ~ name ~ "{" ~/ (name ~ keyword("as") ~/ name ~ ";").map({
-      case (n, a) => Tag(n, a, Nil)
+    (Index ~ name ~ keyword("as") ~ name ~ "{" ~/ (Index ~ name ~ keyword("as") ~/ name ~ ";").map({
+      case (idx, n, a) => Tag(n, a, Nil)(idx)
     }).rep(min = 1) ~ "}").map {
-      case (n, a, ts) => Tag(n, a, ts)
+      case (idx, n, a, ts) => Tag(n, a, ts)(idx)
     }
-      | (name ~ keyword("as") ~ name ~ ";").map {
-        case (n, a) => Tag(n, a, Nil)
+      | (Index ~ name ~ keyword("as") ~ name ~ ";").map {
+        case (idx, n, a) => Tag(n, a, Nil)(idx)
       })
 
 }

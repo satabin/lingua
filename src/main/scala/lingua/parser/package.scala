@@ -16,6 +16,8 @@ package lingua
 
 package object parser {
 
+  type TagEmission = (Boolean, String)
+
   type Rule = Seq[(Pattern, Replacement)]
 
 }

@@ -38,55 +38,55 @@ class DikoParser {
       })
 
   val lexikon: P[Lexikon] = P(
-    (keyword("lexikon") ~ name ~ annotation ~ "{" ~/ (rewrite | word).rep(min = 0) ~/ "}").map {
-      case (name, (cat, tags), entries) => Lexikon(name, cat, tags, entries)
+    (Index ~ keyword("lexikon") ~ name ~ annotation ~ "{" ~/ (rewrite | word).rep(min = 0) ~/ "}").map {
+      case (idx, name, (cat, tags), entries) => Lexikon(name, cat, tags, entries)(idx)
     })
 
   val word: P[Word] = P(
-    (char.rep(min = 0) ~ ("/" ~ annotation).?.map(_.getOrElse((None, Seq.empty[TagEmission]))) ~ ";").map {
-      case (chars, (cat, tags)) => Word(chars, cat, tags)
+    (Index ~ char.rep(min = 0) ~ ("/" ~ annotation).?.map(_.getOrElse((None, Seq.empty[TagEmission]))) ~ ";").map {
+      case (idx, chars, (cat, tags)) => Word(chars, cat, tags)(idx)
     })
 
   val rewrite: P[Rewrite] = P(
-    (keyword("rewrite") ~ name ~ annotation ~ "{" ~/ rule.rep(min = 1) ~ "}").map {
-      case (name, (cat, tags), rules) => Rewrite(name, cat, tags, rules)
+    (Index ~ keyword("rewrite") ~ name ~ tagEmission.rep(min = 0) ~ "{" ~/ rule.rep(min = 1) ~ "}").map {
+      case (idx, name, tags, rules) => Rewrite(name, tags, rules)(idx)
     })
 
   val rule: P[Rule] = P(
     keyword("rule") ~/ (pattern ~ "=>" ~/ replacement).rep(min = 1, sep = "|" ~/ Pass) ~ ";")
 
   val pattern: P[Pattern] = P(
-    (">".!.?.map(_.isDefined)
+    (Index ~ ">".!.?.map(_.isDefined)
       ~ ("\\" ~/ integer.map(CapturePattern)
         | P("_").map(_ => EmptyPattern)
         | !"=>" ~ char.map(CharPattern)).rep(min = 0)
         ~ "<".!.?.map(_.isDefined)
         ~ ("/" ~ annotation).?.map(_.getOrElse((None, Seq.empty[TagEmission])))).map {
-          case (pre, seq, suf, (cat, tags)) =>
+          case (idx, pre, seq, suf, (cat, tags)) =>
             if (pre && suf)
-              Pattern(Infix, seq, cat, tags)
+              Pattern(Infix, seq, cat, tags)(idx)
             else if (pre)
-              Pattern(Prefix, seq, cat, tags)
+              Pattern(Prefix, seq, cat, tags)(idx)
             else if (suf)
-              Pattern(Suffix, seq, cat, tags)
+              Pattern(Suffix, seq, cat, tags)(idx)
             else
-              Pattern(NoAffix, seq, cat, tags)
+              Pattern(NoAffix, seq, cat, tags)(idx)
         })
 
   val replacement: P[Replacement] = P(
-    (">".!.?.map(_.isDefined)
+    (Index ~ ">".!.?.map(_.isDefined)
       ~ replacementText.rep(min = 0)
       ~ "<".!.?.map(_.isDefined)
       ~ ("/" ~ tagEmission.rep(min = 1)).?.map(_.getOrElse(Seq.empty[TagEmission]))).map {
-        case (pre, seq, suf, tags) =>
+        case (idx, pre, seq, suf, tags) =>
           if (pre && suf)
-            Replacement(Infix, seq, tags)
+            Replacement(Infix, seq, tags)(idx)
           else if (pre)
-            Replacement(Prefix, seq, tags)
+            Replacement(Prefix, seq, tags)(idx)
           else if (suf)
-            Replacement(Suffix, seq, tags)
+            Replacement(Suffix, seq, tags)(idx)
           else
-            Replacement(NoAffix, seq, tags)
+            Replacement(NoAffix, seq, tags)(idx)
       })
 
   val replacementText: P[CaseReplacement] = P(
