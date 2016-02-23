@@ -76,5 +76,12 @@ class Builder[In, Out] private[fst] () {
 }
 
 class StateBuilder[In, Out, Initial, Final] private[fst] (private[fst] val id: Int,
-  private[fst] val transitions: ListBuffer[Transition[In, Out]] = ListBuffer.empty[Transition[In, Out]],
-  private[fst] val outputs: Set[Seq[Out]] = Set.empty[Seq[Out]])
+    private[fst] val transitions: ListBuffer[Transition[In, Out]] = ListBuffer.empty[Transition[In, Out]],
+    private[fst] val outputs: Set[Seq[Out]] = Set.empty[Seq[Out]]) {
+
+  def addTransition(in: In, out: Seq[Out], target: StateBuilder[In, Out, _, _]): this.type = {
+    transitions.append((id, in, out, target.id))
+    this
+  }
+
+}
