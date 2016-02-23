@@ -41,7 +41,7 @@ class Typer(reporter: Reporter, input: String, diko: Diko) {
     if (offset < 0) {
       (-1, -1)
     } else {
-      val sidx = start(offset)
+      val sidx = start(lines.size - 1)
       (sidx + 1, offset - lines(sidx))
     }
   }
@@ -103,6 +103,12 @@ class Typer(reporter: Reporter, input: String, diko: Diko) {
       val (line, col) = lineColOf(offset)
       reporter.error(f"[$line:$col] Unknown tag $t")
     }
+
+  def typeCheck(): Unit = {
+    val Diko(_, _, _, _, lexika) = diko
+    for (l <- lexika)
+      typeLexikon(l)
+  }
 
   def typeLexikon(lex: Lexikon): Unit = {
     val Lexikon(name, category, emissions, entries) = lex

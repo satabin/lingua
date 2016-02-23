@@ -28,17 +28,17 @@ class DikoParser {
   import WsApi._
 
   val diko: P[Diko] = P(
-    (keyword("alphabet") ~ (!";" ~ AnyChar.!.map(_(0))).rep(min = 0) ~ ";"
-      ~ (keyword("separators") ~ (!";" ~ AnyChar.!.map(_(0))).rep(min = 1) ~ ";").?.map(_.getOrElse(Seq.empty[Char]))
-      ~ (keyword("categories") ~ category.rep(min = 1)).?.map(_.getOrElse(Seq.empty[Category]))
-      ~ (keyword("tags") ~ tag.rep(min = 1)).?.map(_.getOrElse(Seq.empty[Tag]))
-      ~ lexikon.rep(min = 0)).map {
+    (keyword("alphabet") ~/ (!";" ~ AnyChar.!.map(_(0))).rep(min = 0) ~ ";"
+      ~ (keyword("separators") ~/ (!";" ~ AnyChar.!.map(_(0))).rep(min = 1) ~ ";").?.map(_.getOrElse(Seq.empty[Char]))
+      ~ (keyword("categories") ~/ category.rep(min = 1)).?.map(_.getOrElse(Seq.empty[Category]))
+      ~ (keyword("tags") ~/ tag.rep(min = 1)).?.map(_.getOrElse(Seq.empty[Tag]))
+      ~ NoCut(lexikon.rep(min = 0)) ~/ End).map {
         case (alphabet, separators, cats, tags, lexika) =>
           Diko(alphabet, separators, cats, tags, lexika)
       })
 
   val lexikon: P[Lexikon] = P(
-    (Index ~ keyword("lexikon") ~ name ~ annotation ~ "{" ~/ (rewrite | word).rep(min = 0) ~/ "}").map {
+    (Index ~ keyword("lexikon") ~/ name ~ annotation ~ "{" ~/ (rewrite | word).rep(min = 0) ~/ "}").map {
       case (idx, name, (cat, tags), entries) => Lexikon(name, cat, tags, entries)(idx)
     })
 
