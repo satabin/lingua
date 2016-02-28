@@ -26,60 +26,95 @@ object Builder {
   def create[In, Out]: Builder[In, Out] =
     new Builder[In, Out]
 
-  implicit class FinalStateOp[In, Out, I](val state: StateBuilder[In, Out, I, FinalState]) extends AnyVal {
-
-    def addOutput(out: Seq[Out]): StateBuilder[In, Out, I, FinalState] = {
-      state.outputs += out
-      state
-    }
-
-  }
-
-  implicit class NoFinalStateOp[In, Out, I](val state: StateBuilder[In, Out, I, NoFinalState]) extends AnyVal {
-
-    def makeFinal: StateBuilder[In, Out, I, FinalState] =
-      new StateBuilder[In, Out, I, FinalState](state.id, state.transitions, state.outputs)
-  }
-
-  implicit class NoInitialStateOp[In, Out, F](val state: StateBuilder[In, Out, NoInitState, F]) extends AnyVal {
-
-    def makeInitial: StateBuilder[In, Out, InitState, F] =
-      new StateBuilder[In, Out, InitState, F](state.id, state.transitions, state.outputs)
-
-  }
-
 }
-
-// whether a state is initial
-sealed trait Init
-sealed trait InitState extends Init
-sealed trait NoInitState extends Init
-// whether a state is final
-sealed trait Final
-sealed trait FinalState extends Final
-sealed trait NoFinalState extends Final
 
 class Builder[In, Out] private[fst] () {
 
   private var nextState = 0
 
-  private[fst] val states = Set.empty[State]
+  private[fst] val states = Set.empty[StateBuilder[In, Out]]
 
   /** Creates a new state in this Fst and returns it */
-  def newState: StateBuilder[In, Out, NoInitState, NoFinalState] = {
+  def newState: StateBuilder[In, Out] = {
     val id = nextState
     nextState += 1
-    states += id
-    new StateBuilder[In, Out, NoInitState, NoFinalState](id)
+    val b = new StateBuilder[In, Out](id)
+    states += b
+    b
+  }
+
+  private object InitState {
+    def unapply(s: StateBuilder[_, _]): Option[State] =
+      if (s.i)
+        Some(s.id)
+      else
+        None
+  }
+
+  private object FinalState {
+    def unapply(s: StateBuilder[_, _]): Option[State] =
+      if (s.f)
+        Some(s.id)
+      else
+        None
+  }
+
+  def build(): NFst[Option[In], Out] = {
+    import scala.collection.{ immutable => im }
+    val initials =
+      states.collect { case InitState(s) => s }.toSet
+    val (trans, outs) =
+      states.foldLeft((im.Map.empty[(State, Option[In]), im.Set[State]], im.Map.empty[(State, Option[In], State), Seq[Out]])) {
+        case (acc, s) =>
+          for (seq <- s.outputs) {
+            s.makeNonFinal
+            val f = newState.makeFinal
+            s.addTransition(None, seq, f)
+          }
+          s.transitions.foldLeft(acc) {
+            case ((trans, outs), (source, in, out, target)) =>
+              val fromSource = trans.getOrElse((source, in), im.Set.empty[State])
+              (trans + ((source, in) -> (fromSource + target)),
+                outs + ((source, in, target) -> out))
+          }
+      }
+    val finals =
+      states.collect { case FinalState(s) => s }.toSet
+    val states1 = states.map(_.id).toSet[State]
+    new NFst(states1, initials, finals, trans, outs)
+
   }
 
 }
 
-class StateBuilder[In, Out, Initial, Final] private[fst] (private[fst] val id: Int,
-    private[fst] val transitions: ListBuffer[Transition[In, Out]] = ListBuffer.empty[Transition[In, Out]],
+class StateBuilder[In, Out] private[fst] (private[fst] val id: Int,
+    private[fst] val transitions: ListBuffer[Transition[Option[In], Out]] = ListBuffer.empty[Transition[Option[In], Out]],
     private[fst] val outputs: Set[Seq[Out]] = Set.empty[Seq[Out]]) {
 
-  def addTransition(in: In, out: Seq[Out], target: StateBuilder[In, Out, _, _]): this.type = {
+  var f = false
+  var i = false
+
+  def makeInitial: this.type = {
+    i = true
+    this
+  }
+
+  def makeFinal: this.type = {
+    f = true
+    this
+  }
+
+  def makeNonFinal: this.type = {
+    f = false
+    this
+  }
+
+  def addOutput(out: Seq[Out]): this.type = {
+    outputs += out
+    this
+  }
+
+  def addTransition(in: Option[In], out: Seq[Out], target: StateBuilder[In, Out]): this.type = {
     transitions.append((id, in, out, target.id))
     this
   }

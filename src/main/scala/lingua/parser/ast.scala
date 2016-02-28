@@ -25,7 +25,7 @@ case class Lexikon(name: String, category: Option[String], tags: Seq[TagEmission
 
 sealed trait Entry
 
-final case class Word(word: Seq[Char], category: Option[String], tags: Seq[TagEmission])(val offset: Int) extends Entry
+final case class Word(word: Vector[Char], category: Option[String], tags: Seq[TagEmission])(val offset: Int) extends Entry
 
 final case class Rewrite(name: String, tags: Seq[TagEmission], rules: Seq[Rule])(val offset: Int) extends Entry
 

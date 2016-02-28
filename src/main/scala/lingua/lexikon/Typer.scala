@@ -17,34 +17,9 @@ package lexikon
 
 import parser._
 
-import scala.collection.mutable.{
-  Map,
-  ArrayBuffer
-}
+import scala.collection.mutable.Map
 
-import scala.annotation.tailrec
-
-class Typer(reporter: Reporter, input: String, diko: Diko) {
-
-  private val lines = ArrayBuffer(0)
-
-  for (m <- """\r?\n""".r.findAllMatchIn(input))
-    lines.append(m.end)
-
-  private def lineColOf(offset: Int): (Int, Int) = {
-    @tailrec
-    def start(idx: Int): Int =
-      if (offset < lines(idx))
-        start(idx - 1)
-      else
-        idx
-    if (offset < 0) {
-      (-1, -1)
-    } else {
-      val sidx = start(lines.size - 1)
-      (sidx + 1, offset - lines(sidx))
-    }
-  }
+class Typer(reporter: Reporter, diko: Diko) {
 
   private val categories = Map.empty[String, String]
 
@@ -60,16 +35,14 @@ class Typer(reporter: Reporter, input: String, diko: Diko) {
 
   private def addCategory(cat: Category): Unit = categories.get(cat.alias) match {
     case Some(c) =>
-      val (line, col) = lineColOf(cat.offset)
-      reporter.error(f"[$line:$col] Category ${cat.alias} is already defined")
+      reporter.error(cat.offset, f"Category ${cat.alias} is already defined")
     case None =>
       categories(cat.alias) = cat.fullname
   }
 
   private def addTag(tag: Tag, parent: Option[String]): Unit = tags.get(tag.alias) match {
     case Some(t) =>
-      val (line, col) = lineColOf(tag.offset)
-      reporter.error(f"[$line:$col] Tag ${tag.alias} is already defined")
+      reporter.error(tag.offset, f"Tag ${tag.alias} is already defined")
     case None =>
       tags(tag.alias) = (tag.fullname, tag.children.size > 0, parent)
       for (t <- tag.children)
@@ -91,8 +64,7 @@ class Typer(reporter: Reporter, input: String, diko: Diko) {
       c <- category
       if !categories.contains(c)
     } {
-      val (line, col) = lineColOf(offset)
-      reporter.error(f"[$line:$col] Unknown category $c")
+      reporter.error(offset, f"Unknown category $c")
     }
 
   def typeEmissions(emissions: Seq[TagEmission], offset: Int): Unit =
@@ -100,8 +72,7 @@ class Typer(reporter: Reporter, input: String, diko: Diko) {
       (_, t) <- emissions
       if !tags.contains(t)
     } {
-      val (line, col) = lineColOf(offset)
-      reporter.error(f"[$line:$col] Unknown tag $t")
+      reporter.error(offset, f"Unknown tag $t")
     }
 
   def typeCheck(): Unit = {
@@ -130,8 +101,7 @@ class Typer(reporter: Reporter, input: String, diko: Diko) {
         c <- word
         if !charSet.contains(c)
       } {
-        val (line, col) = lineColOf(w.offset)
-        reporter.error(f"[$line:$col] Unknown letter $c")
+        reporter.error(w.offset, f"Unknown letter $c")
       }
       typeCategory(cat, w.offset)
       typeEmissions(emissions, w.offset)
@@ -156,16 +126,14 @@ class Typer(reporter: Reporter, input: String, diko: Diko) {
 
   def typePattern(p: CasePattern, offset: Int): Unit = p match {
     case CharPattern(c) if !charSet.contains(c) =>
-      val (line, col) = lineColOf(offset)
-      reporter.error(f"[$line:$col] Unknown letter $c")
+      reporter.error(offset, f"Unknown letter $c")
     case _ =>
     // ok
   }
 
   def typeReplacement(r: CaseReplacement, offset: Int): Unit = r match {
     case CharReplacement(c) if !charSet.contains(c) =>
-      val (line, col) = lineColOf(offset)
-      reporter.error(f"[$line:$col] Unknown letter $c")
+      reporter.error(offset, f"Unknown letter $c")
     case GroupReplacement(rs) =>
       for (r <- rs)
         typeReplacement(r, offset)

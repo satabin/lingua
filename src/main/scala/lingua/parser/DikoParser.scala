@@ -44,7 +44,7 @@ class DikoParser {
 
   val word: P[Word] = P(
     (Index ~ char.rep(min = 0) ~ ("/" ~ annotation).?.map(_.getOrElse((None, Seq.empty[TagEmission]))) ~ ";").map {
-      case (idx, chars, (cat, tags)) => Word(chars, cat, tags)(idx)
+      case (idx, chars, (cat, tags)) => Word(chars.toVector, cat, tags)(idx)
     })
 
   val rewrite: P[Rewrite] = P(

@@ -14,39 +14,63 @@
  */
 package lingua
 
+import scala.annotation.tailrec
+
+import scala.collection.mutable.ArrayBuffer
+
 object Reporter {
   object Level extends Enumeration {
     val INFO, WARNING, ERROR = Value
   }
 }
 
-abstract class Reporter {
+abstract class Reporter(input: String) {
 
   import Reporter._
 
-  protected def doReport(level: Level.Value, msg: String, exn: Option[Exception]): Unit
+  protected def doReport(offset: Int, level: Level.Value, msg: String, exn: Option[Exception]): Unit
 
-  def report(level: Level.Value, msg: String, exn: Option[Exception]): Unit = {
+  def report(offset: Int, level: Level.Value, msg: String, exn: Option[Exception]): Unit = {
     if (level == Level.ERROR)
       errors += 1
     else if (level == Level.WARNING)
       warnings += 1
-    doReport(level, msg, exn)
+    doReport(offset, level, msg, exn)
   }
 
-  def error(msg: String, exn: Option[Exception] = None): Unit =
-    report(Level.ERROR, msg, exn)
+  def error(offset: Int, msg: String, exn: Option[Exception] = None): Unit =
+    report(offset, Level.ERROR, msg, exn)
 
-  def warning(msg: String, exn: Option[Exception] = None): Unit =
-    report(Level.ERROR, msg, exn)
+  def warning(offset: Int, msg: String, exn: Option[Exception] = None): Unit =
+    report(offset, Level.ERROR, msg, exn)
 
-  def info(msg: String, exn: Option[Exception] = None): Unit =
-    report(Level.ERROR, msg, exn)
+  def info(offset: Int, msg: String, exn: Option[Exception] = None): Unit =
+    report(offset, Level.ERROR, msg, exn)
 
   private var errors = 0
   private var warnings = 0
 
   def nbOfErrors: Boolean =
     errors > 0
+
+  private val lines = ArrayBuffer(0)
+
+  for (m <- """\r?\n""".r.findAllMatchIn(input))
+    lines.append(m.end)
+
+  protected def lineColOf(offset: Int): (Int, Int) = {
+    @tailrec
+    def start(idx: Int): Int =
+      if (offset < lines(idx))
+        start(idx - 1)
+      else
+        idx
+    if (offset < 0) {
+      (-1, -1)
+    } else {
+      val sidx = start(lines.size - 1)
+      (sidx + 1, offset - lines(sidx))
+    }
+  }
 
 }
