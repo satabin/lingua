@@ -118,16 +118,16 @@ lexikon Nom @N {
     // avant la flèche, le "\1" indique "n'importe quelle séquence qui est capturée et numérotée 1"
     // après la flèche, le "\1" indique la première étoile avant la flèche
     rule \1-\2 / +VNI => \1-\2
-       | \1-\2 / +VN  => \1-[\2->pluriel];
+       | \1-\2 / +VN  => \1-(\2->pluriel);
 
-    rule \1-\2 / +NNI => \1->pluriel-\2
-       | \1-\2 / +NN => \1->pluriel-[\2->pluriel] ;
+    rule \1-\2 / +NNI => (\1->pluriel)-\2
+       | \1-\2 / +NN => (\1->pluriel)-(\2->pluriel) ;
 
-    rule >o-\1 / +AdjN => >o-[\2->pluriel]
-       | \1-\2 / +AdjN  => \1->pluriel-[\2->pluriel]
-       | \1-\2 / +NAdj  => \1->pluriel-[\2->pluriel] ;
+    rule >o-\1 / +AdjN => >o-(\2->pluriel)
+       | \1-\2 / +AdjN => (\1->pluriel)-(\2->pluriel)
+       | \1-\2 / +NAdj => (\1->pluriel)-(\2->pluriel) ;
 
-    rule \1-\2 / +AdvN => \1-[\2->pluriel] ;
+    rule \1-\2 / +AdvN => \1-(\2->pluriel) ;
   }
 
 }

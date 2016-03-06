@@ -108,10 +108,10 @@ class Typer(reporter: Reporter, diko: Diko) {
     case r @ Rewrite(name, emissions, rules) =>
       typeEmissions(emissions, r.offset)
       for (r <- rules)
-        typeRule(r)
+        typeRule(name, r)
   }
 
-  def typeRule(r: Rule): Unit =
+  def typeRule(rewriteName: String, r: Rule): Unit =
     for ((p @ Pattern(_, pattern, cat, pemissions), r @ Replacement(_, replacement, remissions)) <- r) {
       val poffset = p.offset
       val roffset = r.offset
@@ -121,7 +121,7 @@ class Typer(reporter: Reporter, diko: Diko) {
       for (p <- pattern)
         typePattern(p, poffset)
       for (r <- replacement)
-        typeReplacement(r, roffset)
+        typeReplacement(rewriteName, r, roffset)
     }
 
   def typePattern(p: CasePattern, offset: Int): Unit = p match {
@@ -131,12 +131,14 @@ class Typer(reporter: Reporter, diko: Diko) {
     // ok
   }
 
-  def typeReplacement(r: CaseReplacement, offset: Int): Unit = r match {
+  def typeReplacement(rewriteName: String, r: CaseReplacement, offset: Int): Unit = r match {
     case CharReplacement(c) if !charSet.contains(c) =>
       reporter.error(offset, f"Unknown letter $c")
-    case GroupReplacement(rs) =>
+    case RecursiveReplacement(rs, name) if name == rewriteName =>
       for (r <- rs)
-        typeReplacement(r, offset)
+        typeReplacement(rewriteName, r, offset)
+    case RecursiveReplacement(_, name) =>
+      reporter.error(offset, f"Invalid recursive rewrite function name $name")
     case _ =>
     // ok
   }

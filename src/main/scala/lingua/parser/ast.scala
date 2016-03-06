@@ -47,6 +47,5 @@ final case class Replacement(affix: Affix, seq: Seq[CaseReplacement], tags: Seq[
 sealed trait CaseReplacement
 final case class CharReplacement(c: Char) extends CaseReplacement
 final case class CaptureReplacement(n: Int) extends CaseReplacement
-final case class GroupReplacement(seq: Seq[CaseReplacement]) extends CaseReplacement
-final case class NextReplacement(name: String) extends CaseReplacement
+final case class RecursiveReplacement(seq: Seq[CaseReplacement], name: String) extends CaseReplacement
 case object DropReplacement extends CaseReplacement

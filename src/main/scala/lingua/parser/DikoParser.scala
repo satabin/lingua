@@ -90,24 +90,23 @@ class DikoParser {
       })
 
   val replacementText: P[CaseReplacement] = P(
-    "[" ~ (replacementText.rep(min = 1) ~ "]").map(GroupReplacement)
-      | "->" ~ name.map(NextReplacement)
-      | P("_").map(_ => DropReplacement)
+    "(" ~ (replacementText.rep(min = 1) ~ "->" ~ name ~ ")").map { case (seq, name) => RecursiveReplacement(seq, name) }
+      | CharIn("_").map(_ => DropReplacement)
       | char.map(CharReplacement)
       | "\\" ~ integer.map(CaptureReplacement))
 
   val annotation: P[(Option[String], Seq[TagEmission])] = P(
     ("@" ~ name).? ~ tagEmission.rep(min = 0))
 
-  val tagEmission: P[TagEmission] = P(
+  val tagEmission: P[TagEmission] =
     (("+" | "-").! ~ name).map {
       case (pres, name) => (pres == "+", name)
-    }).opaque("<tag emission>")
+    }.opaque("<tag emission>")
 
-  val char: P[Char] = P(
-    (!CharIn("{}[];.<>/\\| _") ~ AnyChar).!.map(_(0))).opaque("<character>")
+  val char: P[Char] =
+    (!"->" ~ !CharIn("{}[];.<>/\\| _") ~ AnyChar).!.map(_(0)).opaque("<character>")
 
-  val integer: P[Int] = P(
-    CharIn("0123456789").rep(min = 1).!.map(_.toInt)).opaque("<integer>")
+  val integer: P[Int] =
+    CharIn("0123456789").rep(min = 1).!.map(_.toInt).opaque("<integer>")
 
 }
