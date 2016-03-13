@@ -13,27 +13,20 @@
  * limitations under the License.
  */
 package lingua
-package lexikon
-package fst
 
-abstract class Fst[In, Out](val states: Set[State], val initials: Set[State], val finals: Set[State]) {
+package object fst {
 
-  def isFinal(state: State): Boolean =
-    finals.contains(state)
+  type State = Int
 
-  def isInitial(state: State): Boolean =
-    initials.contains(state)
+  type Transition[In, Out] = (State, In, Seq[Out], State)
 
-  def toDot(transitions: Iterable[String]): String = {
-    f"""digraph {
-       |  ${
-      states.map { s =>
-        val shape = if (finals.contains(s)) "doublecircle" else "circle"
-        f"q$s[shape=$shape]"
-      }.mkString(";\n  ")
-    }
-       |  ${transitions.mkString(";\n  ")}
-       |}""".stripMargin
-  }
+  def lcp[T](s1: Seq[T], s2: Seq[T]): Seq[T] =
+    s1.zip(s2).takeWhile { case (t1, t2) => t1 == t2 }.unzip._1
+
+  def lcp[T](ss: Iterable[Seq[T]]): Seq[T] =
+    ss.foldLeft(None: Option[Seq[T]]) {
+      case (None, s)      => Some(s)
+      case (Some(s1), s2) => Some(lcp(s1, s2))
+    }.getOrElse(Seq.empty[T])
 
 }

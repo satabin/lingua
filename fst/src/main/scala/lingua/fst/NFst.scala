@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 package lingua
-package lexikon
 package fst
 
 /** A non-deterministic Fst implementation. */

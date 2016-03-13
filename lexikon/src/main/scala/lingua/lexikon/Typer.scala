@@ -16,6 +16,7 @@ package lingua
 package lexikon
 
 import parser._
+import lingua.parser._
 
 import scala.collection.mutable.Map
 
