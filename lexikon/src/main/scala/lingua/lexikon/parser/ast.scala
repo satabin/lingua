@@ -23,14 +23,14 @@ case class Lexikon(name: String, category: Option[String], tags: Seq[TagEmission
 
 sealed trait Entry
 
-final case class Word(word: Vector[Char], category: Option[String], tags: Seq[TagEmission])(val offset: Int) extends Entry
+final case class Word(word: String, category: Option[String], tags: Seq[TagEmission])(val offset: Int) extends Entry
 
 final case class Rewrite(name: String, tags: Seq[TagEmission], rules: Seq[Rule])(val offset: Int) extends Entry
 
 final case class Pattern(affix: Affix, seq: Seq[CasePattern], category: Option[String], tags: Seq[TagEmission])(val offset: Int)
 
 sealed trait CasePattern
-final case class CharPattern(c: Char) extends CasePattern
+final case class StringPattern(s: String) extends CasePattern
 final case class CapturePattern(n: Int) extends CasePattern
 case object EmptyPattern extends CasePattern
 
@@ -43,7 +43,7 @@ case object NoAffix extends Affix
 final case class Replacement(affix: Affix, seq: Seq[CaseReplacement], tags: Seq[TagEmission])(val offset: Int)
 
 sealed trait CaseReplacement
-final case class CharReplacement(c: Char) extends CaseReplacement
+final case class StringReplacement(s: String) extends CaseReplacement
 final case class CaptureReplacement(n: Int) extends CaseReplacement
 final case class RecursiveReplacement(seq: Seq[CaseReplacement], name: String) extends CaseReplacement
 case object DropReplacement extends CaseReplacement

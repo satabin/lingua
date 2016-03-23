@@ -126,15 +126,21 @@ class Typer(reporter: Reporter, diko: Diko) {
     }
 
   def typePattern(p: CasePattern, offset: Int): Unit = p match {
-    case CharPattern(c) if !charSet.contains(c) =>
-      reporter.error(offset, f"Unknown letter $c")
+    case StringPattern(s) =>
+      for {
+        c <- s
+        if !charSet.contains(c)
+      } reporter.error(offset, f"Unknown letter $c")
     case _ =>
     // ok
   }
 
   def typeReplacement(rewriteName: String, r: CaseReplacement, offset: Int): Unit = r match {
-    case CharReplacement(c) if !charSet.contains(c) =>
-      reporter.error(offset, f"Unknown letter $c")
+    case StringReplacement(s) =>
+      for {
+        c <- s
+        if !charSet.contains(c)
+      } reporter.error(offset, f"Unknown letter $c")
     case RecursiveReplacement(rs, name) if name == rewriteName =>
       for (r <- rs)
         typeReplacement(rewriteName, r, offset)

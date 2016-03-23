@@ -45,8 +45,8 @@ class DikoParser {
     })
 
   val word: P[Word] = P(
-    (Index ~ char.rep(min = 0) ~ ("/" ~ annotation).?.map(_.getOrElse((None, Seq.empty[TagEmission]))) ~ ";").map {
-      case (idx, chars, (cat, tags)) => Word(chars.toVector, cat, tags)(idx)
+    (Index ~ (char.rep(min = 1)).! ~ ("/" ~ annotation).?.map(_.getOrElse((None, Seq.empty[TagEmission]))) ~ ";").map {
+      case (idx, chars, (cat, tags)) => Word(chars, cat, tags)(idx)
     })
 
   val rewrite: P[Rewrite] = P(
@@ -61,7 +61,7 @@ class DikoParser {
     (Index ~ ">".!.?.map(_.isDefined)
       ~ ("\\" ~/ integer.map(CapturePattern)
         | P("_").map(_ => EmptyPattern)
-        | !"=>" ~ char.map(CharPattern)).rep(min = 0)
+        | (!"=>" ~ char).rep(min = 1).!.map(StringPattern)).rep(min = 0)
         ~ "<".!.?.map(_.isDefined)
         ~ ("/" ~ annotation).?.map(_.getOrElse((None, Seq.empty[TagEmission])))).map {
           case (idx, pre, seq, suf, (cat, tags)) =>
@@ -94,7 +94,7 @@ class DikoParser {
   val replacementText: P[CaseReplacement] = P(
     "(" ~ (replacementText.rep(min = 1) ~ "->" ~ name ~ ")").map { case (seq, name) => RecursiveReplacement(seq, name) }
       | CharIn("_").map(_ => DropReplacement)
-      | char.map(CharReplacement)
+      | char.rep(min = 1).!.map(StringReplacement)
       | "\\" ~ integer.map(CaptureReplacement))
 
   val annotation: P[(Option[String], Seq[TagEmission])] = P(
@@ -105,8 +105,8 @@ class DikoParser {
       case (pres, name) => (pres == "+", name)
     }.opaque("<tag emission>")
 
-  val char: P[Char] =
-    (!"->" ~ !CharIn("{}[];.<>/\\| _") ~ AnyChar).!.map(_(0)).opaque("<character>")
+  val char: P[Unit] =
+    (!"->" ~ !CharIn("{}[];.<>/\\| _") ~ AnyChar).opaque("<character>")
 
   val integer: P[Int] =
     CharIn("0123456789").rep(min = 1).!.map(_.toInt).opaque("<integer>")
