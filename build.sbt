@@ -19,7 +19,7 @@ lazy val fst = project.in(file("fst"))
   .settings(globalSettings: _*)
   .settings(
     version := "0.1.0-SNAPSHOT",
-    libraryDependencies += "org.scodec" %% "scodec-core" % "1.7.1",
+    libraryDependencies += "org.scodec" %% "scodec-core" % "1.9.0",
     name := "lingua-fst")
 
 lazy val core = project.in(file("core"))
