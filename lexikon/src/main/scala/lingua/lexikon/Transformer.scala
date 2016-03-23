@@ -15,6 +15,7 @@
 package lingua
 package lexikon
 
+import lingua.parser.TagEmission
 import parser._
 import fst._
 
@@ -36,40 +37,61 @@ class Transformer(reporter: Reporter, diko: Diko) {
   def transform(): NFst[Option[Char], Out] = {
     // assume everything type-checks
     if (fst == null) {
-      for {
-        l @ Lexikon(name, gCat, gTags, entries) <- diko.lexika
-        entry <- entries
-      } entry match {
-        case w @ Word(_, Some(_), _) if gCat.isDefined =>
-          reporter.error(w.offset, f"A global category is already defined on the lexikon")
-        case w @ Word(_, None, _) if !gCat.isDefined =>
-          reporter.error(w.offset, f"A category must be defined for the word")
-        case w @ Word(inChars, eCat, eTags) =>
-          @tailrec
-          def createStates(idx: Int, previous: StateBuilder[Char, Out]): Unit =
-            if (idx == inChars.size) {
-              // final state
-              val cat = gCat.orElse(eCat).get
-              val tags =
-                (gTags ++ eTags).foldLeft(Seq.empty[Out]) {
-                  case (acc, (pres, t)) =>
-                    acc :+ TagOut(pres, t)
-                }
-              previous.makeFinal.addOutput(tags :+ CatOut(cat))
-            } else {
-              // add transition with the current character to a new state
-              val st = fstBuilder.newState
-              previous.addTransition(Some(inChars(idx)), Seq(CharOut(inChars(idx))), st)
-              createStates(idx + 1, st)
-            }
-          val start = fstBuilder.newState.makeInitial
-          createStates(0, start)
-        case r @ Rewrite(name, eTags, rules) =>
+      for (l @ Lexikon(name, gCat, gTags, entries) <- diko.lexika) {
+        val (words, rewrites) =
+          entries.foldLeft(List.empty[Word], List.empty[Rewrite]) {
+            case (acc, w @ Word(_, Some(_), _)) if gCat.isDefined =>
+              reporter.error(w.offset, f"A global category is already defined on the lexikon")
+              acc
+            case (acc, w @ Word(_, None, _)) if !gCat.isDefined =>
+              reporter.error(w.offset, f"A category must be defined for the word")
+              acc
+            case ((ws, rs), w @ Word(str, eCat, eTags)) =>
+              (Word(str, gCat.orElse(eCat), gTags ++ eTags)(w.offset) :: ws, rs)
+            case ((ws, rs), r @ Rewrite(name, eTags, rules)) =>
+              (ws, Rewrite(name, gTags ++ eTags, rules)(r.offset) :: rs)
+          }
 
+        for (Word(inChars, cat, tags) <- words) {
+          val start = fstBuilder.newState.makeInitial
+          createStates(inChars, cat.get, tags, 0, start)
+        }
+
+        for (Rewrite(name, tags, rules) <- rewrites) {
+          // a rewrite rule applies all its patterns in order to the words in this
+          // lexicon (collected aboved). The first pattern that applies to a word
+          // is the one taken, and the replacement is substituted to the word
+          val rewrittenWords = rewriteWords(words, tags, rules)
+          for (Word(inChars, cat, tags) <- words) {
+            val start = fstBuilder.newState.makeInitial
+            createStates(inChars, cat.get, tags, 0, start)
+          }
+        }
       }
       fst = fstBuilder.build()
     }
     fst
   }
+
+  @tailrec
+  private def createStates(inChars: String, cat: String, tags: Seq[TagEmission], idx: Int, previous: StateBuilder[Char, Out]): Unit = {
+    if (idx == inChars.size) {
+      // final state
+      val tags1 =
+        tags.map {
+          case (pres, t) =>
+            TagOut(pres, t)
+        }
+      previous.makeFinal.addOutput(tags1 :+ CatOut(cat))
+    } else {
+      // add transition with the current character to a new state
+      val st = fstBuilder.newState
+      previous.addTransition(Some(inChars(idx)), Seq(CharOut(inChars(idx))), st)
+      createStates(inChars, cat, tags, idx + 1, st)
+    }
+  }
+
+  private def rewriteWords(words: List[Word], rTags: Seq[TagEmission], rules: Seq[Rule]): List[Word] =
+    ???
 
 }
