@@ -21,6 +21,8 @@ import fst._
 
 import scala.annotation.tailrec
 
+import scala.util.matching.Regex
+
 sealed trait Out
 final case class CharOut(c: Char) extends Out
 final case class CatOut(c: String) extends Out
@@ -31,6 +33,10 @@ class Transformer(reporter: Reporter, diko: Diko) {
   private val fstBuilder = Builder.create[Char, Out]
 
   private var fst: NFst[Option[Char], Out] = null
+
+  // a regular expression that matches a non empty sequence of letters from the alphabet
+  private val lettersRe =
+    f"[${Regex.quote(diko.alphabet.mkString)}]+"
 
   import Builder._
 
@@ -54,7 +60,7 @@ class Transformer(reporter: Reporter, diko: Diko) {
 
         for (Word(inChars, cat, tags) <- words) {
           val start = fstBuilder.newState.makeInitial
-          createStates(inChars, cat.get, tags, 0, start)
+          createStates(inChars, inChars, cat.get, tags, 0, start)
         }
 
         for (Rewrite(name, tags, rules) <- rewrites) {
@@ -62,9 +68,9 @@ class Transformer(reporter: Reporter, diko: Diko) {
           // lexicon (collected aboved). The first pattern that applies to a word
           // is the one taken, and the replacement is substituted to the word
           val rewrittenWords = rewriteWords(words, tags, rules)
-          for (Word(inChars, cat, tags) <- words) {
+          for ((original, Word(inChars, cat, tags)) <- rewrittenWords) {
             val start = fstBuilder.newState.makeInitial
-            createStates(inChars, cat.get, tags, 0, start)
+            createStates(original, inChars, cat.get, tags, 0, start)
           }
         }
       }
@@ -74,7 +80,8 @@ class Transformer(reporter: Reporter, diko: Diko) {
   }
 
   @tailrec
-  private def createStates(inChars: String, cat: String, tags: Seq[TagEmission], idx: Int, previous: StateBuilder[Char, Out]): Unit = {
+  private def createStates(inChars: String, outChars: String, cat: String, tags: Seq[TagEmission], idx: Int, previous: StateBuilder[Char, Out]): Unit = {
+    assert(inChars.size == outChars.size, "")
     if (idx == inChars.size) {
       // final state
       val tags1 =
@@ -86,12 +93,72 @@ class Transformer(reporter: Reporter, diko: Diko) {
     } else {
       // add transition with the current character to a new state
       val st = fstBuilder.newState
-      previous.addTransition(Some(inChars(idx)), Seq(CharOut(inChars(idx))), st)
-      createStates(inChars, cat, tags, idx + 1, st)
+      val inChar =
+        if (inChars(idx) == '\u0000')
+          None
+        else
+          Some(inChars(idx))
+      val outChar =
+        if (outChars(idx) == '\u0000')
+          Seq()
+        else
+          Seq(CharOut(outChars(idx)))
+      previous.addTransition(inChar, outChar, st)
+      createStates(inChars, outChars, cat, tags, idx + 1, st)
     }
   }
 
-  private def rewriteWords(words: List[Word], rTags: Seq[TagEmission], rules: Seq[Rule]): List[Word] =
+  private def rewriteWords(words: List[Word], rTags: Seq[TagEmission], rules: Seq[Rule]): List[(String, Word)] = {
+    def applyRewrite(pattern: Pattern, replacement: Replacement): List[(String, Word)] = {
+      val Pattern(affix, seq, category, tags) = pattern
+      val compiledPattern = compilePattern(affix, seq)
+      for {
+        word @ Word(_, wCategory, wTags) <- words
+        if category == wCategory && tags.forall(wTags.contains(_))
+        res <- rewriteWord(word, compiledPattern, rTags, replacement)
+      } yield res
+    }
     ???
+  }
+
+  private def rewriteWord(original: Word, pattern: Regex, rTags: Seq[TagEmission], replacement: Replacement): Option[(String, Word)] =
+    pattern.findFirstMatchIn(original.word) match {
+      case Some(m) =>
+        val (startIdx, endIdx) = replacement.affix match {
+          case Prefix =>
+            (0, -1)
+          case Suffix =>
+            (-1, original.word.size)
+          case Infix =>
+            (0, original.word.size)
+          case NoAffix =>
+            (-1, -1)
+        }
+        ???
+      case None =>
+        None
+    }
+
+  private def compilePattern(affix: Affix, pattern: Seq[CasePattern]): Regex = {
+    val compiledPattern =
+      pattern.foldLeft(new StringBuilder) {
+        case (acc, StringPattern(s)) =>
+          acc.append(Regex.quote(s))
+        case (acc, CapturePattern(n)) =>
+          acc.append(f"($lettersRe)")
+        //case (acc, EmptyPattern) =>
+        //  acc.append("$")
+      }
+    affix match {
+      case Prefix =>
+        new Regex("^" + compiledPattern)
+      case Suffix =>
+        new Regex(compiledPattern.append("$").toString)
+      case Infix =>
+        new Regex(compiledPattern.toString)
+      case NoAffix =>
+        new Regex("^" + compiledPattern + "$")
+    }
+  }
 
 }

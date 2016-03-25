@@ -114,7 +114,7 @@ lexikon Nom @N {
   rewrite pluriel +Pl {
     rule >al / -NC => >aux
        | >eau / -NC => >eaux
-       | >_ / -NC => >s ;
+       | > / -NC => >s ;
     // avant la flèche, le "\1" indique "n'importe quelle séquence qui est capturée et numérotée 1"
     // après la flèche, le "\1" indique la première étoile avant la flèche
     rule \1-\2 / +VNI => \1-\2
@@ -144,15 +144,15 @@ lexikon VG1 @V +G1 {
     // est remplacé par une transition vide
     // qui ajoute les traits +Sg et +1ère
     // ainsi `mange` est annoté comme suit:
-    // `manger{V +G1 +Fut +Ind +Sg +1ère}`
+    // `manger{V +G1 +Prés +Ind +Sg +1ère}`
     // cette règle est équivalente à la suite de transitions suivante :
-    // `mange _/r @V +G1 +Fut +Ind +Sg +1ère`
-    rule >r => >_ / +Sg +1ère ;
+    // `mange _/r @V +G1 +Prés +Ind +Sg +1ère`
+    rule >r => > / +Sg +1ère ;
     rule >r => >s / +Sg +2ème ;
     // avec cette règle nous voyons que `mange` est annoté comme
     // {V +G1 +Prés +Ind +Sg +1ère} et comme
     // {V +G1 +Prés +Ind +Sg +3ème}
-    rule >r => >_ / +Sg +3ème ;
+    rule >r => > / +Sg +3ème ;
     // ici nous écrivons un patron plus complexe avec des sous-cas
     // les sous-cas sont appliqués en séquence, et le premier qui correspond
     // est choisi. Si aucun ne correspond la règle ne s'applique pas ici.
@@ -166,13 +166,13 @@ lexikon VG1 @V +G1 {
     rule >r => >nt / +Pl +3ème ;
   }
 
-  rewrite futur-indicatid +Fut +Ind {
-    rule >_ => >ai / +Fut +Ind +Sg +1ère ;
-    rule >_ => >as / +Fut +Ind +Sg +2ème ;
-    rule >_ => >a / +Fut +Ind +Sg +3ème ;
-    rule >_ => >ons / +Fut +Ind +Pl +1ère ;
-    rule >_ => >ez / +Fut +Ind +Pl +2ème ;
-    rule >_ => >ont / +Fut +Ind +Pl +3ème ;
+  rewrite futur-indicatif +Fut +Ind {
+    rule > => >ai / +Fut +Ind +Sg +1ère ;
+    rule > => >as / +Fut +Ind +Sg +2ème ;
+    rule > => >a / +Fut +Ind +Sg +3ème ;
+    rule > => >ons / +Fut +Ind +Pl +1ère ;
+    rule > => >ez / +Fut +Ind +Pl +2ème ;
+    rule > => >ont / +Fut +Ind +Pl +3ème ;
   }
 
   rewrite passé-simple-indicatif +PassSimp +Ind {

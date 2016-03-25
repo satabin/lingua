@@ -32,7 +32,7 @@ final case class Pattern(affix: Affix, seq: Seq[CasePattern], category: Option[S
 sealed trait CasePattern
 final case class StringPattern(s: String) extends CasePattern
 final case class CapturePattern(n: Int) extends CasePattern
-case object EmptyPattern extends CasePattern
+//case object EmptyPattern extends CasePattern
 
 sealed trait Affix
 case object Prefix extends Affix

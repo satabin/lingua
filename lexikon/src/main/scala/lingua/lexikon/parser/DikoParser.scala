@@ -60,7 +60,7 @@ class DikoParser {
   val pattern: P[Pattern] = P(
     (Index ~ ">".!.?.map(_.isDefined)
       ~ ("\\" ~/ integer.map(CapturePattern)
-        | P("_").map(_ => EmptyPattern)
+        //| P("_").map(_ => EmptyPattern)
         | (!"=>" ~ char).rep(min = 1).!.map(StringPattern)).rep(min = 0)
         ~ "<".!.?.map(_.isDefined)
         ~ ("/" ~ annotation).?.map(_.getOrElse((None, Seq.empty[TagEmission])))).map {
