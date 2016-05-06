@@ -116,20 +116,23 @@ lexikon Nom @N {
   rewrite pluriel +Pl {
     rule >al / -NC => aux
        | >eau / -NC => eaux
-       | > / -NC => s ;
-    // avant la flèche, le "\1" indique "n'importe quelle séquence qui est capturée et numérotée 1"
-    // après la flèche, le "\1" indique la première étoile avant la flèche
-    rule \1-\2 / +VNI => \1-\2
-       | \1-\2 / +VN  => \1-(\2->pluriel) ;
+       | > / -NC => s
+       // avant la flèche, le "\1" indique "n'importe quelle séquence qui est capturée et numérotée 1"
+       // après la flèche, le "\1" indique la première étoile avant la flèche
+       | \1-\2 / +VNI => \1-\2
+       // la notation @(...) indique que la règle de réécriture courante est appliquée au résulat
+       // du remplacement entre parenthèses de manière récursive. Le résultat a la même catégorie
+       // et aucune étiquette
+       | \1-\2 / +VN  => \1-@(\2)
 
-    rule \1-\2 / +NNI => (\1->pluriel)-\2
-       | \1-\2 / +NN => (\1->pluriel)-(\2->pluriel) ;
+       | \1-\2 / +NNI => @(\1)-\2
+       | \1-\2 / +NN => @(\1)-@(\2)
 
-    rule >o-\1 / +AdjN => o-(\1->pluriel)
-       | \1-\2 / +AdjN => (\1->pluriel)-(\2->pluriel)
-       | \1-\2 / +NAdj => (\1->pluriel)-(\2->pluriel) ;
+       | >o-\1 / +AdjN => o-@(\1)
+       | \1-\2 / +AdjN => @(\1)-@(\2)
+       | \1-\2 / +NAdj => @(\1)-@(\2)
 
-    rule \1-\2 / +AdvN => \1-(\2->pluriel) ;
+       | \1-\2 / +AdvN => \1-@(\2) ;
   }
 
 }

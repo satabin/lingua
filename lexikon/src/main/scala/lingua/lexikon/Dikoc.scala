@@ -63,7 +63,7 @@ object Dikoc extends App {
         if (reporter.hasErrors)
           sys.exit(1)
 
-        val transformer = new Transformer(reporter, diko)
+        val transformer = new Transformer(typer, reporter, diko)
 
         val nfst = transformer.transform().removeEpsilonTransitions
 

@@ -71,7 +71,7 @@ object DikoParser {
         | (!"=>" ~ char).rep(min = 1).!.map(StringPattern)).rep(min = 0)
         ~ "<".!.?.map(_.isDefined)
         ~ ("/" ~ annotation).?.map(_.getOrElse((None, Seq.empty[TagEmission])))).map {
-          case (idx, pre, seq, suf, (cat, tags)) =>
+          case (idx, suf, seq, pre, (cat, tags)) =>
             if (pre && suf)
               Pattern(Infix, seq, cat, tags)(idx)
             else if (pre)
@@ -90,7 +90,7 @@ object DikoParser {
       })
 
   val replacementText: P[CaseReplacement] = P(
-    "(" ~ (replacementText.rep(min = 1) ~ "->" ~ name ~ ")").map { case (seq, name) => RecursiveReplacement(seq, name) }
+    "@" ~ "(" ~ (replacementText.rep(min = 1) ~ ")").map(RecursiveReplacement)
       | char.rep(min = 1).!.map(StringReplacement)
       | "\\" ~ integer.map(CaptureReplacement))
 
@@ -103,7 +103,7 @@ object DikoParser {
     }.opaque("<tag emission>")
 
   val char: P[Unit] =
-    (!"->" ~ !CharIn("(){};:.<>/\\| _") ~ AnyChar).opaque("<character>")
+    (!CharIn("@(){};:.<>/\\| _") ~ AnyChar).opaque("<character>")
 
   val integer: P[Int] =
     CharIn("0123456789").rep(min = 1).!.map(_.toInt).opaque("<integer>")

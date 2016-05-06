@@ -28,8 +28,10 @@ class Typer(reporter: Reporter, diko: Diko) {
 
   private val charSet = diko.alphabet.toSet.union(diko.separators.toSet)
 
-  private def isA(tag: String, name: String): Boolean =
-    tag == name || tags.get(tag).flatMap(_._3.map(_ == name)).getOrElse(false)
+  def isA(tagEmission: (Boolean, String), name: String): Boolean = {
+    val (present, tag) = tagEmission
+    present && (tag == name || tags.get(tag).flatMap(_._3.map(_ == name)).getOrElse(false))
+  }
 
   private def isAbstract(tag: String): Boolean =
     tags.get(tag).map(_._2).getOrElse(false)
@@ -145,11 +147,9 @@ class Typer(reporter: Reporter, diko: Diko) {
         c <- s
         if !charSet.contains(c)
       } reporter.error(offset, f"Unknown letter $c")
-    case RecursiveReplacement(rs, name) if name == rewriteName =>
+    case RecursiveReplacement(rs) =>
       for (r <- rs)
         typeReplacement(rewriteName, r, offset)
-    case RecursiveReplacement(_, name) =>
-      reporter.error(offset, f"Invalid recursive rewrite function name $name")
     case _ =>
     // ok
   }

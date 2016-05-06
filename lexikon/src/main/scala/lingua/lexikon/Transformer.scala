@@ -22,6 +22,9 @@ import fst._
 import scala.annotation.tailrec
 
 import scala.util.matching.Regex
+import scala.util.matching.Regex.Match
+
+import gnieh.diff._
 
 sealed trait Out
 final case class CharOut(c: Char) extends Out {
@@ -34,7 +37,9 @@ final case class TagOut(present: Boolean, t: String) extends Out {
   override def toString = f"${if (present) "+" else "-"}$t"
 }
 
-class Transformer(reporter: Reporter, diko: Diko) {
+class Transformer(typer: Typer, reporter: Reporter, diko: Diko) {
+
+  private val lcs = new Patience[Char]
 
   private val fstBuilder = Builder.create[Char, Out]
 
@@ -111,23 +116,69 @@ class Transformer(reporter: Reporter, diko: Diko) {
     }
   }
 
-  private def rewriteWords(words: List[Word], rTags: Seq[TagEmission], rules: Seq[Rule]): List[Word] = {
-    def applyRewrite(pattern: Pattern, replacement: Replacement): List[(String, Word)] = {
-      val Pattern(affix, seq, category, tags) = pattern
-      val compiledPattern = compilePattern(affix, seq)
-      for {
-        word @ Word(_, wCategory, wTags) <- words
-        if category == wCategory && tags.forall(wTags.contains(_))
-        res <- rewriteWord(word, compiledPattern, rTags, replacement)
-      } yield res
-    }
-    Nil
+  private def rewriteWords(words: List[Word], rTags: Seq[TagEmission], rules: Seq[Rule]): List[Word] =
+    for {
+      word <- words
+      rule <- rules
+      rewritten <- applyRule(word, rule, rTags, rule)
+    } yield rewritten
+
+  private def applyPattern(word: Word, rule: Rule, rTags: Seq[TagEmission], pattern: Pattern, replacement: Replacement): Option[Word] = {
+    val Pattern(affix, seq, category, tags) = pattern
+    val (mustTags, mustntTags) =
+      tags.foldLeft((Set.empty[String], Set.empty[String])) {
+        case ((mustTags, mustntTags), (true, tag))  => (mustTags + tag, mustntTags)
+        case ((mustTags, mustntTags), (false, tag)) => (mustTags, mustntTags + tag)
+      }
+
+    val compiledPattern = compilePattern(affix, seq)
+    rewriteWord(word, rule, compiledPattern, category, mustTags, mustntTags, rTags, replacement)
   }
 
-  private def rewriteWord(original: Word, pattern: Regex, rTags: Seq[TagEmission], replacement: Replacement): Option[(String, Word)] =
-    for (m <- pattern.findFirstMatchIn(original.word)) yield {
-      ???
+  private def applyRule(word: Word, origin: Rule, rTags: Seq[TagEmission], rule: Rule): Option[Word] =
+    if (rule.isEmpty) {
+      None
+    } else {
+      val (pat, repl) = rule.head
+      applyPattern(word, origin, rTags, pat, repl).orElse(applyRule(word, origin, rTags, rule.tail))
     }
+
+  private def buildString(offset: Int, category: Option[String], rule: Rule, m: Match, seq: Seq[CaseReplacement], builder: StringBuilder): Unit =
+    for (repl <- seq)
+      repl match {
+        case StringReplacement(s) =>
+          builder.append(s)
+        case CaptureReplacement(n) =>
+          builder.append(m.group(n))
+        case RecursiveReplacement(seq) =>
+          val substring = new StringBuilder
+          buildString(offset, category, rule, m, seq, substring)
+          val newSeq = substring.toSeq.map(c => WordChar(Some(c), Some(c)))
+          val subword = Word(newSeq, category, Seq.empty)(offset)
+          applyRule(subword, rule, Seq.empty, rule) match {
+            case Some(w) => builder.append(w.word)
+            case None    => builder.append(subword.word)
+          }
+      }
+
+  private def rewriteWord(original: Word, rule: Rule, pattern: Regex, mustCategory: Option[String], mustTags: Set[String], mustntTags: Set[String], rTags: Seq[TagEmission], replacement: Replacement): Option[Word] = {
+    val normalized = normalizedTags(Seq.empty, original.tags)
+    if ((mustCategory.isEmpty || mustCategory == original.category) && mustTags.forall(t => normalized.exists(tag => typer.isA(tag, t))) && mustntTags.forall(t => !normalized.exists(tag => typer.isA(tag, t)))) {
+      for (m <- pattern.findFirstMatchIn(original.word)) yield {
+        // build the new word based on original and replacement text
+        val builder = new StringBuilder
+        if (m.start > 0)
+          builder.append(original.word.substring(0, m.start))
+        buildString(original.offset, original.category, rule, m, replacement.seq, builder)
+        if (m.end < original.word.size)
+          builder.append(original.word.substring(m.end, original.word.size))
+        val chars = buildWordChars(original.word, builder.toString)
+        Word(chars, original.category, normalizedTags(normalized, rTags))(original.offset)
+      }
+    } else {
+      None
+    }
+  }
 
   private def compilePattern(affix: Affix, pattern: Seq[CasePattern]): Regex = {
     val compiledPattern =
@@ -148,5 +199,41 @@ class Transformer(reporter: Reporter, diko: Diko) {
         new Regex(f"^$compiledPattern$$")
     }
   }
+
+  private def buildWordChars(original: String, rewritten: String): Seq[WordChar] = {
+    @tailrec
+    def loop(rewrittenIdx: Int, originalIdx: Int, indices: List[(Int, Int)], acc: List[WordChar]): List[WordChar] = indices match {
+      case (rIdx, oIdx) :: _ if rIdx > rewrittenIdx && oIdx > originalIdx =>
+        loop(rewrittenIdx + 1, originalIdx + 1, indices, WordChar(Some(rewritten(rewrittenIdx)), Some(original(originalIdx))) :: acc)
+      case (rIdx, _) :: _ if rIdx > rewrittenIdx =>
+        loop(rewrittenIdx + 1, originalIdx, indices, WordChar(Some(rewritten(rewrittenIdx)), None) :: acc)
+      case (_, oIdx) :: _ if oIdx > originalIdx =>
+        loop(rewrittenIdx, originalIdx + 1, indices, WordChar(None, Some(original(originalIdx))) :: acc)
+      case _ :: rest =>
+        loop(rewrittenIdx + 1, originalIdx + 1, rest, WordChar(Some(rewritten(rewrittenIdx)), Some(original(originalIdx))) :: acc)
+      case Nil if rewrittenIdx < rewritten.size && originalIdx < original.size =>
+        loop(rewrittenIdx + 1, originalIdx + 1, indices, WordChar(Some(rewritten(rewrittenIdx)), Some(original(originalIdx))) :: acc)
+      case Nil if rewrittenIdx < rewritten.size =>
+        loop(rewrittenIdx + 1, originalIdx, indices, WordChar(Some(rewritten(rewrittenIdx)), None) :: acc)
+      case Nil if originalIdx < original.size =>
+        loop(rewrittenIdx, originalIdx + 1, indices, WordChar(None, Some(original(originalIdx))) :: acc)
+      case Nil =>
+        acc.reverse
+    }
+    val indices = lcs.lcs(rewritten, original)
+    loop(0, 0, indices, Nil)
+  }
+
+  private def normalizedTags(tags1: Seq[TagEmission], tags2: Seq[TagEmission]): Seq[TagEmission] =
+    tags2.foldLeft(if (tags1.isEmpty) tags1 else normalizedTags(Seq.empty, tags1)) {
+      case (acc, tage) if acc.contains(tage) =>
+        acc
+      case (acc, (true, tag)) if acc.contains(false -> tag) =>
+        acc.filterNot(_ == (false -> tag))
+      case (acc, (false, tag)) if acc.contains(true -> tag) =>
+        acc.filterNot(_ == (true -> tag))
+      case (acc, tage) =>
+        acc :+ tage
+    }
 
 }
