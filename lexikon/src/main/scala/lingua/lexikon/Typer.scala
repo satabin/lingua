@@ -113,7 +113,7 @@ class Typer(reporter: Reporter, diko: Diko) {
   }
 
   def typeRule(rewriteName: String, r: Rule): Unit =
-    for ((p @ Pattern(_, pattern, cat, pemissions), r @ Replacement(_, replacement, remissions)) <- r) {
+    for ((p @ Pattern(_, pattern, cat, pemissions), r @ Replacement(replacement, remissions)) <- r) {
       val poffset = p.offset
       val roffset = r.offset
       typeCategory(cat, poffset)

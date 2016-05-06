@@ -118,25 +118,12 @@ class Transformer(reporter: Reporter, diko: Diko) {
         res <- rewriteWord(word, compiledPattern, rTags, replacement)
       } yield res
     }
-    ???
+    Nil
   }
 
   private def rewriteWord(original: Word, pattern: Regex, rTags: Seq[TagEmission], replacement: Replacement): Option[(String, Word)] =
-    pattern.findFirstMatchIn(original.word) match {
-      case Some(m) =>
-        val (startIdx, endIdx) = replacement.affix match {
-          case Prefix =>
-            (0, -1)
-          case Suffix =>
-            (-1, original.word.size)
-          case Infix =>
-            (0, original.word.size)
-          case NoAffix =>
-            (-1, -1)
-        }
-        ???
-      case None =>
-        None
+    for (m <- pattern.findFirstMatchIn(original.word)) yield {
+      ???
     }
 
   private def compilePattern(affix: Affix, pattern: Seq[CasePattern]): Regex = {
@@ -146,18 +133,16 @@ class Transformer(reporter: Reporter, diko: Diko) {
           acc.append(Regex.quote(s))
         case (acc, CapturePattern(n)) =>
           acc.append(f"($lettersRe)")
-        //case (acc, EmptyPattern) =>
-        //  acc.append("$")
       }
     affix match {
       case Prefix =>
-        new Regex("^" + compiledPattern)
+        new Regex(f"^$compiledPattern")
       case Suffix =>
-        new Regex(compiledPattern.append("$").toString)
+        new Regex(f"$compiledPattern$$")
       case Infix =>
         new Regex(compiledPattern.toString)
       case NoAffix =>
-        new Regex("^" + compiledPattern + "$")
+        new Regex(f"^$compiledPattern$$")
     }
   }
 

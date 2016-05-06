@@ -30,8 +30,12 @@ lazy val core = project.in(file("core"))
     name := "lingua-core")
 
 lazy val lexikon = project.in(file("lexikon"))
+  .enablePlugins(BuildInfoPlugin)
   .settings(globalSettings: _*)
   .settings(
     version := "0.1.0-SNAPSHOT",
-    name := "lingua-lexikon")
+    libraryDependencies += "com.github.scopt" %% "scopt" % "3.4.0",
+    name := "lingua-lexikon",
+    buildInfoKeys := Seq[BuildInfoKey](version),
+    buildInfoPackage := "lingua.lexikon")
   .dependsOn(core, fst)

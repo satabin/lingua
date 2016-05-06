@@ -32,7 +32,6 @@ final case class Pattern(affix: Affix, seq: Seq[CasePattern], category: Option[S
 sealed trait CasePattern
 final case class StringPattern(s: String) extends CasePattern
 final case class CapturePattern(n: Int) extends CasePattern
-//case object EmptyPattern extends CasePattern
 
 sealed trait Affix
 case object Prefix extends Affix
@@ -40,7 +39,7 @@ case object Suffix extends Affix
 case object Infix extends Affix
 case object NoAffix extends Affix
 
-final case class Replacement(affix: Affix, seq: Seq[CaseReplacement], tags: Seq[TagEmission])(val offset: Int)
+final case class Replacement(seq: Seq[CaseReplacement], tags: Seq[TagEmission])(val offset: Int)
 
 sealed trait CaseReplacement
 final case class StringReplacement(s: String) extends CaseReplacement
