@@ -60,9 +60,15 @@ object Dikoc extends App {
 
         typer.typeCheck()
 
+        if (reporter.hasErrors)
+          sys.exit(1)
+
         val transformer = new Transformer(reporter, diko)
 
         val nfst = transformer.transform().removeEpsilonTransitions
+
+        if (reporter.hasErrors)
+          sys.exit(1)
 
         for (f <- options.saveNFst)
           f.overwrite(nfst.toDot)(codec = Codec.UTF8)

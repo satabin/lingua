@@ -50,7 +50,7 @@ abstract class Reporter(input: String) {
   private var errors = 0
   private var warnings = 0
 
-  def nbOfErrors: Boolean =
+  def hasErrors: Boolean =
     errors > 0
 
   private val lines = ArrayBuffer(0)
