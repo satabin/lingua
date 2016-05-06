@@ -23,7 +23,13 @@ case class Lexikon(name: String, category: Option[String], tags: Seq[TagEmission
 
 sealed trait Entry
 
-final case class Word(word: String, category: Option[String], tags: Seq[TagEmission])(val offset: Int) extends Entry
+final case class WordChar(in: Option[Char], out: Option[Char])
+
+final case class Word(input: Seq[WordChar], category: Option[String], tags: Seq[TagEmission])(val offset: Int) extends Entry {
+
+  val word = input.collect { case WordChar(Some(c), _) => c }.mkString
+
+}
 
 final case class Rewrite(name: String, tags: Seq[TagEmission], rules: Seq[Rule])(val offset: Int) extends Entry
 

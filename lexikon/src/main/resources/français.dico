@@ -7,7 +7,7 @@ a à â æ b c ç d e é è ê ë f g h i î ï j k l m n o ô œ p q r s t u ù
 
 separators
 
-- ;
+- ’ ;
 
 categories
 
@@ -137,7 +137,8 @@ lexikon Nom @N {
 lexikon Nom-Exceptions @N {
 
   festival / +Masc +Exn ;
-  festival / +Masc +Pl +Exn ;
+  // le `s` suivi de `:_` permet de spécifier la racinisation de `festivals` en `festival`
+  festival s:_ / +Masc +Pl +Exn ;
 
 }
 

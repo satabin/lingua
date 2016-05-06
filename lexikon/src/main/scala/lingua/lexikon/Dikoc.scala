@@ -55,7 +55,7 @@ object Dikoc extends App {
 
           val nfst = transformer.transform();
 
-          println(nfst.determinize.toDot)
+          println(nfst.removeEpsilonTransitions.determinize.toDot)
 
         case f @ Parsed.Failure(_, offset, _) =>
           reporter.error(offset, f"Parse error")

@@ -24,9 +24,15 @@ import scala.annotation.tailrec
 import scala.util.matching.Regex
 
 sealed trait Out
-final case class CharOut(c: Char) extends Out
-final case class CatOut(c: String) extends Out
-final case class TagOut(present: Boolean, t: String) extends Out
+final case class CharOut(c: Char) extends Out {
+  override def toString = c.toString
+}
+final case class CatOut(c: String) extends Out {
+  override def toString = f"@$c"
+}
+final case class TagOut(present: Boolean, t: String) extends Out {
+  override def toString = f"${if (present) "+" else "-"}$t"
+}
 
 class Transformer(reporter: Reporter, diko: Diko) {
 
@@ -58,9 +64,10 @@ class Transformer(reporter: Reporter, diko: Diko) {
               (ws, Rewrite(name, gTags ++ eTags, rules)(r.offset) :: rs)
           }
 
-        for (Word(inChars, cat, tags) <- words) {
+        for (Word(input, cat, tags) <- words) {
           val start = fstBuilder.newState.makeInitial
-          createStates(inChars, inChars, cat.get, tags, 0, start)
+          val (inChars, outChars) = input.toVector.unzip { case WordChar(in, out) => (in, out) }
+          createStates(inChars, outChars, cat.get, tags, 0, start)
         }
 
         for (Rewrite(name, tags, rules) <- rewrites) {
@@ -68,9 +75,10 @@ class Transformer(reporter: Reporter, diko: Diko) {
           // lexicon (collected aboved). The first pattern that applies to a word
           // is the one taken, and the replacement is substituted to the word
           val rewrittenWords = rewriteWords(words, tags, rules)
-          for ((original, Word(inChars, cat, tags)) <- rewrittenWords) {
+          for (Word(input, cat, tags) <- rewrittenWords) {
             val start = fstBuilder.newState.makeInitial
-            createStates(original, inChars, cat.get, tags, 0, start)
+            val (inChars, outChars) = input.toVector.unzip { case WordChar(in, out) => (in, out) }
+            createStates(inChars, outChars, cat.get, tags, 0, start)
           }
         }
       }
@@ -80,7 +88,7 @@ class Transformer(reporter: Reporter, diko: Diko) {
   }
 
   @tailrec
-  private def createStates(inChars: String, outChars: String, cat: String, tags: Seq[TagEmission], idx: Int, previous: StateBuilder[Char, Out]): Unit = {
+  private def createStates(inChars: Vector[Option[Char]], outChars: Vector[Option[Char]], cat: String, tags: Seq[TagEmission], idx: Int, previous: StateBuilder[Char, Out]): Unit = {
     assert(inChars.size == outChars.size, "")
     if (idx == inChars.size) {
       // final state
@@ -93,22 +101,17 @@ class Transformer(reporter: Reporter, diko: Diko) {
     } else {
       // add transition with the current character to a new state
       val st = fstBuilder.newState
-      val inChar =
-        if (inChars(idx) == '\u0000')
-          None
-        else
-          Some(inChars(idx))
       val outChar =
-        if (outChars(idx) == '\u0000')
-          Seq()
-        else
-          Seq(CharOut(outChars(idx)))
-      previous.addTransition(inChar, outChar, st)
+        outChars(idx) match {
+          case Some(c) => Seq(CharOut(c))
+          case None    => Seq()
+        }
+      previous.addTransition(inChars(idx), outChar, st)
       createStates(inChars, outChars, cat, tags, idx + 1, st)
     }
   }
 
-  private def rewriteWords(words: List[Word], rTags: Seq[TagEmission], rules: Seq[Rule]): List[(String, Word)] = {
+  private def rewriteWords(words: List[Word], rTags: Seq[TagEmission], rules: Seq[Rule]): List[Word] = {
     def applyRewrite(pattern: Pattern, replacement: Replacement): List[(String, Word)] = {
       val Pattern(affix, seq, category, tags) = pattern
       val compiledPattern = compilePattern(affix, seq)

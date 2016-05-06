@@ -45,9 +45,17 @@ object DikoParser {
     })
 
   val word: P[Word] = P(
-    (Index ~ (char.rep(min = 1)).! ~ ("/" ~ annotation).?.map(_.getOrElse((None, Seq.empty[TagEmission]))) ~ ";").map {
+    (Index ~ wordChar.rep(min = 1) ~ ("/" ~ annotation).?.map(_.getOrElse((None, Seq.empty[TagEmission]))) ~ ";").map {
       case (idx, chars, (cat, tags)) => Word(chars, cat, tags)(idx)
     })
+
+  val optChar: P[Option[Char]] = P(
+    char.!.map(c => Some(c(0)))
+      | fastparse.parsers.Terminals.CharLiteral('_').map(_ => None))
+
+  val wordChar: P[WordChar] = P(
+    (optChar ~ ":" ~ optChar).map { case (c1, c2) => WordChar(c1, c2) }
+      | char.!.map(c => WordChar(Some(c(0)), Some(c(0)))))
 
   val rewrite: P[Rewrite] = P(
     (Index ~ keyword("rewrite") ~ name ~ tagEmission.rep(min = 0) ~ "{" ~/ rule.rep(min = 1) ~ "}").map {
@@ -60,7 +68,6 @@ object DikoParser {
   val pattern: P[Pattern] = P(
     (Index ~ ">".!.?.map(_.isDefined)
       ~ ("\\" ~/ integer.map(CapturePattern)
-        //| P("_").map(_ => EmptyPattern)
         | (!"=>" ~ char).rep(min = 1).!.map(StringPattern)).rep(min = 0)
         ~ "<".!.?.map(_.isDefined)
         ~ ("/" ~ annotation).?.map(_.getOrElse((None, Seq.empty[TagEmission])))).map {
@@ -96,7 +103,7 @@ object DikoParser {
     }.opaque("<tag emission>")
 
   val char: P[Unit] =
-    (!"->" ~ !CharIn("(){};.<>/\\| _") ~ AnyChar).opaque("<character>")
+    (!"->" ~ !CharIn("(){};:.<>/\\| _") ~ AnyChar).opaque("<character>")
 
   val integer: P[Int] =
     CharIn("0123456789").rep(min = 1).!.map(_.toInt).opaque("<integer>")

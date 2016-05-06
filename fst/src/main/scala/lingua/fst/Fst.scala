@@ -25,14 +25,15 @@ abstract class Fst[In, Out](val states: Set[State], val initials: Set[State], va
 
   def toDot(transitions: Iterable[String]): String = {
     f"""digraph {
+       |  rankdir = LR
        |  ${
       states.map { s =>
         if (finals.contains(s))
-          f"""q$s[shape=doublecircle];
-             |  end$s[shape=plaintext,label="end"];
-             |  q$s->end$s[label="${finals(s)}"]""".stripMargin
+          f"""q$s[shape=doublecircle, label=""];
+             |  end$s[shape=plaintext,label=""];
+             |  q$s->end$s[label="${finals(s).map(_.mkString("[", ", ", "]")).mkString("\\n")}"]""".stripMargin
         else
-          f"q$s[shape=circle]"
+          f"""q$s[shape=circle,label=""]"""
       }.mkString(";\n  ")
     }
        |  ${transitions.mkString(";\n  ")}

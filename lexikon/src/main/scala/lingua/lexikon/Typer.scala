@@ -98,11 +98,15 @@ class Typer(reporter: Reporter, diko: Diko) {
   def typeEntry(e: Entry): Unit = e match {
     case w @ Word(word, cat, emissions) =>
       // check that all characters in a word are either in the alphabet or a separator
-      for {
-        c <- word
-        if !charSet.contains(c)
-      } {
-        reporter.error(w.offset, f"Unknown letter $c")
+      for (WordChar(c1, c2) <- word) {
+        for {
+          c <- c1
+          if !charSet.contains(c)
+        } reporter.error(w.offset, f"Unknown letter $c")
+        for {
+          c <- c2
+          if !charSet.contains(c)
+        } reporter.error(w.offset, f"Unknown letter $c")
       }
       typeCategory(cat, w.offset)
       typeEmissions(emissions, w.offset)
