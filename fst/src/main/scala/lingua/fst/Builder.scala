@@ -58,6 +58,7 @@ class Builder[In, Out] private[fst] () {
         None
   }
 
+  /** Builds a non-deterministic Fst with epsilon transitions. */
   def build(): NFst[Option[In], Out] = {
     import scala.collection.{ immutable => im }
     val initials =
@@ -65,11 +66,6 @@ class Builder[In, Out] private[fst] () {
     val (trans, outs) =
       states.foldLeft((im.Map.empty[(State, Option[In]), im.Set[State]], im.Map.empty[(State, Option[In], State), Seq[Out]])) {
         case (acc, s) =>
-          for (seq <- s.outputs) {
-            s.makeNonFinal
-            val f = newState.makeFinal
-            s.addTransition(None, seq, f)
-          }
           s.transitions.foldLeft(acc) {
             case ((trans, outs), (source, in, out, target)) =>
               val fromSource = trans.getOrElse((source, in), im.Set.empty[State])
@@ -78,7 +74,7 @@ class Builder[In, Out] private[fst] () {
           }
       }
     val finals =
-      states.collect { case FinalState(s) => s }.toSet
+      states.collect { case sb @ FinalState(s) => s -> sb.outputs.toSet }.toMap
     val states1 = states.map(_.id).toSet[State]
     new NFst(states1, initials, finals, trans, outs)
 

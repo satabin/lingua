@@ -16,12 +16,12 @@ package lingua
 package fst
 
 /** A non-deterministic Fst implementation. */
-class NFst[In, Out] private (states: Set[State], initials: Set[State], finals: Set[State], maps: (Map[(State, In), Set[State]], Map[(State, In, State), Seq[Out]])) extends Fst(states, initials, finals) {
+class NFst[In, Out] private (states: Set[State], initials: Set[State], finals: Map[State, Set[Seq[Out]]], maps: (Map[(State, In), Set[State]], Map[(State, In, State), Seq[Out]])) extends Fst(states, initials, finals) {
 
-  def this(states: Set[State], initials: Set[State], finals: Set[State], transitions: Map[(State, In), Set[State]], outputs: Map[(State, In, State), Seq[Out]]) =
+  def this(states: Set[State], initials: Set[State], finals: Map[State, Set[Seq[Out]]], transitions: Map[(State, In), Set[State]], outputs: Map[(State, In, State), Seq[Out]]) =
     this(states, initials, finals, (transitions, outputs))
 
-  def this(states: Set[State], initials: Set[State], finals: Set[State], transitions: Set[Transition[In, Out]]) =
+  def this(states: Set[State], initials: Set[State], finals: Map[State, Set[Seq[Out]]], transitions: Set[Transition[In, Out]]) =
     this(states, initials, finals, transitions.foldLeft(
       (Map.empty[(State, In), Set[State]],
         Map.empty[(State, In, State), Seq[Out]])) {
@@ -37,7 +37,7 @@ class NFst[In, Out] private (states: Set[State], initials: Set[State], finals: S
           (transAcc1, outAcc1)
       })
 
-  private val (transitionMap, outputMap) = maps
+  val (transitionMap, outputMap) = maps
 
   def delta(state: State, in: In): Set[State] =
     transitionMap.getOrElse((state, in), Set.empty)
@@ -49,7 +49,6 @@ class NFst[In, Out] private (states: Set[State], initials: Set[State], finals: S
 
     import scala.collection.{ mutable => mu }
 
-    val f2 = mu.Set.empty[State]
     val output2 = new mu.HashMap[State, mu.Set[Seq[Out]]] with mu.MultiMap[State, Seq[Out]]
 
     val delta2 = mu.Map.empty[(State, In), State]
@@ -86,10 +85,8 @@ class NFst[In, Out] private (states: Set[State], initials: Set[State], finals: S
       for {
         (q, w) <- q2
         if this.finals.contains(q)
-      } {
-        f2 + q2id
-        output2.addBinding(q2id, w)
-      }
+        out <- this.finals(q)
+      } output2.addBinding(q2id, w ++ out)
 
       for {
         (q, w) <- q2
@@ -122,7 +119,7 @@ class NFst[In, Out] private (states: Set[State], initials: Set[State], finals: S
 
     }
 
-    new PSubFst(newStates.values.toSet, 0, f2.toSet, delta2.toMap, sigma2.toMap, output2.mapValues(_.toSet).toMap)
+    new PSubFst(newStates.values.toSet, 0, output2.mapValues(_.toSet).toMap, delta2.toMap, sigma2.toMap)
   }
 
   def toDot: String = {
