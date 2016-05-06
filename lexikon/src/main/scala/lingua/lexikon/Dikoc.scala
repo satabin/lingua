@@ -15,21 +15,31 @@
 package lingua
 package lexikon
 
+import scopt._
+
 import fastparse.core.Parsed
 
 import parser._
 
-import java.io.File
+import scala.io.Codec
 
-import scala.io.Source
+import better.files._
 
 object Dikoc extends App {
 
-  val optParser = new scopt.OptionParser[Options]("dikoc") {
+  implicit val fileRead: Read[File] = Read.reads(File(_))
+
+  val optParser = new OptionParser[Options]("dikoc") {
     head("dikoc", BuildInfo.version)
     opt[Unit]('V', "verbose").action { (_, c) =>
       c.copy(verbose = true)
     }.text("Turn on verbose mode")
+    opt[File]('N', "save-nfst").action { (f, c) =>
+      c.copy(saveNFst = Some(f))
+    }.text("Save the dot representation of the non deterministic fst to the given file")
+    opt[File]('F', "save-fst").action { (f, c) =>
+      c.copy(saveFst = Some(f))
+    }.text("Save the dot representation of the fst to the given file")
     help("help").abbr("h").text("Print this usage text")
     version("version").abbr("v").text("Print the version")
     arg[File]("<file>").action { (f, c) =>
@@ -37,32 +47,35 @@ object Dikoc extends App {
     }.text("Input diko file to compile")
   }
 
-  optParser.parse(args, Options()) match {
-    case Some(options) =>
+  for (options <- optParser.parse(args, Options())) {
 
-      val input = Source.fromFile(options.input).mkString
+    val input = options.input.contentAsString(codec = Codec.UTF8)
 
-      val reporter = new ConsoleReporter(input)
+    val reporter = new ConsoleReporter(input)
 
-      // do stuff
-      DikoParser.diko.parse(input) match {
-        case Parsed.Success(diko, _) =>
-          val typer = new Typer(reporter, diko)
+    // do stuff
+    DikoParser.diko.parse(input) match {
+      case Parsed.Success(diko, _) =>
+        val typer = new Typer(reporter, diko)
 
-          typer.typeCheck()
+        typer.typeCheck()
 
-          val transformer = new Transformer(reporter, diko)
+        val transformer = new Transformer(reporter, diko)
 
-          val nfst = transformer.transform();
+        val nfst = transformer.transform().removeEpsilonTransitions
 
-          println(nfst.removeEpsilonTransitions.determinize.toDot)
+        for (f <- options.saveNFst)
+          f.overwrite(nfst.toDot)(codec = Codec.UTF8)
 
-        case f @ Parsed.Failure(_, offset, _) =>
-          reporter.error(offset, f"Parse error")
-      }
+        val fst = nfst.determinize
 
-    case None =>
-    // arguments are bad, error message will have been displayed
+        for (f <- options.saveFst)
+          f.overwrite(fst.toDot)(codec = Codec.UTF8)
+
+      case f @ Parsed.Failure(_, offset, _) =>
+        reporter.error(offset, f"Parse error")
+    }
+
   }
 
 }

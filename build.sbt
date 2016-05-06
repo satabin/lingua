@@ -35,6 +35,7 @@ lazy val lexikon = project.in(file("lexikon"))
   .settings(
     version := "0.1.0-SNAPSHOT",
     libraryDependencies += "com.github.scopt" %% "scopt" % "3.4.0",
+    libraryDependencies += "com.github.pathikrit" %% "better-files" % "2.15.0",
     name := "lingua-lexikon",
     buildInfoKeys := Seq[BuildInfoKey](version),
     buildInfoPackage := "lingua.lexikon")
