@@ -17,7 +17,7 @@ package parser
 
 import lingua.parser._
 
-class DikoParser {
+object DikoParser {
 
   val keywords =
     Set("alphabet", "as", "categories", "lexikon", "main", "rewrite", "rule", "separators", "tags")
@@ -45,9 +45,17 @@ class DikoParser {
     })
 
   val word: P[Word] = P(
-    (Index ~ (char.rep(min = 1)).! ~ ("/" ~ annotation).?.map(_.getOrElse((None, Seq.empty[TagEmission]))) ~ ";").map {
+    (Index ~ wordChar.rep(min = 1) ~ ("/" ~ annotation).?.map(_.getOrElse((None, Seq.empty[TagEmission]))) ~ ";").map {
       case (idx, chars, (cat, tags)) => Word(chars, cat, tags)(idx)
     })
+
+  val optChar: P[Option[Char]] = P(
+    char.!.map(c => Some(c(0)))
+      | fastparse.parsers.Terminals.CharLiteral('_').map(_ => None))
+
+  val wordChar: P[WordChar] = P(
+    (optChar ~ ":" ~ optChar).map { case (c1, c2) => WordChar(c1, c2) }
+      | char.!.map(c => WordChar(Some(c(0)), Some(c(0)))))
 
   val rewrite: P[Rewrite] = P(
     (Index ~ keyword("rewrite") ~ name ~ tagEmission.rep(min = 0) ~ "{" ~/ rule.rep(min = 1) ~ "}").map {
@@ -60,11 +68,10 @@ class DikoParser {
   val pattern: P[Pattern] = P(
     (Index ~ ">".!.?.map(_.isDefined)
       ~ ("\\" ~/ integer.map(CapturePattern)
-        | P("_").map(_ => EmptyPattern)
         | (!"=>" ~ char).rep(min = 1).!.map(StringPattern)).rep(min = 0)
         ~ "<".!.?.map(_.isDefined)
         ~ ("/" ~ annotation).?.map(_.getOrElse((None, Seq.empty[TagEmission])))).map {
-          case (idx, pre, seq, suf, (cat, tags)) =>
+          case (idx, suf, seq, pre, (cat, tags)) =>
             if (pre && suf)
               Pattern(Infix, seq, cat, tags)(idx)
             else if (pre)
@@ -76,24 +83,14 @@ class DikoParser {
         })
 
   val replacement: P[Replacement] = P(
-    (Index ~ ">".!.?.map(_.isDefined)
-      ~ replacementText.rep(min = 0)
-      ~ "<".!.?.map(_.isDefined)
+    (Index ~ replacementText.rep(min = 0)
       ~ ("/" ~ tagEmission.rep(min = 1)).?.map(_.getOrElse(Seq.empty[TagEmission]))).map {
-        case (idx, pre, seq, suf, tags) =>
-          if (pre && suf)
-            Replacement(Infix, seq, tags)(idx)
-          else if (pre)
-            Replacement(Prefix, seq, tags)(idx)
-          else if (suf)
-            Replacement(Suffix, seq, tags)(idx)
-          else
-            Replacement(NoAffix, seq, tags)(idx)
+        case (idx, seq, tags) =>
+          Replacement(seq, tags)(idx)
       })
 
   val replacementText: P[CaseReplacement] = P(
-    "(" ~ (replacementText.rep(min = 1) ~ "->" ~ name ~ ")").map { case (seq, name) => RecursiveReplacement(seq, name) }
-      | CharIn("_").map(_ => DropReplacement)
+    "@" ~ "(" ~ (replacementText.rep(min = 1) ~ ")").map(RecursiveReplacement)
       | char.rep(min = 1).!.map(StringReplacement)
       | "\\" ~ integer.map(CaptureReplacement))
 
@@ -106,7 +103,7 @@ class DikoParser {
     }.opaque("<tag emission>")
 
   val char: P[Unit] =
-    (!"->" ~ !CharIn("{}[];.<>/\\| _") ~ AnyChar).opaque("<character>")
+    (!CharIn("@(){};:.<>/\\| _") ~ AnyChar).opaque("<character>")
 
   val integer: P[Int] =
     CharIn("0123456789").rep(min = 1).!.map(_.toInt).opaque("<integer>")

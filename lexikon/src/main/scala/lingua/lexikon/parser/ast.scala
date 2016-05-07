@@ -23,7 +23,13 @@ case class Lexikon(name: String, category: Option[String], tags: Seq[TagEmission
 
 sealed trait Entry
 
-final case class Word(word: String, category: Option[String], tags: Seq[TagEmission])(val offset: Int) extends Entry
+final case class WordChar(in: Option[Char], out: Option[Char])
+
+final case class Word(input: Seq[WordChar], category: Option[String], tags: Seq[TagEmission])(val offset: Int) extends Entry {
+
+  val word = input.collect { case WordChar(Some(c), _) => c }.mkString
+
+}
 
 final case class Rewrite(name: String, tags: Seq[TagEmission], rules: Seq[Rule])(val offset: Int) extends Entry
 
@@ -32,7 +38,6 @@ final case class Pattern(affix: Affix, seq: Seq[CasePattern], category: Option[S
 sealed trait CasePattern
 final case class StringPattern(s: String) extends CasePattern
 final case class CapturePattern(n: Int) extends CasePattern
-case object EmptyPattern extends CasePattern
 
 sealed trait Affix
 case object Prefix extends Affix
@@ -40,10 +45,9 @@ case object Suffix extends Affix
 case object Infix extends Affix
 case object NoAffix extends Affix
 
-final case class Replacement(affix: Affix, seq: Seq[CaseReplacement], tags: Seq[TagEmission])(val offset: Int)
+final case class Replacement(seq: Seq[CaseReplacement], tags: Seq[TagEmission])(val offset: Int)
 
 sealed trait CaseReplacement
 final case class StringReplacement(s: String) extends CaseReplacement
 final case class CaptureReplacement(n: Int) extends CaseReplacement
-final case class RecursiveReplacement(seq: Seq[CaseReplacement], name: String) extends CaseReplacement
-case object DropReplacement extends CaseReplacement
+final case class RecursiveReplacement(seq: Seq[CaseReplacement]) extends CaseReplacement

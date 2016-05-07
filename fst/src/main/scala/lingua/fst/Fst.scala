@@ -15,7 +15,7 @@
 package lingua
 package fst
 
-abstract class Fst[In, Out](val states: Set[State], val initials: Set[State], val finals: Set[State]) {
+abstract class Fst[In, Out](val states: Set[State], val initials: Set[State], val finals: Map[State, Set[Seq[Out]]]) {
 
   def isFinal(state: State): Boolean =
     finals.contains(state)
@@ -25,10 +25,15 @@ abstract class Fst[In, Out](val states: Set[State], val initials: Set[State], va
 
   def toDot(transitions: Iterable[String]): String = {
     f"""digraph {
+       |  rankdir = LR
        |  ${
       states.map { s =>
-        val shape = if (finals.contains(s)) "doublecircle" else "circle"
-        f"q$s[shape=$shape]"
+        if (finals.contains(s))
+          f"""q$s[shape=doublecircle, label=""];
+             |  end$s[shape=plaintext,label=""];
+             |  q$s->end$s[label="${finals(s).map(_.mkString("[", ", ", "]")).mkString("\\n")}"]""".stripMargin
+        else
+          f"""q$s[shape=circle,label=""]"""
       }.mkString(";\n  ")
     }
        |  ${transitions.mkString(";\n  ")}

@@ -7,7 +7,7 @@ a à â æ b c ç d e é è ê ë f g h i î ï j k l m n o ô œ p q r s t u ù
 
 separators
 
-- ;
+- ’ ;
 
 categories
 
@@ -94,6 +94,8 @@ première-personne as 1ère;
 deuxième-personne as 2ème;
 troisième-personne as 3ème;
 
+exception as Exn;
+
 lexikon Nom @N {
 
   arbre / +Masc ;
@@ -112,23 +114,34 @@ lexikon Nom @N {
   // pour les noms composés d'un verbe et d'un nom, seul le nom prend la marque
   // du pluriel s'il est dénombrable, sinon le nom reste invariable
   rewrite pluriel +Pl {
-    rule >al / -NC => >aux
-       | >eau / -NC => >eaux
-       | >_ / -NC => >s ;
-    // avant la flèche, le "\1" indique "n'importe quelle séquence qui est capturée et numérotée 1"
-    // après la flèche, le "\1" indique la première étoile avant la flèche
-    rule \1-\2 / +VNI => \1-\2
-       | \1-\2 / +VN  => \1-(\2->pluriel);
+    rule >al / -NC => aux
+       | >eau / -NC => eaux
+       | > / -NC => s
+       // avant la flèche, le "\1" indique "n'importe quelle séquence qui est capturée et numérotée 1"
+       // après la flèche, le "\1" indique la première étoile avant la flèche
+       | \1-\2 / +VNI => \1-\2
+       // la notation @(...) indique que la règle de réécriture courante est appliquée au résulat
+       // du remplacement entre parenthèses de manière récursive. Le résultat a la même catégorie
+       // et aucune étiquette
+       | \1-\2 / +VN  => \1-@(\2)
 
-    rule \1-\2 / +NNI => (\1->pluriel)-\2
-       | \1-\2 / +NN => (\1->pluriel)-(\2->pluriel) ;
+       | \1-\2 / +NNI => @(\1)-\2
+       | \1-\2 / +NN => @(\1)-@(\2)
 
-    rule >o-\1 / +AdjN => >o-(\2->pluriel)
-       | \1-\2 / +AdjN => (\1->pluriel)-(\2->pluriel)
-       | \1-\2 / +NAdj => (\1->pluriel)-(\2->pluriel) ;
+       | >o-\1 / +AdjN => o-@(\1)
+       | \1-\2 / +AdjN => @(\1)-@(\2)
+       | \1-\2 / +NAdj => @(\1)-@(\2)
 
-    rule \1-\2 / +AdvN => \1-(\2->pluriel) ;
+       | \1-\2 / +AdvN => \1-@(\2) ;
   }
+
+}
+
+lexikon Nom-Exceptions @N {
+
+  festival / +Masc +Exn ;
+  // le `s` suivi de `:_` permet de spécifier la racinisation de `festivals` en `festival`
+  festival s:_ / +Masc +Pl +Exn ;
 
 }
 
@@ -144,71 +157,71 @@ lexikon VG1 @V +G1 {
     // est remplacé par une transition vide
     // qui ajoute les traits +Sg et +1ère
     // ainsi `mange` est annoté comme suit:
-    // `manger{V +G1 +Fut +Ind +Sg +1ère}`
+    // `manger{V +G1 +Prés +Ind +Sg +1ère}`
     // cette règle est équivalente à la suite de transitions suivante :
-    // `mange _/r @V +G1 +Fut +Ind +Sg +1ère`
-    rule >r => >_ / +Sg +1ère ;
-    rule >r => >s / +Sg +2ème ;
+    // `mange _/r @V +G1 +Prés +Ind +Sg +1ère`
+    rule >r => / +Sg +1ère ;
+    rule >r => s / +Sg +2ème ;
     // avec cette règle nous voyons que `mange` est annoté comme
     // {V +G1 +Prés +Ind +Sg +1ère} et comme
     // {V +G1 +Prés +Ind +Sg +3ème}
-    rule >r => >_ / +Sg +3ème ;
+    rule >r => / +Sg +3ème ;
     // ici nous écrivons un patron plus complexe avec des sous-cas
     // les sous-cas sont appliqués en séquence, et le premier qui correspond
     // est choisi. Si aucun ne correspond la règle ne s'applique pas ici.
     // contrairement aux `rule`s dont l'ordre n'a pas d'importance, il faut veiller
     // ici à correctement ordonner les cas afin que les plus spécifiques arrivent avant
     // les plus généraux
-    rule >ger => >geons / +Pl +1ère
-       | >cer => >çons / +Pl +1ère
-       | >er => >ons / +Pl +1ère ;
-    rule >r => >z / +Pl +2ème ;
-    rule >r => >nt / +Pl +3ème ;
+    rule >ger => geons / +Pl +1ère
+       | >cer => çons / +Pl +1ère
+       | >er => ons / +Pl +1ère ;
+    rule >r => z / +Pl +2ème ;
+    rule >r => nt / +Pl +3ème ;
   }
 
-  rewrite futur-indicatid +Fut +Ind {
-    rule >_ => >ai / +Fut +Ind +Sg +1ère ;
-    rule >_ => >as / +Fut +Ind +Sg +2ème ;
-    rule >_ => >a / +Fut +Ind +Sg +3ème ;
-    rule >_ => >ons / +Fut +Ind +Pl +1ère ;
-    rule >_ => >ez / +Fut +Ind +Pl +2ème ;
-    rule >_ => >ont / +Fut +Ind +Pl +3ème ;
+  rewrite futur-indicatif +Fut +Ind {
+    rule > => ai / +Fut +Ind +Sg +1ère ;
+    rule > => as / +Fut +Ind +Sg +2ème ;
+    rule > => a / +Fut +Ind +Sg +3ème ;
+    rule > => ons / +Fut +Ind +Pl +1ère ;
+    rule > => ez / +Fut +Ind +Pl +2ème ;
+    rule > => ont / +Fut +Ind +Pl +3ème ;
   }
 
   rewrite passé-simple-indicatif +PassSimp +Ind {
-    rule >ger => >geai / +Sg +1ère
-       | >cer => >çai / +Sg +1ère
-       | >er => >ai / +Sg +1ère ;
-    rule >ger => >geas / +Sg +2ème
-       | >cer => >ças / +Sg +2ème
-       | >er => >as / +Sg +2ème ;
-    rule >ger => >gea / +Sg +3ème
-       | >cer => >ça / +Sg +3ème
-       | >er => >a / +Sg +3ème ;
-    rule >ger => >geâmes / +Pl +1ère
-       | >cer => >çâmes / +Pl +1ère
-       | >er => >âmes / +Pl +1ère ;
-    rule >ger => >geâtes / +Pl +2ème
-       | >cer => >çâtes / +Pl +2ème
-       | >er => >âtes / +Pl +2ème ;
-    rule >er => >èrent / +Pl +3ème ;
+    rule >ger => geai / +Sg +1ère
+       | >cer => çai / +Sg +1ère
+       | >er => ai / +Sg +1ère ;
+    rule >ger => geas / +Sg +2ème
+       | >cer => ças / +Sg +2ème
+       | >er => as / +Sg +2ème ;
+    rule >ger => gea / +Sg +3ème
+       | >cer => ça / +Sg +3ème
+       | >er => a / +Sg +3ème ;
+    rule >ger => geâmes / +Pl +1ère
+       | >cer => çâmes / +Pl +1ère
+       | >er => âmes / +Pl +1ère ;
+    rule >ger => geâtes / +Pl +2ème
+       | >cer => çâtes / +Pl +2ème
+       | >er => âtes / +Pl +2ème ;
+    rule >er => èrent / +Pl +3ème ;
   }
 
   rewrite imparfait-indicatif +Imp +Ind {
-    rule >ger => >geais / +Sg +1ère
-       | >cer => >çais / +Sg +1ère
-       | >er => >ais / +Sg +1ère ;
-    rule >ger => >geais / +Sg +2ème
-       | >cer => >çais / +Sg +2ème
-       | >er => >ais / +Sg +2ème ;
-    rule >ger => >geait / +Sg +3ème
-       | >cer => >çait / +Sg +3ème
-       | >er => >ait / +Sg +3ème ;
-    rule >er => >ions / +Pl +1ère ;
-    rule >er => >iez / +Pl +2ème ;
-    rule >ger => >geaient / +Pl +3ème
-       | >cer => >çaient / +Pl +3ème
-       | >er => >aient / +Pl +3ème ;
+    rule >ger => geais / +Sg +1ère
+       | >cer => çais / +Sg +1ère
+       | >er => ais / +Sg +1ère ;
+    rule >ger => geais / +Sg +2ème
+       | >cer => çais / +Sg +2ème
+       | >er => ais / +Sg +2ème ;
+    rule >ger => geait / +Sg +3ème
+       | >cer => çait / +Sg +3ème
+       | >er => ait / +Sg +3ème ;
+    rule >er => ions / +Pl +1ère ;
+    rule >er => iez / +Pl +2ème ;
+    rule >ger => geaient / +Pl +3ème
+       | >cer => çaient / +Pl +3ème
+       | >er => aient / +Pl +3ème ;
   }
 
 }

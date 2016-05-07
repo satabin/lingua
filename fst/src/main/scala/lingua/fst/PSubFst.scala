@@ -18,18 +18,17 @@ package fst
 /** A p-subsequential finite-state transducer. */
 class PSubFst[In, Out] private (states: Set[State],
     initial: State,
-    finals: Set[State],
-    maps: (Map[(State, In), State], Map[(State, In), Seq[Out]]),
-    finalOutputs: Map[State, Set[Seq[Out]]]) extends Fst(states, Set(initial), finals) {
+    finals: Map[State, Set[Seq[Out]]],
+    maps: (Map[(State, In), State], Map[(State, In), Seq[Out]])) extends Fst(states, Set(initial), finals) {
 
   /** The value of p */
   def p =
-    finalOutputs.map(_._2.size).max
+    finals.map(_._2.size).max
 
-  def this(states: Set[State], initial: State, finals: Set[State], transitions: Map[(State, In), State], outputs: Map[(State, In), Seq[Out]], finalOutputs: Map[State, Set[Seq[Out]]]) =
-    this(states, initial, finals, (transitions, outputs), finalOutputs)
+  def this(states: Set[State], initial: State, finals: Map[State, Set[Seq[Out]]], transitions: Map[(State, In), State], outputs: Map[(State, In), Seq[Out]]) =
+    this(states, initial, finals, (transitions, outputs))
 
-  def this(states: Set[State], initial: State, finals: Set[State], transitions: Set[Transition[In, Out]], finalOutputs: Map[State, Set[Seq[Out]]]) =
+  def this(states: Set[State], initial: State, finals: Map[State, Set[Seq[Out]]], transitions: Set[Transition[In, Out]]) =
     this(states, initial, finals, transitions.foldLeft(
       (Map.empty[(State, In), State],
         Map.empty[(State, In), Seq[Out]])) {
@@ -42,7 +41,7 @@ class PSubFst[In, Out] private (states: Set[State],
               transAcc.updated(key, target)
           val outAcc1 = outAcc.updated(key, output)
           (transAcc1, outAcc1)
-      }, finalOutputs)
+      })
 
   private val (transitionMap, outputMap) = maps
 
@@ -77,17 +76,14 @@ class PSubFst[In, Out] private (states: Set[State],
 
   /** Returns the set of extra output associated to the state `state`. */
   def phi(state: State): Set[Seq[Out]] =
-    finalOutputs.getOrElse(state, Set.empty)
+    finals.getOrElse(state, Set.empty)
 
   def toDot: String = {
     val trans = for {
       ((s1, in), s2) <- transitionMap
       out = outputMap.getOrElse((s1, in), Seq()).mkString
     } yield f"""q$s1->q$s2[label="$in:$out"]"""
-    val out = for {
-      (s1, out) <- finalOutputs
-    } yield f"""q$s1->out[label="${out.map(_.mkString).mkString}"]"""
-    toDot(trans ++ out)
+    toDot(trans)
   }
 
   /** pushes common prefixes in front when possible. */
@@ -99,7 +95,7 @@ class PSubFst[In, Out] private (states: Set[State],
 
     val sigma2 = mu.Map.empty[(State, In), Seq[Out]] ++ outputMap
 
-    val phi2 = mu.Map.empty[State, Set[Seq[Out]]] ++ finalOutputs
+    val phi2 = mu.Map.empty[State, Set[Seq[Out]]] ++ finals
 
     def computePrefix(state: State, seen: Set[State]): Unit =
       if (!prefixes.contains(state) && !seen.contains(state)) {
@@ -129,7 +125,7 @@ class PSubFst[In, Out] private (states: Set[State],
 
     computePrefix(initial, Set.empty[State])
 
-    new PSubFst(states, initial, finals, transitionMap, sigma2.toMap, phi2.toMap)
+    new PSubFst(states, initial, phi2.toMap, transitionMap, sigma2.toMap)
 
   }
 
