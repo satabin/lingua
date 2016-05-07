@@ -20,7 +20,7 @@ import lingua.parser._
 object DikoParser {
 
   val keywords =
-    Set("alphabet", "as", "categories", "lexikon", "main", "rewrite", "rule", "separators", "tags")
+    Set("alphabet", "as", "categories", "lexikon", "main", "private", "rewrite", "rule", "separators", "tags")
 
   val utils = new LinguaParser(keywords)
 

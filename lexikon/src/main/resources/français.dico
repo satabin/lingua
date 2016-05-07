@@ -28,7 +28,10 @@ commun as Comm;
 interrogratif as Qu;
 
 // pour les noms composés, les traits indiquent comment ils sont faits
-nom-composé as NC {
+// le trait NC (et ses enfants) sont marqués comme `private`, ce qui signifie
+// qu’il ne sont utilisés que pour construire le Fst mais ne seront pas exportés
+// dans le résultat
+private nom-composé as NC {
   verbe-nom as VN;
   verbe-nom-indénombrable as VNI;
   nom-nom as NN;
@@ -94,7 +97,7 @@ première-personne as 1ère;
 deuxième-personne as 2ème;
 troisième-personne as 3ème;
 
-exception as Exn;
+private exception as Exn;
 
 lexikon Nom @N {
 

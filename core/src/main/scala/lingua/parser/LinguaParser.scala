@@ -57,13 +57,13 @@ class LinguaParser(keywords: Set[String]) {
     })
 
   val tag: P[Tag] = P(
-    (Index ~ name ~ keyword("as") ~ name ~ "{" ~/ (Index ~ name ~ keyword("as") ~/ name ~ ";").map({
-      case (idx, n, a) => Tag(n, a, Nil)(idx)
+    (Index ~ keyword("private").!.?.map(_.isEmpty) ~ name ~ keyword("as") ~ name ~ "{" ~/ (Index ~ keyword("private").!.?.map(_.isEmpty) ~ name ~ keyword("as") ~/ name ~ ";").map({
+      case (idx, p, n, a) => Tag(p, n, a, Nil)(idx)
     }).rep(min = 1) ~ "}").map {
-      case (idx, n, a, ts) => Tag(n, a, ts)(idx)
+      case (idx, p, n, a, ts) => Tag(p, n, a, ts)(idx)
     }
-      | (Index ~ name ~ keyword("as") ~ name ~ ";").map {
-        case (idx, n, a) => Tag(n, a, Nil)(idx)
+      | (Index ~ keyword("private").!.?.map(_.isEmpty) ~ name ~ keyword("as") ~ name ~ ";").map {
+        case (idx, p, n, a) => Tag(p, n, a, Nil)(idx)
       })
 
 }

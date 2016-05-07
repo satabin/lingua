@@ -24,7 +24,7 @@ class Typer(reporter: Reporter, diko: Diko) {
 
   private val categories = Map.empty[String, String]
 
-  private val tags = Map.empty[String, (String, Boolean, Option[String])]
+  private val tags = Map.empty[String, (String, Boolean, Option[String], Boolean)]
 
   private val charSet = diko.alphabet.toSet.union(diko.separators.toSet)
 
@@ -33,8 +33,11 @@ class Typer(reporter: Reporter, diko: Diko) {
     present && (tag == name || tags.get(tag).flatMap(_._3.map(_ == name)).getOrElse(false))
   }
 
-  private def isAbstract(tag: String): Boolean =
+  def isAbstract(tag: String): Boolean =
     tags.get(tag).map(_._2).getOrElse(false)
+
+  def isPublic(tag: String): Boolean =
+    tags.get(tag).map(_._4).getOrElse(false)
 
   private def addCategory(cat: Category): Unit = categories.get(cat.alias) match {
     case Some(c) =>
@@ -47,7 +50,8 @@ class Typer(reporter: Reporter, diko: Diko) {
     case Some(t) =>
       reporter.error(tag.offset, f"Tag ${tag.alias} is already defined")
     case None =>
-      tags(tag.alias) = (tag.fullname, tag.children.size > 0, parent)
+      val public = parent.fold(tag.public)(p => tag.public && tags(p)._4)
+      tags(tag.alias) = (tag.fullname, tag.children.size > 0, parent, public)
       for (t <- tag.children)
         addTag(t, Some(tag.alias))
   }

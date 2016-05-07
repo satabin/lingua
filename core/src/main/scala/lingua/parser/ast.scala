@@ -15,6 +15,6 @@
 package lingua
 package parser
 
-case class Tag(fullname: String, alias: String, children: Seq[Tag])(val offset: Int)
+case class Tag(public: Boolean, fullname: String, alias: String, children: Seq[Tag])(val offset: Int)
 
 case class Category(fullname: String, alias: String)(val offset: Int)
