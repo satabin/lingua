@@ -37,6 +37,11 @@ final case class TagOut(present: Boolean, t: String) extends Out {
   override def toString = f"${if (present) "+" else "-"}$t"
 }
 
+/** The transformer is the core class of the lexicon generator. It takes a well-typed lexicon
+ *  description and produces a non-deterministic Fst with epsilon transitions.
+ *
+ *  @author Lucas Satabin
+ */
 class Transformer(typer: Typer, reporter: Reporter, diko: Diko) {
 
   private val lcs = new Patience[Char]

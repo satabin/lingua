@@ -20,6 +20,11 @@ import lingua.parser._
 
 import scala.collection.mutable.Map
 
+/** The typer builds a typing environment for an input lexicon description.
+ *  This environment can then be used to retrieve various information.
+ *
+ *  @author Lucas Satabin
+ */
 class Typer(reporter: Reporter, diko: Diko) {
 
   private val categories = Map.empty[String, String]
@@ -28,25 +33,28 @@ class Typer(reporter: Reporter, diko: Diko) {
 
   private val charSet = diko.alphabet.toSet.union(diko.separators.toSet)
 
+  /** Indicates whether the tag emission emits a tag of the given type. */
   def isA(tagEmission: (Boolean, String), name: String): Boolean = {
     val (present, tag) = tagEmission
     present && (tag == name || tags.get(tag).flatMap(_._3.map(_ == name)).getOrElse(false))
   }
 
+  /** Indicates whether the tag is abstract. */
   def isAbstract(tag: String): Boolean =
     tags.get(tag).map(_._2).getOrElse(false)
 
+  /** Indicates whether the tag is public. */
   def isPublic(tag: String): Boolean =
     tags.get(tag).map(_._4).getOrElse(false)
 
-  private def addCategory(cat: Category): Unit = categories.get(cat.alias) match {
+  def addCategory(cat: Category): Unit = categories.get(cat.alias) match {
     case Some(c) =>
       reporter.error(cat.offset, f"Category ${cat.alias} is already defined")
     case None =>
       categories(cat.alias) = cat.fullname
   }
 
-  private def addTag(tag: Tag, parent: Option[String]): Unit = tags.get(tag.alias) match {
+  def addTag(tag: Tag, parent: Option[String]): Unit = tags.get(tag.alias) match {
     case Some(t) =>
       reporter.error(tag.offset, f"Tag ${tag.alias} is already defined")
     case None =>
@@ -82,6 +90,7 @@ class Typer(reporter: Reporter, diko: Diko) {
       reporter.error(offset, f"Unknown tag $t")
     }
 
+  /** Type checks the entire lexicon description file. */
   def typeCheck(): Unit = {
     val Diko(_, _, _, _, lexika) = diko
     for (l <- lexika)
