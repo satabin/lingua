@@ -26,17 +26,6 @@ import scala.util.matching.Regex.Match
 
 import gnieh.diff._
 
-sealed trait Out
-final case class CharOut(c: Char) extends Out {
-  override def toString = c.toString
-}
-final case class CatOut(c: String) extends Out {
-  override def toString = f"@$c"
-}
-final case class TagOut(present: Boolean, t: String) extends Out {
-  override def toString = f"${if (present) "+" else "-"}$t"
-}
-
 /** The transformer is the core class of the lexicon generator. It takes a well-typed lexicon
  *  description and produces a non-deterministic Fst with epsilon transitions.
  *
