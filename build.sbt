@@ -21,7 +21,6 @@ lazy val fst = project.in(file("fst"))
   .settings(globalSettings: _*)
   .settings(
     version := "0.1.0-SNAPSHOT",
-    libraryDependencies += "org.scodec" %% "scodec-core" % "1.7.1",
     name := "lingua-fst")
 
 lazy val core = project.in(file("core"))
@@ -34,6 +33,7 @@ lazy val core = project.in(file("core"))
 lazy val lexikonDependencies = Seq(
   "com.github.scopt" %% "scopt" % "3.4.0",
   "com.github.pathikrit" %% "better-files" % "2.15.0",
+  "org.scodec" %% "scodec-core" % "1.9.0",
   "org.gnieh" %% "tekstlib" % "0.1.0-SNAPSHOT")
 
 lazy val lexikon = project.in(file("lexikon"))
