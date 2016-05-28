@@ -20,9 +20,6 @@ package object compiled {
 
   implicit class TransitionIndexOps(val ti: TransitionIndex) extends AnyVal {
 
-    def isFinal: Boolean =
-      (ti >>> 48) == 1
-
     def char: Char =
       ((ti >>> 32) & 0x000f).toChar
 

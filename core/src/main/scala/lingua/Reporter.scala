@@ -38,13 +38,13 @@ abstract class Reporter(input: String) {
     doReport(offset, level, msg, exn)
   }
 
-  def error(offset: Int, msg: String, exn: Option[Exception] = None): Unit =
+  def error(msg: String, offset: Int = -1, exn: Option[Exception] = None): Unit =
     report(offset, Level.ERROR, msg, exn)
 
-  def warning(offset: Int, msg: String, exn: Option[Exception] = None): Unit =
+  def warning(msg: String, offset: Int = -1, exn: Option[Exception] = None): Unit =
     report(offset, Level.ERROR, msg, exn)
 
-  def info(offset: Int, msg: String, exn: Option[Exception] = None): Unit =
+  def info(msg: String, offset: Int = -1, exn: Option[Exception] = None): Unit =
     report(offset, Level.ERROR, msg, exn)
 
   private var errors = 0

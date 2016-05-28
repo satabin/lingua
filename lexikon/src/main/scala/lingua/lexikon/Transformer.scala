@@ -52,10 +52,10 @@ class Transformer(typer: Typer, reporter: Reporter, diko: Diko) {
         val (words, rewrites) =
           entries.foldLeft(List.empty[Word], List.empty[Rewrite]) {
             case (acc, w @ Word(_, Some(_), _)) if gCat.isDefined =>
-              reporter.error(w.offset, f"A global category is already defined on the lexikon")
+              reporter.error(f"A global category is already defined on the lexikon", w.offset)
               acc
             case (acc, w @ Word(_, None, _)) if !gCat.isDefined =>
-              reporter.error(w.offset, f"A category must be defined for the word")
+              reporter.error(f"A category must be defined for the word", w.offset)
               acc
             case ((ws, rs), w @ Word(str, eCat, eTags)) =>
               (Word(str, gCat.orElse(eCat), gTags ++ eTags)(w.offset) :: ws, rs)

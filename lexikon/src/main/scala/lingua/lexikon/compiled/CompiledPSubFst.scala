@@ -15,6 +15,8 @@
 package lingua.lexikon
 package compiled
 
+import scodec.bits._
+
 import scala.annotation.tailrec
 
 /** A compiled and compacted representation of a p-subsequential Fst in a format inspired by the HFST
@@ -25,46 +27,48 @@ import scala.annotation.tailrec
  *  Each transition may output several values, so the table of transitions looks a bit different than
  *  the one in HFST runtime format.
  *
- *  States with a single outgoing transition are not present in the transition index array.
  *  Initial state is always at index 0 in the transition index array.
  *
  *
  *  @author Lucas Satabin
  */
-case class CompiledPSubFst(alphabet: Vector[Char], outputs: Vector[Out], tia: Vector[TransitionIndex], ta: Vector[Transition]) {
+case class CompiledPSubFst(alphabet: Vector[Char], outputs: Vector[Out], tia: ByteVector, ta: Vector[Transition]) {
 
   private val alphabetMap =
     alphabet.zipWithIndex.toMap
+
+  /** Size of a state in bytes */
+  private val stateSize =
+    1 + 6 * alphabet.size
 
   /** Lookup for the word in this Fst and returns the ordered sequence of outputs if it is found. */
   def lookup(word: String): Option[Seq[Out]] = {
 
     @tailrec
     def step(idx: Int, state: Int, acc: List[Int]): Option[Seq[Out]] =
-      if (idx >= word.size) {
-        if ((state >= 0 && tia(state).isFinal) || (state < 0 && ta(state).isFinal))
-          Some(acc.foldLeft(List.empty[Out]) { (acc, i) => outputs(i) :: acc })
-        else
-          None
-      } else if (state >= 0) {
-        val c = word(idx)
-        val cidx = alphabetMap(c)
-        tia(cidx) match {
-          case TransitionIndex(`c`, trans) =>
-            // there exists a transition for the read symbol, collect the output and goto target
-            val Transition(_, out, target, _) = ta(trans)
-            step(idx + 1, target, out.reverse_:::(acc))
-          case _ =>
+      if (state >= 0) {
+        val isFinal = tia(state) == 1
+        if (idx >= word.size) {
+          if (isFinal)
+            Some(acc.foldLeft(List.empty[Out]) { (acc, i) => outputs(i) :: acc })
+          else
             None
+        } else {
+          val stateVector = tia.slice(state + 1, state + stateSize)
+          val c = word(idx)
+          val cidx = alphabetMap(c) * 6
+          val ti = stateVector.slice(cidx, cidx + 6).toLong()
+          ti match {
+            case TransitionIndex(`c`, trans) =>
+              // there exists a transition for the read symbol, collect the output and goto target
+              val Transition(_, out, target) = ta(trans)
+              step(idx + 1, target, out.reverse_:::(acc))
+            case _ =>
+              None
+          }
         }
       } else {
-        val c = word(idx)
-        ta(-state) match {
-          case Transition(`c`, out, target, _) =>
-            step(idx + 1, target, out.reverse_:::(acc))
-          case _ =>
-            None
-        }
+        None
       }
 
     step(0, 0, Nil)

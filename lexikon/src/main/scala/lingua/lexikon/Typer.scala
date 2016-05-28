@@ -49,14 +49,14 @@ class Typer(reporter: Reporter, diko: Diko) {
 
   def addCategory(cat: Category): Unit = categories.get(cat.alias) match {
     case Some(c) =>
-      reporter.error(cat.offset, f"Category ${cat.alias} is already defined")
+      reporter.error(f"Category ${cat.alias} is already defined", cat.offset)
     case None =>
       categories(cat.alias) = cat.fullname
   }
 
   def addTag(tag: Tag, parent: Option[String]): Unit = tags.get(tag.alias) match {
     case Some(t) =>
-      reporter.error(tag.offset, f"Tag ${tag.alias} is already defined")
+      reporter.error(f"Tag ${tag.alias} is already defined", tag.offset)
     case None =>
       val public = parent.fold(tag.public)(p => tag.public && tags(p)._4)
       tags(tag.alias) = (tag.fullname, tag.children.size > 0, parent, public)
@@ -79,7 +79,7 @@ class Typer(reporter: Reporter, diko: Diko) {
       c <- category
       if !categories.contains(c)
     } {
-      reporter.error(offset, f"Unknown category $c")
+      reporter.error(f"Unknown category $c", offset)
     }
 
   def typeEmissions(emissions: Seq[TagEmission], offset: Int): Unit =
@@ -87,7 +87,7 @@ class Typer(reporter: Reporter, diko: Diko) {
       (_, t) <- emissions
       if !tags.contains(t)
     } {
-      reporter.error(offset, f"Unknown tag $t")
+      reporter.error(f"Unknown tag $t", offset)
     }
 
   /** Type checks the entire lexicon description file. */
@@ -117,11 +117,11 @@ class Typer(reporter: Reporter, diko: Diko) {
         for {
           c <- c1
           if !charSet.contains(c)
-        } reporter.error(w.offset, f"Unknown letter $c")
+        } reporter.error(f"Unknown letter $c", w.offset)
         for {
           c <- c2
           if !charSet.contains(c)
-        } reporter.error(w.offset, f"Unknown letter $c")
+        } reporter.error(f"Unknown letter $c", w.offset)
       }
       typeCategory(cat, w.offset)
       typeEmissions(emissions, w.offset)
@@ -149,7 +149,7 @@ class Typer(reporter: Reporter, diko: Diko) {
       for {
         c <- s
         if !charSet.contains(c)
-      } reporter.error(offset, f"Unknown letter $c")
+      } reporter.error(f"Unknown letter $c", offset)
     case _ =>
     // ok
   }
@@ -159,7 +159,7 @@ class Typer(reporter: Reporter, diko: Diko) {
       for {
         c <- s
         if !charSet.contains(c)
-      } reporter.error(offset, f"Unknown letter $c")
+      } reporter.error(f"Unknown letter $c", offset)
     case RecursiveReplacement(rs) =>
       for (r <- rs)
         typeReplacement(rewriteName, r, offset)

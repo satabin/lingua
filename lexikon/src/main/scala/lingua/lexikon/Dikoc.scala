@@ -20,10 +20,13 @@ import scopt._
 import fastparse.core.Parsed
 
 import parser._
+import compiled._
 
 import scala.io.Codec
 
 import better.files._
+
+import scodec.Attempt
 
 object Dikoc extends App {
 
@@ -31,6 +34,9 @@ object Dikoc extends App {
 
   val optParser = new OptionParser[Options]("dikoc") {
     head("dikoc", BuildInfo.version)
+    opt[File]('o', "output").action { (f, c) =>
+      c.copy(output = f)
+    }
     opt[Unit]('V', "verbose").action { (_, c) =>
       c.copy(verbose = true)
     }.text("Turn on verbose mode")
@@ -78,8 +84,23 @@ object Dikoc extends App {
         for (f <- options.saveFst)
           f.overwrite(fst.toDot)(codec = Codec.UTF8)
 
+        val compiler = new Compiler(reporter, fst, diko)
+
+        val compiled = compiler.compile()
+
+        FstProtocol.fst.encode(compiled) match {
+          case Attempt.Successful(bytes) =>
+            for (raf <- options.output.newRandomAccess(File.RandomAccessMode.readWrite).autoClosed)
+              raf.write(bytes.toByteArray)
+          case Attempt.Failure(err) =>
+            reporter.error(err.toString)
+        }
+
+        if (reporter.hasErrors)
+          sys.exit(1)
+
       case f @ Parsed.Failure(_, offset, _) =>
-        reporter.error(offset, f"Parse error")
+        reporter.error(f"Parse error", offset)
     }
 
   }

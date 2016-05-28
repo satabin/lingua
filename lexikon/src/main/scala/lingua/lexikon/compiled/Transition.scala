@@ -18,9 +18,6 @@ package compiled
 /** A compiled transition.
  *  The `out` sequence contains the indices of outputs in the outputs array of the compiled Fst.
  *
- *  Positive `target` points to the index in the transition index array. Negative target, in the
- *  transition array directly.
- *
  *  @author Lucas Satabin
  */
-final case class Transition(in: Char, out: List[Int], target: Int, isFinal: Boolean)
+final case class Transition(in: Char, out: List[Int], target: Int)
