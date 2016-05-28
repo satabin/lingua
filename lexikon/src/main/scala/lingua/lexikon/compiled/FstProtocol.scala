@@ -32,7 +32,7 @@ object FstProtocol {
     "output" | discriminated[Out].by(byte)
       .|(0) { case CharOut(c) => c }(CharOut)(char)
       .|(1) { case CatOut(s) => s }(CatOut)(utf8_32)
-      .|(2) { case TagOut(p, t) => (p, t) }(TagOut)(bool ~ utf8_32)
+      .|(2) { case TagOut(t) => t }(TagOut)(utf8_32)
 
   val transition: Codec[Transition] =
     ("transition" |

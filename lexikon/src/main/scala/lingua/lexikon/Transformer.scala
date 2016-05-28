@@ -92,9 +92,9 @@ class Transformer(typer: Typer, reporter: Reporter, diko: Diko) {
     if (idx == inChars.size) {
       // final state
       val tags1 =
-        tags.foldLeft(Seq.empty[TagOut]) {
-          case (acc, (pres, t)) if typer.isPublic(t) =>
-            acc :+ TagOut(pres, t)
+        normalizedTags(Seq.empty, tags).foldLeft(Seq.empty[TagOut]) {
+          case (acc, (true, t)) if typer.isPublic(t) =>
+            acc :+ TagOut(t)
           case (acc, _) =>
             acc
         }

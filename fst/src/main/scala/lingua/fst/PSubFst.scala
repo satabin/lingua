@@ -17,7 +17,7 @@ package fst
 
 /** A p-subsequential finite-state transducer. */
 class PSubFst[In, Out] private (states: Set[State],
-    initial: State,
+    val initial: State,
     finals: Map[State, Set[Seq[Out]]],
     maps: (Map[(State, In), State], Map[(State, In), Seq[Out]])) extends Fst(states, Set(initial), finals) {
 
@@ -43,7 +43,7 @@ class PSubFst[In, Out] private (states: Set[State],
           (transAcc1, outAcc1)
       })
 
-  private val (transitionMap, outputMap) = maps
+  val (transitionMap, outputMap) = maps
 
   /** Returns the next state when reading `in` in state `state`.
    *  If no transition exists, returns `None`.

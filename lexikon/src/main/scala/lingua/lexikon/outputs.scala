@@ -23,6 +23,6 @@ final case class CharOut(c: Char) extends Out {
 final case class CatOut(c: String) extends Out {
   override def toString = f"@$c"
 }
-final case class TagOut(present: Boolean, t: String) extends Out {
-  override def toString = f"${if (present) "+" else "-"}$t"
+final case class TagOut(t: String) extends Out {
+  override def toString = f"+$t"
 }
