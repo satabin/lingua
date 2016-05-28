@@ -36,7 +36,7 @@ object Dikoc extends App {
     head("dikoc", BuildInfo.version)
     opt[File]('o', "output").action { (f, c) =>
       c.copy(output = f)
-    }
+    }.text("The output .diko file (by default 'dikoput.diko'")
     opt[Unit]('V', "verbose").action { (_, c) =>
       c.copy(verbose = true)
     }.text("Turn on verbose mode")
