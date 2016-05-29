@@ -14,6 +14,7 @@
  */
 package lingua
 package lexikon
+package phases
 
 import parser._
 
@@ -37,7 +38,7 @@ import scala.collection.mutable.{
 
 import scodec.bits._
 
-class Compiler(fst: PSubFst[Char, Out], diko: Diko) extends Phase[CompiledPSubFst] {
+class Compiler(fst: PSubFst[Char, Out], diko: Diko) extends Phase[CompiledPSubFst](Some("compiler")) {
 
   def process(options: Options, reporter: Reporter): CompiledPSubFst = {
 

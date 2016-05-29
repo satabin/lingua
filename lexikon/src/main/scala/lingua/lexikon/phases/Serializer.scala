@@ -14,25 +14,24 @@
  */
 package lingua
 package lexikon
+package phases
 
-import fst._
+import compiled._
 
-import scala.io.Codec
+import scodec.Attempt
 
-class Determinize(nfst: NFst[Char, Out]) extends Phase[PSubFst[Char, Out]] {
+import better.files._
 
-  def process(options: Options, reporter: Reporter): PSubFst[Char, Out] = {
+class Serializer(compiled: CompiledPSubFst) extends Phase[Unit](Some("serializer")) {
 
-    for (f <- options.saveNFst)
-      f.overwrite(nfst.toDot)(codec = Codec.UTF8)
-
-    val fst = nfst.determinize
-
-    for (f <- options.saveFst)
-      f.overwrite(fst.toDot)(codec = Codec.UTF8)
-
-    fst
-
+  def process(options: Options, reporter: Reporter): Unit = {
+    FstProtocol.fst.encode(compiled) match {
+      case Attempt.Successful(bytes) =>
+        for (raf <- options.output.newRandomAccess(File.RandomAccessMode.readWrite).autoClosed)
+          raf.write(bytes.toByteArray)
+      case Attempt.Failure(err) =>
+        reporter.error(err.toString)
+    }
   }
 
 }

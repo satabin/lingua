@@ -14,12 +14,26 @@
  */
 package lingua
 package lexikon
+package phases
 
-import better.files.File
+import fst._
 
-final case class Options(verbose: Boolean = false,
-  input: File = null,
-  output: File = File("dikoput.diko"),
-  timing: Boolean = false,
-  saveNFst: Option[File] = None,
-  saveFst: Option[File] = None)
+import scala.io.Codec
+
+class Determinize(nfst: NFst[Char, Out]) extends Phase[PSubFst[Char, Out]](Some("determinizer")) {
+
+  def process(options: Options, reporter: Reporter): PSubFst[Char, Out] = {
+
+    for (f <- options.saveNFst)
+      f.overwrite(nfst.toDot)(codec = Codec.UTF8)
+
+    val fst = nfst.determinize
+
+    for (f <- options.saveFst)
+      f.overwrite(fst.toDot)(codec = Codec.UTF8)
+
+    fst
+
+  }
+
+}

@@ -14,22 +14,21 @@
  */
 package lingua
 package lexikon
+package phases
 
-import compiled._
+import parser._
 
-import scodec.Attempt
+import fastparse.core.Parsed
 
-import better.files._
+class Parser(input: String) extends Phase[Diko](Some("parser")) {
 
-class Serializer(compiled: CompiledPSubFst) extends Phase[Unit] {
-
-  def process(options: Options, reporter: Reporter): Unit = {
-    FstProtocol.fst.encode(compiled) match {
-      case Attempt.Successful(bytes) =>
-        for (raf <- options.output.newRandomAccess(File.RandomAccessMode.readWrite).autoClosed)
-          raf.write(bytes.toByteArray)
-      case Attempt.Failure(err) =>
-        reporter.error(err.toString)
+  def process(options: Options, reporter: Reporter): Diko = {
+    DikoParser.diko.parse(input) match {
+      case Parsed.Success(diko, _) =>
+        diko
+      case Parsed.Failure(_, offset, _) =>
+        reporter.error(f"Parse error", offset)
+        Diko(Seq.empty, Seq.empty, Seq.empty, Seq.empty, Seq.empty)
     }
   }
 

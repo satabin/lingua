@@ -14,6 +14,7 @@
  */
 package lingua
 package lexikon
+package phases
 
 import parser._
 import lingua.parser._
@@ -25,7 +26,7 @@ import scala.collection.mutable.Map
  *
  *  @author Lucas Satabin
  */
-class Typer(diko: Diko) extends Phase[Typer] {
+class Typer(diko: Diko) extends Phase[Typer](Some("typer")) {
 
   private val categories = Map.empty[String, String]
 

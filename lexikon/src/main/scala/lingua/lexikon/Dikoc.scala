@@ -15,18 +15,15 @@
 package lingua
 package lexikon
 
-import scala.io.Codec
-
 import scopt._
-
-import fastparse.core.Parsed
 
 import parser._
 import compiled._
+import phases._
 
 import better.files._
 
-import scodec.Attempt
+import scala.io.Codec
 
 object Dikoc extends App {
 
@@ -37,6 +34,9 @@ object Dikoc extends App {
     opt[File]('o', "output").action { (f, c) =>
       c.copy(output = f)
     }.text("The output .diko file (by default 'dikoput.diko'")
+    opt[Unit]('t', "timing").action { (_, c) =>
+      c.copy(timing = true)
+    }.text("Turn on phase timing")
     opt[Unit]('V', "verbose").action { (_, c) =>
       c.copy(verbose = true)
     }.text("Turn on verbose mode")
@@ -56,30 +56,22 @@ object Dikoc extends App {
   for (options <- optParser.parse(args, Options())) {
 
     val input = options.input.contentAsString(codec = Codec.UTF8)
-
     val reporter = new ConsoleReporter(input)
 
     // do stuff
-    DikoParser.diko.parse(input) match {
-      case Parsed.Success(diko, _) =>
+    val sequence =
+      for {
+        diko <- new Parser(input)
+        typer <- new Typer(diko)
+        nfst <- new Transformer(typer, diko)
+        fst <- new Determinize(nfst)
+        compiled <- new Compiler(fst, diko)
+        () <- new Serializer(compiled)
+      } yield ()
 
-        val sequence =
-          for {
-            typer <- new Typer(diko)
-            nfst <- new Transformer(typer, diko)
-            fst <- new Determinize(nfst.removeEpsilonTransitions)
-            compiled <- new Compiler(fst, diko)
-            () <- new Serializer(compiled)
-          } yield ()
-
-        sequence.run(options, reporter)
-        reporter.summary()
-        reporter.info(f"output wirtten in ${options.output}")
-
-      case f @ Parsed.Failure(_, offset, _) =>
-        reporter.error(f"Parse error", offset)
-        reporter.summary()
-    }
+    sequence.run(options, reporter)
+    reporter.summary()
+    reporter.info(f"output wirtten in ${options.output}")
 
   }
 

@@ -15,12 +15,33 @@
 package lingua
 package lexikon
 
-abstract class Phase[T] {
+abstract class Phase[T](val name: Option[String]) {
 
-  def process(options: Options, reporter: Reporter): T
+  protected[lexikon] def process(options: Options, reporter: Reporter): T
 
   def run(options: Options, reporter: Reporter): T = {
+
+    for (name <- name) {
+      if (options.verbose) {
+        reporter.info(f"beginning of phase $name")
+      }
+    }
+
+    val start = System.currentTimeMillis
+
     val t = process(options, reporter)
+
+    val end = System.currentTimeMillis
+
+    for (name <- name) {
+      if (options.verbose) {
+        reporter.info(f"end of phase $name")
+      }
+      if (options.timing) {
+        val time = end - start
+        reporter.info(f"phase $name ran in $time ms")
+      }
+    }
 
     if (reporter.hasErrors) {
       reporter.summary()
@@ -45,7 +66,7 @@ abstract class Phase[T] {
 
 }
 
-private class FilteredPhase[T](phase: Phase[T], p: T => Boolean) extends Phase[T] {
+private class FilteredPhase[T](phase: Phase[T], p: T => Boolean) extends Phase[T](None) {
 
   def process(options: Options, reporter: Reporter): T = {
     val t = phase.process(options, reporter)
@@ -59,7 +80,7 @@ private class FilteredPhase[T](phase: Phase[T], p: T => Boolean) extends Phase[T
 
 }
 
-private class FlatMappedPhase[T, U](p1: Phase[T], f: T => Phase[U]) extends Phase[U] {
+private class FlatMappedPhase[T, U](p1: Phase[T], f: T => Phase[U]) extends Phase[U](None) {
 
   def process(options: Options, reporter: Reporter): U = {
     val t = p1.run(options, reporter)
@@ -68,7 +89,7 @@ private class FlatMappedPhase[T, U](p1: Phase[T], f: T => Phase[U]) extends Phas
 
 }
 
-private class MappedPhase[T, U](p: Phase[T], f: T => U) extends Phase[U] {
+private class MappedPhase[T, U](p: Phase[T], f: T => U) extends Phase[U](None) {
 
   def process(options: Options, reporter: Reporter): U =
     f(p.run(options, reporter))

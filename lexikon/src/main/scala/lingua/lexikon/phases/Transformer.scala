@@ -14,6 +14,7 @@
  */
 package lingua
 package lexikon
+package phases
 
 import lingua.parser.TagEmission
 import parser._
@@ -31,13 +32,13 @@ import gnieh.diff._
  *
  *  @author Lucas Satabin
  */
-class Transformer(typer: Typer, diko: Diko) extends Phase[NFst[Option[Char], Out]] {
+class Transformer(typer: Typer, diko: Diko) extends Phase[NFst[Char, Out]](Some("transformer")) {
 
   private val lcs = new Patience[Char]
 
   private val fstBuilder = Builder.create[Char, Out]
 
-  private var fst: NFst[Option[Char], Out] = null
+  private var fst: NFst[Char, Out] = null
 
   // a regular expression that matches a non empty sequence of letters from the alphabet
   private val lettersRe =
@@ -45,7 +46,7 @@ class Transformer(typer: Typer, diko: Diko) extends Phase[NFst[Option[Char], Out
 
   import Builder._
 
-  def process(options: Options, reporter: Reporter): NFst[Option[Char], Out] = {
+  def process(options: Options, reporter: Reporter): NFst[Char, Out] = {
     // assume everything type-checks
     if (fst == null) {
       for (l @ Lexikon(name, gCat, gTags, entries) <- diko.lexika) {
@@ -81,7 +82,7 @@ class Transformer(typer: Typer, diko: Diko) extends Phase[NFst[Option[Char], Out
           }
         }
       }
-      fst = fstBuilder.build()
+      fst = fstBuilder.build().removeEpsilonTransitions
     }
     fst
   }
