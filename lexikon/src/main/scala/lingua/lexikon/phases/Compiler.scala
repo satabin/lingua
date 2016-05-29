@@ -27,7 +27,8 @@ import fst.{
 
 import scala.collection.immutable.{
   VectorBuilder,
-  TreeSet
+  TreeSet,
+  Set => IMSet
 }
 import scala.collection.mutable.{
   ListBuffer,
@@ -48,17 +49,25 @@ class Compiler(fst: PSubFst[Char, Out], diko: Diko) extends Phase[CompiledPSubFs
     val alphabet = alphabetB.result
 
     val stateSize =
-      1 + 6 * alphabet.size
+      5 + 6 * alphabet.size
 
     val outputsB = new VectorBuilder[Out]
     outputsB ++= diko.alphabet.map(CharOut(_))
     outputsB ++= diko.separators.map(CharOut(_))
     outputsB ++= diko.categories.map(c => CatOut(c.alias))
-    outputsB ++= diko.tags.map(t => TagOut(t.alias))
+    outputsB ++= diko.tags.flatMap { t =>
+      if (t.children.isEmpty)
+        Some(TagOut(t.alias))
+      else
+        t.children.map(t => TagOut(t.alias))
+    }
     val outputs = outputsB.result
 
     val ta = new VectorBuilder[Transition]
     var taSize = 0
+
+    val oa = new VectorBuilder[IMSet[Seq[Int]]]
+    var oaSize = 0
 
     val state2idx = Map.empty[State, Int]
 
@@ -81,16 +90,19 @@ class Compiler(fst: PSubFst[Char, Out], diko: Diko) extends Phase[CompiledPSubFs
       // compute the transition indices for the state
       var ti = ByteVector.low(stateSize)
 
-      if (fst.finals.contains(state)) {
+      for (outs <- fst.finals.get(state)) {
         ti = ti.update(0, 1)
+        ti = ti.patch(1, ByteVector.fromInt(oaSize))
+        oa += outs.map(_.map(outputs.indexOf(_)))
+        oaSize += 1
       }
 
-      var profile = BitVector.low(stateSize).update(0, true)
+      var profile = BitVector.low(stateSize).patch(0, BitVector.high(5))
 
       for (((`state`, c), target) <- fst.transitionMap) {
         val cidx = alphabet.indexOf(c)
-        ti = ti.patch(1 + cidx * 6, ByteVector.fromShort(c.toShort) ++ ByteVector.fromInt(taSize))
-        profile = profile.patch(1 + cidx * 6, BitVector.high(6))
+        ti = ti.patch(5 + cidx * 6, ByteVector.fromShort(c.toShort) ++ ByteVector.fromInt(taSize))
+        profile = profile.patch(5 + cidx * 6, BitVector.high(6))
         ta += Transition(c, fst.outputMap(state -> c).map(outputs.indexOf(_)).toList, target)
         taSize += 1
         if (!processed.contains(target)) {
@@ -118,7 +130,7 @@ class Compiler(fst: PSubFst[Char, Out], diko: Diko) extends Phase[CompiledPSubFs
 
     }
 
-    CompiledPSubFst(alphabet, outputs, tia, ta.result.map(t => t.copy(target = state2idx(t.target))))
+    CompiledPSubFst(alphabet, outputs, tia, ta.result.map(t => t.copy(target = state2idx(t.target))), oa.result)
   }
 
 }

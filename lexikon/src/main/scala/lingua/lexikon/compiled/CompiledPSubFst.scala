@@ -32,29 +32,38 @@ import scala.annotation.tailrec
  *
  *  @author Lucas Satabin
  */
-case class CompiledPSubFst(alphabet: Vector[Char], outputs: Vector[Out], tia: ByteVector, ta: Vector[Transition]) {
+case class CompiledPSubFst(alphabet: Vector[Char], outputs: Vector[Out], tia: ByteVector, ta: Vector[Transition], oa: Vector[Set[Seq[Int]]]) {
 
   private val alphabetMap =
     alphabet.zipWithIndex.toMap
 
   /** Size of a state in bytes */
   private val stateSize =
-    1 + 6 * alphabet.size
+    5 + 6 * alphabet.size
 
   /** Lookup for the word in this Fst and returns the ordered sequence of outputs if it is found. */
-  def lookup(word: String): Option[Seq[Out]] = {
+  def lookup(word: String): Option[Set[Seq[Out]]] = {
 
     @tailrec
-    def step(idx: Int, state: Int, acc: List[Int]): Option[Seq[Out]] =
+    def step(idx: Int, state: Int, acc: List[Int]): Option[Set[Seq[Out]]] =
       if (state >= 0) {
         val isFinal = tia(state) == 1
         if (idx >= word.size) {
-          if (isFinal)
-            Some(acc.foldLeft(List.empty[Out]) { (acc, i) => outputs(i) :: acc })
-          else
+          if (isFinal) {
+            val outs = oa(tia.slice(state + 1, state + 5).toInt())
+            if (outs.isEmpty) {
+              Some(Set(acc.foldLeft(Seq.empty[Out]) { (acc, i) => outputs(i) +: acc }))
+            } else {
+              val res =
+                for (out <- outs)
+                  yield acc.foldLeft(out.map(outputs(_))) { (acc, i) => outputs(i) +: acc }
+              Some(res)
+            }
+          } else {
             None
+          }
         } else {
-          val stateVector = tia.slice(state + 1, state + stateSize)
+          val stateVector = tia.slice(state + 5, state + stateSize)
           val c = word(idx)
           val cidx = alphabetMap(c) * 6
           val ti = stateVector.slice(cidx, cidx + 6).toLong()

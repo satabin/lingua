@@ -34,6 +34,9 @@ object FstProtocol {
       .|(1) { case CatOut(s) => s }(CatOut)(utf8_32)
       .|(2) { case TagOut(t) => t }(TagOut)(utf8_32)
 
+  val outputs: Codec[Set[Seq[Int]]] =
+    "outputs" | vectorOfN(int32, listOfN(int32, int32).xmap[Seq[Int]](_.toSeq, _.toList)).xmap[Set[Seq[Int]]](_.toSet, _.toVector)
+
   private val sizeBytes: Codec[(Int, ByteVector)] = int32.flatZip(bytes(_))
 
   val transitionIndexArray: Codec[ByteVector] =
@@ -50,7 +53,8 @@ object FstProtocol {
       ("alphabet" | vectorOfN(int32, char)) ::
       ("outputs" | vectorOfN(int32, output)) ::
       ("transition_index_array" | transitionIndexArray) ::
-      ("transition_array" | vectorOfN(int32, transition))).as[CompiledPSubFst]
+      ("transition_array" | vectorOfN(int32, transition)) ::
+      ("outputs_array" | vectorOfN(int32, outputs))).as[CompiledPSubFst]
 
   val header: Codec[Unit] =
     "header" |

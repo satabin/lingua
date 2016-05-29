@@ -28,7 +28,7 @@ import scodec.Attempt
 
 class DikoLoader extends Phase[CompiledPSubFst](Some("diko-loader")) {
 
-  val empty = CompiledPSubFst(Vector.empty, Vector.empty, ByteVector.empty, Vector.empty)
+  val empty = CompiledPSubFst(Vector.empty, Vector.empty, ByteVector.empty, Vector.empty, Vector.empty)
 
   def process(options: Options, reporter: Reporter): CompiledPSubFst = {
     var channel: FileChannel = null

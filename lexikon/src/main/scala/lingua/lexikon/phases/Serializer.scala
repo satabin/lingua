@@ -29,7 +29,7 @@ class Serializer(compiled: CompiledPSubFst) extends Phase[Unit](Some("serializer
   def process(options: Options, reporter: Reporter): Unit = {
     FstProtocol.file.encode(compiled) match {
       case Attempt.Successful(bytes) =>
-        for (raf <- options.output.newFileChannel(Seq(StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)).autoClosed) {
+        for (raf <- options.output.newFileChannel(Seq(StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)).autoClosed) {
           raf.write(bytes.toByteBuffer)
         }
       case Attempt.Failure(err) =>
