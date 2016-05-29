@@ -13,25 +13,24 @@
  * limitations under the License.
  */
 package lingua
+package lexikon
 
-class ConsoleReporter(input: String) extends Reporter(input) {
+import compiled._
 
-  import Reporter._
+import scodec.Attempt
 
-  protected def doReport(offset: Int, level: Level.Value, msg: String, exn: Option[Exception]): Unit = {
-    val pos = if (offset >= 0) {
-      val (line, col) = lineColOf(offset)
-      f"[$line,$col] "
-    } else {
-      ""
+import better.files._
+
+class Serializer(compiled: CompiledPSubFst) extends Phase[Unit] {
+
+  def process(options: Options, reporter: Reporter): Unit = {
+    FstProtocol.fst.encode(compiled) match {
+      case Attempt.Successful(bytes) =>
+        for (raf <- options.output.newRandomAccess(File.RandomAccessMode.readWrite).autoClosed)
+          raf.write(bytes.toByteArray)
+      case Attempt.Failure(err) =>
+        reporter.error(err.toString)
     }
-    val severity =
-      level match {
-        case Level.INFO    => "[info]"
-        case Level.WARNING => f"[${Console.YELLOW}warning${Console.RESET}]"
-        case Level.ERROR   => f"[${Console.RED}error${Console.RESET}]"
-      }
-    println(f"$severity $pos$msg")
   }
 
 }

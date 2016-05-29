@@ -25,7 +25,7 @@ import scala.collection.mutable.Map
  *
  *  @author Lucas Satabin
  */
-class Typer(reporter: Reporter, diko: Diko) {
+class Typer(diko: Diko) extends Phase[Typer] {
 
   private val categories = Map.empty[String, String]
 
@@ -47,14 +47,14 @@ class Typer(reporter: Reporter, diko: Diko) {
   def isPublic(tag: String): Boolean =
     tags.get(tag).map(_._4).getOrElse(false)
 
-  def addCategory(cat: Category): Unit = categories.get(cat.alias) match {
+  def addCategory(cat: Category)(implicit reporter: Reporter): Unit = categories.get(cat.alias) match {
     case Some(c) =>
       reporter.error(f"Category ${cat.alias} is already defined", cat.offset)
     case None =>
       categories(cat.alias) = cat.fullname
   }
 
-  def addTag(tag: Tag, parent: Option[String]): Unit = tags.get(tag.alias) match {
+  def addTag(tag: Tag, parent: Option[String])(implicit reporter: Reporter): Unit = tags.get(tag.alias) match {
     case Some(t) =>
       reporter.error(f"Tag ${tag.alias} is already defined", tag.offset)
     case None =>
@@ -65,16 +65,14 @@ class Typer(reporter: Reporter, diko: Diko) {
   }
 
   /** Resets the typing environment to the initial `diko` file. */
-  def reset(): Unit = {
+  def reset(implicit reporter: Reporter): Unit = {
     for (cat <- diko.categories)
       addCategory(cat)
     for (tag <- diko.tags)
       addTag(tag, None)
   }
 
-  reset()
-
-  def typeCategory(category: Option[String], offset: Int): Unit =
+  def typeCategory(category: Option[String], offset: Int)(implicit reporter: Reporter): Unit =
     for {
       c <- category
       if !categories.contains(c)
@@ -82,7 +80,7 @@ class Typer(reporter: Reporter, diko: Diko) {
       reporter.error(f"Unknown category $c", offset)
     }
 
-  def typeEmissions(emissions: Seq[TagEmission], offset: Int): Unit =
+  def typeEmissions(emissions: Seq[TagEmission], offset: Int)(implicit reporter: Reporter): Unit =
     for {
       (_, t) <- emissions
       if !tags.contains(t)
@@ -91,13 +89,15 @@ class Typer(reporter: Reporter, diko: Diko) {
     }
 
   /** Type checks the entire lexicon description file. */
-  def typeCheck(): Unit = {
+  def process(options: Options, reporter: Reporter): Typer = {
+    reset(reporter)
     val Diko(_, _, _, _, lexika) = diko
     for (l <- lexika)
-      typeLexikon(l)
+      typeLexikon(l)(reporter)
+    this
   }
 
-  def typeLexikon(lex: Lexikon): Unit = {
+  def typeLexikon(lex: Lexikon)(implicit reporter: Reporter): Unit = {
     val Lexikon(name, category, emissions, entries) = lex
     val offset = lex.offset
 
@@ -110,7 +110,7 @@ class Typer(reporter: Reporter, diko: Diko) {
 
   }
 
-  def typeEntry(e: Entry): Unit = e match {
+  def typeEntry(e: Entry)(implicit reporter: Reporter): Unit = e match {
     case w @ Word(word, cat, emissions) =>
       // check that all characters in a word are either in the alphabet or a separator
       for (WordChar(c1, c2) <- word) {
@@ -131,7 +131,7 @@ class Typer(reporter: Reporter, diko: Diko) {
         typeRule(name, r)
   }
 
-  def typeRule(rewriteName: String, r: Rule): Unit =
+  def typeRule(rewriteName: String, r: Rule)(implicit reporter: Reporter): Unit =
     for ((p @ Pattern(_, pattern, cat, pemissions), r @ Replacement(replacement, remissions)) <- r) {
       val poffset = p.offset
       val roffset = r.offset
@@ -144,7 +144,7 @@ class Typer(reporter: Reporter, diko: Diko) {
         typeReplacement(rewriteName, r, roffset)
     }
 
-  def typePattern(p: CasePattern, offset: Int): Unit = p match {
+  def typePattern(p: CasePattern, offset: Int)(implicit reporter: Reporter): Unit = p match {
     case StringPattern(s) =>
       for {
         c <- s
@@ -154,7 +154,7 @@ class Typer(reporter: Reporter, diko: Diko) {
     // ok
   }
 
-  def typeReplacement(rewriteName: String, r: CaseReplacement, offset: Int): Unit = r match {
+  def typeReplacement(rewriteName: String, r: CaseReplacement, offset: Int)(implicit reporter: Reporter): Unit = r match {
     case StringReplacement(s) =>
       for {
         c <- s

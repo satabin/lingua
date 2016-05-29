@@ -13,25 +13,26 @@
  * limitations under the License.
  */
 package lingua
+package lexikon
 
-class ConsoleReporter(input: String) extends Reporter(input) {
+import fst._
 
-  import Reporter._
+import scala.io.Codec
 
-  protected def doReport(offset: Int, level: Level.Value, msg: String, exn: Option[Exception]): Unit = {
-    val pos = if (offset >= 0) {
-      val (line, col) = lineColOf(offset)
-      f"[$line,$col] "
-    } else {
-      ""
-    }
-    val severity =
-      level match {
-        case Level.INFO    => "[info]"
-        case Level.WARNING => f"[${Console.YELLOW}warning${Console.RESET}]"
-        case Level.ERROR   => f"[${Console.RED}error${Console.RESET}]"
-      }
-    println(f"$severity $pos$msg")
+class Determinize(nfst: NFst[Char, Out]) extends Phase[PSubFst[Char, Out]] {
+
+  def process(options: Options, reporter: Reporter): PSubFst[Char, Out] = {
+
+    for (f <- options.saveNFst)
+      f.overwrite(nfst.toDot)(codec = Codec.UTF8)
+
+    val fst = nfst.determinize
+
+    for (f <- options.saveFst)
+      f.overwrite(fst.toDot)(codec = Codec.UTF8)
+
+    fst
+
   }
 
 }

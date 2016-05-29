@@ -42,10 +42,15 @@ abstract class Reporter(input: String) {
     report(offset, Level.ERROR, msg, exn)
 
   def warning(msg: String, offset: Int = -1, exn: Option[Exception] = None): Unit =
-    report(offset, Level.ERROR, msg, exn)
+    report(offset, Level.WARNING, msg, exn)
 
   def info(msg: String, offset: Int = -1, exn: Option[Exception] = None): Unit =
-    report(offset, Level.ERROR, msg, exn)
+    report(offset, Level.INFO, msg, exn)
+
+  def summary(): Unit = {
+    doReport(-1, Level.INFO, f"number of warnings: $warnings", None)
+    doReport(-1, Level.INFO, f"number of errors: $errors", None)
+  }
 
   private var errors = 0
   private var warnings = 0

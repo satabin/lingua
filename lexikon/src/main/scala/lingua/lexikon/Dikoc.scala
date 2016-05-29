@@ -15,14 +15,14 @@
 package lingua
 package lexikon
 
+import scala.io.Codec
+
 import scopt._
 
 import fastparse.core.Parsed
 
 import parser._
 import compiled._
-
-import scala.io.Codec
 
 import better.files._
 
@@ -62,45 +62,23 @@ object Dikoc extends App {
     // do stuff
     DikoParser.diko.parse(input) match {
       case Parsed.Success(diko, _) =>
-        val typer = new Typer(reporter, diko)
 
-        typer.typeCheck()
+        val sequence =
+          for {
+            typer <- new Typer(diko)
+            nfst <- new Transformer(typer, diko)
+            fst <- new Determinize(nfst.removeEpsilonTransitions)
+            compiled <- new Compiler(fst, diko)
+            () <- new Serializer(compiled)
+          } yield ()
 
-        if (reporter.hasErrors)
-          sys.exit(1)
-
-        val transformer = new Transformer(typer, reporter, diko)
-
-        val nfst = transformer.transform().removeEpsilonTransitions
-
-        if (reporter.hasErrors)
-          sys.exit(1)
-
-        for (f <- options.saveNFst)
-          f.overwrite(nfst.toDot)(codec = Codec.UTF8)
-
-        val fst = nfst.determinize
-
-        for (f <- options.saveFst)
-          f.overwrite(fst.toDot)(codec = Codec.UTF8)
-
-        val compiler = new Compiler(reporter, fst, diko)
-
-        val compiled = compiler.compile()
-
-        FstProtocol.fst.encode(compiled) match {
-          case Attempt.Successful(bytes) =>
-            for (raf <- options.output.newRandomAccess(File.RandomAccessMode.readWrite).autoClosed)
-              raf.write(bytes.toByteArray)
-          case Attempt.Failure(err) =>
-            reporter.error(err.toString)
-        }
-
-        if (reporter.hasErrors)
-          sys.exit(1)
+        sequence.run(options, reporter)
+        reporter.summary()
+        reporter.info(f"output wirtten in ${options.output}")
 
       case f @ Parsed.Failure(_, offset, _) =>
         reporter.error(f"Parse error", offset)
+        reporter.summary()
     }
 
   }
