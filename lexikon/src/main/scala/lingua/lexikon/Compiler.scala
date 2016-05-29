@@ -61,7 +61,14 @@ class Compiler(reporter: Reporter, fst: PSubFst[Char, Out], diko: Diko) {
 
     val state2idx = Map.empty[State, Int]
 
+    // worst case : all states have transitions for all characters in the alphabet
+    // a 1 in the profile indicate that this byte is already used to encode some state,
+    // each transition takes 6 bytes, the first one indicates finality of the state.
+    var tiaProfile = BitVector.low(fst.states.size * stateSize)
     var tia = ByteVector.low(stateSize).buffer
+
+    // the first free byte in the profile
+    var firstFree = 0
 
     val queue = Queue.empty[State]
     queue.enqueue(fst.initial)
@@ -77,8 +84,12 @@ class Compiler(reporter: Reporter, fst: PSubFst[Char, Out], diko: Diko) {
         ti = ti.update(0, 1)
       }
 
+      var profile = BitVector.low(stateSize).update(0, true)
+
       for (((`state`, c), target) <- fst.transitionMap) {
-        ti = ti | ByteVector.low(stateSize).patch(6 + alphabet.indexOf(c) * 6, ByteVector.fromShort(c.toShort) ++ ByteVector.fromInt(taSize))
+        val cidx = alphabet.indexOf(c)
+        ti = ti.patch(1 + cidx * 6, ByteVector.fromShort(c.toShort) ++ ByteVector.fromInt(taSize))
+        profile = profile.patch(1 + cidx * 6, BitVector.high(6))
         ta += Transition(c, fst.outputMap(state -> c).map(outputs.indexOf(_)).toList, target)
         taSize += 1
         if (!processed.contains(target)) {
@@ -87,10 +98,11 @@ class Compiler(reporter: Reporter, fst: PSubFst[Char, Out], diko: Diko) {
       }
 
       // insert the transition indices into the tia at the first place that does not overlap anything
-      var idx = 0
+      var idx = firstFree
       var cont = true
-      while (cont && idx < tia.size) {
-        if ((tia.slice(idx, tia.size) & ti) === ByteVector.low(math.min(tia.size - idx, ti.size))) {
+      while (cont && idx < tiaProfile.size) {
+        val slice = tiaProfile.slice(idx, tiaProfile.size)
+        if ((slice & profile) === BitVector.low(profile.size)) {
           cont = false
         } else {
           idx += 1
@@ -99,6 +111,9 @@ class Compiler(reporter: Reporter, fst: PSubFst[Char, Out], diko: Diko) {
 
       state2idx(state) = idx
       tia = tia.padRight(math.max(tia.size, ti.size + idx)) | ti.padLeft(ti.size + idx).buffer
+      tiaProfile |= profile.padLeft(profile.size + idx).padRight(tiaProfile.size)
+
+      firstFree = tiaProfile.indexOfSlice(BitVector.low(1), firstFree).toInt
 
     }
 
