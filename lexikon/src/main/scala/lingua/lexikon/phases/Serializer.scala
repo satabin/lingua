@@ -22,13 +22,16 @@ import scodec.Attempt
 
 import better.files._
 
+import java.nio.file.StandardOpenOption
+
 class Serializer(compiled: CompiledPSubFst) extends Phase[Unit](Some("serializer")) {
 
   def process(options: Options, reporter: Reporter): Unit = {
-    FstProtocol.fst.encode(compiled) match {
+    FstProtocol.file.encode(compiled) match {
       case Attempt.Successful(bytes) =>
-        for (raf <- options.output.newRandomAccess(File.RandomAccessMode.readWrite).autoClosed)
-          raf.write(bytes.toByteArray)
+        for (raf <- options.output.newFileChannel(Seq(StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)).autoClosed) {
+          raf.write(bytes.toByteBuffer)
+        }
       case Attempt.Failure(err) =>
         reporter.error(err.toString)
     }

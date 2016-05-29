@@ -21,10 +21,10 @@ package object compiled {
   implicit class TransitionIndexOps(val ti: TransitionIndex) extends AnyVal {
 
     def char: Char =
-      ((ti >>> 32) & 0x000f).toChar
+      ((ti >>> 32) & 0xffff).toChar
 
     def transition: Int =
-      (ti & 0x00ff).toInt
+      (ti & 0xffffffff).toInt
 
   }
 

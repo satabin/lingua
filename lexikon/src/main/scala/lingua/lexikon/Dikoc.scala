@@ -25,6 +25,9 @@ import better.files._
 
 import scala.io.Codec
 
+import scodec.bits._
+import scodec.Attempt
+
 object Dikoc extends App {
 
   implicit val fileRead: Read[File] = Read.reads(File(_))
@@ -34,6 +37,9 @@ object Dikoc extends App {
     opt[File]('o', "output").action { (f, c) =>
       c.copy(output = f)
     }.text("The output .diko file (by default 'dikoput.diko'")
+    opt[String]('q', "query").action { (s, c) =>
+      c.copy(query = Some(s))
+    }.text("The word to query if reading a compiled diko file")
     opt[Unit]('t', "timing").action { (_, c) =>
       c.copy(timing = true)
     }.text("Turn on phase timing")
@@ -55,23 +61,34 @@ object Dikoc extends App {
 
   for (options <- optParser.parse(args, Options())) {
 
-    val input = options.input.contentAsString(codec = Codec.UTF8)
-    val reporter = new ConsoleReporter(input)
+    val head = BitVector(options.input.bytes.take(5))
+    FstProtocol.header.decodeValue(head) match {
+      case Attempt.Successful(()) =>
+        val reporter = new ConsoleReporter("")
+        val fst = new DikoLoader().process(options, reporter)
 
-    // do stuff
-    val sequence =
-      for {
-        diko <- new Parser(input)
-        typer <- new Typer(diko)
-        nfst <- new Transformer(typer, diko)
-        fst <- new Determinize(nfst)
-        compiled <- new Compiler(fst, diko)
-        () <- new Serializer(compiled)
-      } yield ()
+        println(fst.lookup(options.query.get))
 
-    sequence.run(options, reporter)
-    reporter.summary()
-    reporter.info(f"output wirtten in ${options.output}")
+      case Attempt.Failure(_) =>
+        val input = options.input.contentAsString(codec = Codec.UTF8)
+        val reporter = new ConsoleReporter(input)
+
+        // do stuff
+        val sequence =
+          for {
+            diko <- new Parser(input)
+            typer <- new Typer(diko)
+            nfst <- new Transformer(typer, diko)
+            fst <- new Determinize(nfst)
+            compiled <- new Compiler(fst, diko)
+            () <- new Serializer(compiled)
+          } yield ()
+
+        sequence.run(options, reporter)
+        reporter.info(f"output wirtten in ${options.output}")
+        reporter.summary()
+
+    }
 
   }
 

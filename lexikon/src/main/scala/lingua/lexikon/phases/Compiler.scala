@@ -66,7 +66,7 @@ class Compiler(fst: PSubFst[Char, Out], diko: Diko) extends Phase[CompiledPSubFs
     // a 1 in the profile indicate that this byte is already used to encode some state,
     // each transition takes 6 bytes, the first one indicates finality of the state.
     var tiaProfile = BitVector.low(fst.states.size * stateSize)
-    var tia = ByteVector.low(stateSize).buffer
+    var tia = ByteVector.low(stateSize)
 
     // the first free byte in the profile
     var firstFree = 0
@@ -111,7 +111,7 @@ class Compiler(fst: PSubFst[Char, Out], diko: Diko) extends Phase[CompiledPSubFs
       }
 
       state2idx(state) = idx
-      tia = tia.padRight(math.max(tia.size, ti.size + idx)) | ti.padLeft(ti.size + idx).buffer
+      tia = tia.padRight(math.max(tia.size, ti.size + idx)) | ti.padLeft(ti.size + idx).padRight(math.max(tia.size, ti.size + idx))
       tiaProfile |= profile.padLeft(profile.size + idx).padRight(tiaProfile.size)
 
       firstFree = tiaProfile.indexOfSlice(BitVector.low(1), firstFree).toInt

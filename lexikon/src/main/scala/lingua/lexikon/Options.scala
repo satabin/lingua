@@ -22,4 +22,5 @@ final case class Options(verbose: Boolean = false,
   output: File = File("dikoput.diko"),
   timing: Boolean = false,
   saveNFst: Option[File] = None,
-  saveFst: Option[File] = None)
+  saveFst: Option[File] = None,
+  query: Option[String] = None)
