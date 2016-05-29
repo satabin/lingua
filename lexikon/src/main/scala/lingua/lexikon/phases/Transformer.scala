@@ -161,6 +161,7 @@ class Transformer(typer: Typer, diko: Diko) extends Phase[NFst[Char, Out]](Some(
   private def rewriteWord(original: Word, rule: Rule, pattern: Regex, mustCategory: Option[String], mustTags: Set[String], mustntTags: Set[String], rTags: Seq[TagEmission], replacement: Replacement): Option[Word] = {
     val normalized = normalizedTags(Seq.empty, original.tags)
     if ((mustCategory.isEmpty || mustCategory == original.category) && mustTags.forall(t => normalized.exists(tag => typer.isA(tag, t))) && mustntTags.forall(t => !normalized.exists(tag => typer.isA(tag, t)))) {
+      val normalized1 = normalizedTags(normalized, replacement.tags)
       for (m <- pattern.findFirstMatchIn(original.word)) yield {
         // build the new word based on original and replacement text
         val builder = new StringBuilder
@@ -170,7 +171,7 @@ class Transformer(typer: Typer, diko: Diko) extends Phase[NFst[Char, Out]](Some(
         if (m.end < original.word.size)
           builder.append(original.word.substring(m.end, original.word.size))
         val chars = buildWordChars(original.word, builder.toString)
-        Word(chars, original.category, normalizedTags(normalized, rTags))(original.offset)
+        Word(chars, original.category, normalizedTags(normalized1, rTags))(original.offset)
       }
     } else {
       None
