@@ -1,12 +1,12 @@
 Lingua
 ======
 
-Lingua is a set of linguistic tools wirtten in Scala. It is divided in several modules.
+Lingua is a set of linguistic tools written in Scala. It is divided in several modules.
 
 Module `lexikon`
 ----------------
 
-The `lexikon` module provides tools to generate morphological lexica out of a dedicated language. For example dictionaries, see the [resources directory](https://github.com/satabin/lingua/tree/master/lexikon/src/main/resources) andhave a look at `.dico` files.
+The `lexikon` module provides tools to generate morphological lexica out of a dedicated description language. For example dictionaries, see the [resources directory](https://github.com/satabin/lingua/tree/master/lexikon/src/main/resources) and have a look at `.dico` files.
 
 To run the lexicon genrator:
 
@@ -17,6 +17,22 @@ $ sbt
 ```
 
 Then you can render the generated (N)Fst by using graphviz tools.
+
+This command produces a compiled version of the dictionary in a file named `dikput.diko`. This compiled version can be queried as follows (from the same sbt session)
+
+```sh
+> runMain lingua.lexikon.Dikoc dikoput.diko -q mange
+```
+
+Which will return
+
+```scala
+Some(Set(List(m, a, n, g, e, r, +G1, +Sg, +3ème, +Prés, +Ind, @V), List(m, a, n, g, e, r, +G1, +Sg, +1ère, +Prés, +Ind, @V)))
+```
+
+This means that according to this dictionary, `mange` stems to `manger` which is a verb (`@V` category) conjugated at the first person singular of the indicative present, or at the third person of the indicative present.
+
+For more details on available options, run this main class with option `-h`
 
 Module `fst`
 ------------

@@ -85,7 +85,7 @@ object Dikoc extends App {
           } yield ()
 
         sequence.run(options, reporter)
-        reporter.info(f"output wirtten in ${options.output}")
+        reporter.info(f"output written in ${options.output}")
         reporter.summary()
 
     }

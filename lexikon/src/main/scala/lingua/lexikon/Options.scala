@@ -19,7 +19,7 @@ import better.files.File
 
 final case class Options(verbose: Boolean = false,
   input: File = null,
-  output: File = File("dikoput.diko"),
+  output: File = File("dikput.diko"),
   timing: Boolean = false,
   saveNFst: Option[File] = None,
   saveFst: Option[File] = None,
