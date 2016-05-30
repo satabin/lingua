@@ -1,4 +1,4 @@
-Lingua
+Lingua [![Codacy Badge](https://api.codacy.com/project/badge/Grade/cab189517d35400a848cc44348b1757b)](https://www.codacy.com/app/satabin/lingua?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=satabin/lingua&amp;utm_campaign=Badge_Grade)
 ======
 
 Lingua is a set of linguistic tools written in Scala. It is divided in several modules.
