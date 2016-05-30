@@ -56,10 +56,13 @@ class Compiler(fst: PSubFst[Char, Out], diko: Diko) extends Phase[CompileOptions
     outputsB ++= diko.separators.map(CharOut(_))
     outputsB ++= diko.categories.map(c => CatOut(c.alias))
     outputsB ++= diko.tags.flatMap { t =>
-      if (t.children.isEmpty)
-        Some(TagOut(t.alias))
+      if (t.public)
+        if (t.children.isEmpty)
+          Some(TagOut(t.alias))
+        else
+          t.children.flatMap(t => if (t.public) Some(TagOut(t.alias)) else None)
       else
-        t.children.map(t => TagOut(t.alias))
+        None
     }
     val outputs = outputsB.result
 
