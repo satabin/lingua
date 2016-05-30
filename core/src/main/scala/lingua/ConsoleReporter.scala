@@ -18,7 +18,7 @@ class ConsoleReporter(input: String) extends Reporter(input) {
 
   import Reporter._
 
-  protected def doReport(offset: Int, level: Level.Value, msg: String, exn: Option[Exception]): Unit = {
+  protected def doReport(offset: Int, level: Level.Value, msg: String, exn: Option[Throwable]): Unit = {
     val pos = if (offset >= 0) {
       val (line, col) = lineColOf(offset)
       f"[$line,$col] "
@@ -32,6 +32,8 @@ class ConsoleReporter(input: String) extends Reporter(input) {
         case Level.ERROR   => f"[${Console.RED}error${Console.RESET}]"
       }
     println(f"$severity $pos$msg")
+    for (e <- exn)
+      e.printStackTrace
   }
 
 }
