@@ -17,12 +17,14 @@ package lexikon
 
 sealed trait Out
 
+sealed trait Annotation extends Out
+
 final case class CharOut(c: Char) extends Out {
   override def toString = c.toString
 }
-final case class CatOut(c: String) extends Out {
+final case class CatOut(c: String) extends Annotation {
   override def toString = f"@$c"
 }
-final case class TagOut(t: String) extends Out {
+final case class TagOut(t: String) extends Annotation {
   override def toString = f"+$t"
 }

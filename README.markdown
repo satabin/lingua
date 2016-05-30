@@ -13,7 +13,7 @@ To run the lexicon genrator:
 ```sh
 $ sbt
 > project lexikon
-> runMain lingua.lexikon.Dikoc compile lexikon/src/main/resources/français.dico -N /tmp/nfst.dot -F /tmp/fst.dot
+> runMain lingua.lexikon.DikoMain compile lexikon/src/main/resources/français.dico -N /tmp/nfst.dot -F /tmp/fst.dot
 ```
 
 Then you can render the generated (N)Fst by using graphviz tools.
@@ -21,13 +21,13 @@ Then you can render the generated (N)Fst by using graphviz tools.
 This command produces a compiled version of the dictionary in a file named `dikput.diko`. This compiled version can be queried as follows (from the same sbt session)
 
 ```sh
-> runMain lingua.lexikon.Dikoc query dikoput.diko -q mange
+> runMain lingua.lexikon.DikoMain query dikoput.diko -q mange
 ```
 
 Which will return
 
 ```scala
-Some(Set(List(m, a, n, g, e, r, +G1, +Sg, +3ème, +Prés, +Ind, @V), List(m, a, n, g, e, r, +G1, +Sg, +1ère, +Prés, +Ind, @V)))
+Set(DikoEntry(manger,Set(+Sg, @V, +3ème, +G1, +Prés, +Ind)), DikoEntry(manger,Set(+Sg, +1ère, @V, +G1, +Prés, +Ind)))
 ```
 
 This means that according to this dictionary, `mange` stems to `manger` which is a verb (`@V` category) conjugated at the first person singular of the indicative present, or at the third person of the indicative present.
