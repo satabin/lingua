@@ -17,10 +17,56 @@ package lexikon
 
 import better.files.File
 
-final case class Options(verbose: Boolean = false,
-  input: File = null,
-  output: File = File("dikput.diko"),
-  timing: Boolean = false,
-  saveNFst: Option[File] = None,
-  saveFst: Option[File] = None,
-  query: Option[String] = None)
+sealed abstract class Options {
+  val verbose: Boolean
+  val timing: Boolean
+
+  def mkCompile: CompileOptions =
+    CompileOptions(verbose = verbose, timing = timing)
+
+  def mkQuery: QueryOptions =
+    QueryOptions(verbose = verbose, timing = timing)
+
+  def mkVerbose: Options
+  def mkTimed: Options
+
+}
+
+final case class NoCommandOptions(verbose: Boolean = false,
+    timing: Boolean = false) extends Options {
+
+  def mkVerbose: NoCommandOptions =
+    copy(verbose = true)
+
+  def mkTimed: NoCommandOptions =
+    copy(timing = true)
+
+}
+
+final case class CompileOptions(input: File = null,
+    output: File = File("dikput.diko"),
+    saveNFst: Option[File] = None,
+    saveFst: Option[File] = None,
+    verbose: Boolean = false,
+    timing: Boolean = false) extends Options {
+
+  def mkVerbose: CompileOptions =
+    copy(verbose = true)
+
+  def mkTimed: CompileOptions =
+    copy(timing = true)
+
+}
+
+final case class QueryOptions(input: File = null,
+    query: String = null,
+    verbose: Boolean = false,
+    timing: Boolean = false) extends Options {
+
+  def mkVerbose: QueryOptions =
+    copy(verbose = true)
+
+  def mkTimed: QueryOptions =
+    copy(timing = true)
+
+}

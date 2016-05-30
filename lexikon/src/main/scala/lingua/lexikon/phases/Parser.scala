@@ -20,9 +20,9 @@ import parser._
 
 import fastparse.core.Parsed
 
-class Parser(input: String) extends Phase[Diko](Some("parser")) {
+class Parser(input: String) extends Phase[CompileOptions, Diko](Some("parser")) {
 
-  def process(options: Options, reporter: Reporter): Diko = {
+  def process(options: CompileOptions, reporter: Reporter): Diko = {
     DikoParser.diko.parse(input) match {
       case Parsed.Success(diko, _) =>
         diko

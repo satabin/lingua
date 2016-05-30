@@ -39,9 +39,9 @@ import scala.collection.mutable.{
 
 import scodec.bits._
 
-class Compiler(fst: PSubFst[Char, Out], diko: Diko) extends Phase[CompiledPSubFst](Some("compiler")) {
+class Compiler(fst: PSubFst[Char, Out], diko: Diko) extends Phase[CompileOptions, CompiledPSubFst](Some("compiler")) {
 
-  def process(options: Options, reporter: Reporter): CompiledPSubFst = {
+  def process(options: CompileOptions, reporter: Reporter): CompiledPSubFst = {
 
     val alphabetB = new VectorBuilder[Char]
     alphabetB ++= diko.alphabet

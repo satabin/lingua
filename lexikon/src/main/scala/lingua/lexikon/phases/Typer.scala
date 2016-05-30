@@ -26,7 +26,7 @@ import scala.collection.mutable.Map
  *
  *  @author Lucas Satabin
  */
-class Typer(diko: Diko) extends Phase[Typer](Some("typer")) {
+class Typer(diko: Diko) extends Phase[CompileOptions, Typer](Some("typer")) {
 
   private val categories = Map.empty[String, String]
 
@@ -90,7 +90,7 @@ class Typer(diko: Diko) extends Phase[Typer](Some("typer")) {
     }
 
   /** Type checks the entire lexicon description file. */
-  def process(options: Options, reporter: Reporter): Typer = {
+  def process(options: CompileOptions, reporter: Reporter): Typer = {
     reset(reporter)
     val Diko(_, _, _, _, lexika) = diko
     for (l <- lexika)

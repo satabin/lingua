@@ -32,7 +32,7 @@ import gnieh.diff._
  *
  *  @author Lucas Satabin
  */
-class Transformer(typer: Typer, diko: Diko) extends Phase[NFst[Char, Out]](Some("transformer")) {
+class Transformer(typer: Typer, diko: Diko) extends Phase[CompileOptions, NFst[Char, Out]](Some("transformer")) {
 
   private val lcs = new Patience[Char]
 
@@ -46,7 +46,7 @@ class Transformer(typer: Typer, diko: Diko) extends Phase[NFst[Char, Out]](Some(
 
   import Builder._
 
-  def process(options: Options, reporter: Reporter): NFst[Char, Out] = {
+  def process(options: CompileOptions, reporter: Reporter): NFst[Char, Out] = {
     // assume everything type-checks
     if (fst == null) {
       for (l @ Lexikon(name, gCat, gTags, entries) <- diko.lexika) {

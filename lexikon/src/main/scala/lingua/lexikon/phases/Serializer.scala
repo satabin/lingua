@@ -24,9 +24,9 @@ import better.files._
 
 import java.nio.file.StandardOpenOption
 
-class Serializer(compiled: CompiledPSubFst) extends Phase[Unit](Some("serializer")) {
+class Serializer(compiled: CompiledPSubFst) extends Phase[CompileOptions, Unit](Some("serializer")) {
 
-  def process(options: Options, reporter: Reporter): Unit = {
+  def process(options: CompileOptions, reporter: Reporter): Unit = {
     FstProtocol.file.encode(compiled) match {
       case Attempt.Successful(bytes) =>
         for (raf <- options.output.newFileChannel(Seq(StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)).autoClosed) {

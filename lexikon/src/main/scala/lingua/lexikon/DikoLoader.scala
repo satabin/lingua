@@ -26,11 +26,11 @@ import java.nio.file.StandardOpenOption
 import scodec.bits._
 import scodec.Attempt
 
-class DikoLoader extends Phase[CompiledPSubFst](Some("diko-loader")) {
+class DikoLoader extends Phase[QueryOptions, CompiledPSubFst](Some("diko-loader")) {
 
   val empty = CompiledPSubFst(Vector.empty, Vector.empty, ByteVector.empty, Vector.empty, Vector.empty)
 
-  def process(options: Options, reporter: Reporter): CompiledPSubFst = {
+  def process(options: QueryOptions, reporter: Reporter): CompiledPSubFst = {
     var channel: FileChannel = null
     try {
       channel = options.input.newFileChannel(Seq(StandardOpenOption.READ))

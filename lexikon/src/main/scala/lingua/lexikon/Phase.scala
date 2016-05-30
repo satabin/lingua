@@ -15,11 +15,11 @@
 package lingua
 package lexikon
 
-abstract class Phase[T](val name: Option[String]) {
+abstract class Phase[O <: Options, T](val name: Option[String]) {
 
-  protected[lexikon] def process(options: Options, reporter: Reporter): T
+  protected[lexikon] def process(options: O, reporter: Reporter): T
 
-  def run(options: Options, reporter: Reporter): T = {
+  def run(options: O, reporter: Reporter): T = {
 
     for (name <- name) {
       if (options.verbose) {
@@ -52,23 +52,23 @@ abstract class Phase[T](val name: Option[String]) {
 
   }
 
-  def flatMap[U](f: T => Phase[U]): Phase[U] =
+  def flatMap[U](f: T => Phase[O, U]): Phase[O, U] =
     new FlatMappedPhase(this, f)
 
-  def map[U](f: T => U): Phase[U] =
+  def map[U](f: T => U): Phase[O, U] =
     new MappedPhase(this, f)
 
-  def filter(p: T => Boolean): Phase[T] =
+  def filter(p: T => Boolean): Phase[O, T] =
     new FilteredPhase(this, p)
 
-  def withFilter(p: T => Boolean): Phase[T] =
+  def withFilter(p: T => Boolean): Phase[O, T] =
     new FilteredPhase(this, p)
 
 }
 
-private class FilteredPhase[T](phase: Phase[T], p: T => Boolean) extends Phase[T](None) {
+private class FilteredPhase[O <: Options, T](phase: Phase[O, T], p: T => Boolean) extends Phase[O, T](None) {
 
-  def process(options: Options, reporter: Reporter): T = {
+  def process(options: O, reporter: Reporter): T = {
     val t = phase.process(options, reporter)
 
     if (!p(t)) {
@@ -80,18 +80,18 @@ private class FilteredPhase[T](phase: Phase[T], p: T => Boolean) extends Phase[T
 
 }
 
-private class FlatMappedPhase[T, U](p1: Phase[T], f: T => Phase[U]) extends Phase[U](None) {
+private class FlatMappedPhase[O <: Options, T, U](p1: Phase[O, T], f: T => Phase[O, U]) extends Phase[O, U](None) {
 
-  def process(options: Options, reporter: Reporter): U = {
+  def process(options: O, reporter: Reporter): U = {
     val t = p1.run(options, reporter)
     f(t).run(options, reporter)
   }
 
 }
 
-private class MappedPhase[T, U](p: Phase[T], f: T => U) extends Phase[U](None) {
+private class MappedPhase[O <: Options, T, U](p: Phase[O, T], f: T => U) extends Phase[O, U](None) {
 
-  def process(options: Options, reporter: Reporter): U =
+  def process(options: O, reporter: Reporter): U =
     f(p.run(options, reporter))
 
 }

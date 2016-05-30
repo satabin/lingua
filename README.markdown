@@ -13,7 +13,7 @@ To run the lexicon genrator:
 ```sh
 $ sbt
 > project lexikon
-> runMain lingua.lexikon.Dikoc lexikon/src/main/resources/français.dico -N /tmp/nfst.dot -F /tmp/fst.dot
+> runMain lingua.lexikon.Dikoc compile lexikon/src/main/resources/français.dico -N /tmp/nfst.dot -F /tmp/fst.dot
 ```
 
 Then you can render the generated (N)Fst by using graphviz tools.
@@ -21,7 +21,7 @@ Then you can render the generated (N)Fst by using graphviz tools.
 This command produces a compiled version of the dictionary in a file named `dikput.diko`. This compiled version can be queried as follows (from the same sbt session)
 
 ```sh
-> runMain lingua.lexikon.Dikoc dikoput.diko -q mange
+> runMain lingua.lexikon.Dikoc query dikoput.diko -q mange
 ```
 
 Which will return
