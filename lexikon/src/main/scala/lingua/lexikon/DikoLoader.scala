@@ -16,7 +16,11 @@ package lingua
 package lexikon
 package phases
 
+import scala.util.Try
+import scala.util.control.NonFatal
+
 import compiled._
+import io._
 
 import better.files._
 
@@ -31,9 +35,7 @@ class DikoLoader extends Phase[QueryOptions, CompiledPSubFst](Some("diko-loader"
   val empty = CompiledPSubFst(Vector.empty, Vector.empty, ByteVector.empty, Vector.empty, Vector.empty)
 
   def process(options: QueryOptions, reporter: Reporter): CompiledPSubFst = {
-    var channel: FileChannel = null
-    try {
-      channel = options.input.newFileChannel(Seq(StandardOpenOption.READ))
+    (for (channel <- options.input.newFileChannel(Seq(StandardOpenOption.READ)).managed) yield {
       FstProtocol.file.decodeValue(BitVector.fromChannel(channel)) match {
         case Attempt.Successful(fst) =>
           fst
@@ -41,15 +43,11 @@ class DikoLoader extends Phase[QueryOptions, CompiledPSubFst](Some("diko-loader"
           reporter.error(err.toString)
           empty
       }
-    } catch {
-      case e: Exception =>
+    }).recover {
+      case NonFatal(e) =>
         reporter.error(f"Error while loading ${options.input}", exn = Some(e))
         empty
-    } finally {
-      if (channel != null) {
-        channel.close
-      }
-    }
+    }.get
   }
 
 }

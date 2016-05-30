@@ -28,9 +28,9 @@ abstract class Reporter(input: String) {
 
   import Reporter._
 
-  protected def doReport(offset: Int, level: Level.Value, msg: String, exn: Option[Exception]): Unit
+  protected def doReport(offset: Int, level: Level.Value, msg: String, exn: Option[Throwable]): Unit
 
-  def report(offset: Int, level: Level.Value, msg: String, exn: Option[Exception]): Unit = {
+  def report(offset: Int, level: Level.Value, msg: String, exn: Option[Throwable]): Unit = {
     if (level == Level.ERROR)
       errors += 1
     else if (level == Level.WARNING)
@@ -38,13 +38,13 @@ abstract class Reporter(input: String) {
     doReport(offset, level, msg, exn)
   }
 
-  def error(msg: String, offset: Int = -1, exn: Option[Exception] = None): Unit =
+  def error(msg: String, offset: Int = -1, exn: Option[Throwable] = None): Unit =
     report(offset, Level.ERROR, msg, exn)
 
-  def warning(msg: String, offset: Int = -1, exn: Option[Exception] = None): Unit =
+  def warning(msg: String, offset: Int = -1, exn: Option[Throwable] = None): Unit =
     report(offset, Level.WARNING, msg, exn)
 
-  def info(msg: String, offset: Int = -1, exn: Option[Exception] = None): Unit =
+  def info(msg: String, offset: Int = -1, exn: Option[Throwable] = None): Unit =
     report(offset, Level.INFO, msg, exn)
 
   def summary(): Unit = {
