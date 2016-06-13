@@ -70,6 +70,7 @@ object DikoMain extends App {
           throw new Exception
       }.text("Input diko file to compile").required())
 
+    note("")
     cmd("query").action { (_, c) =>
       c.mkQuery
     }.text("Query a dictionary").children(
@@ -78,14 +79,16 @@ object DikoMain extends App {
           c.copy(query = q)
         case _ =>
           throw new Exception
-      }.text("The word to query if reading a compiled diko file").required(),
+      }.text("The word to query in the compiled diko file").required(),
       arg[File]("<file>").action {
         case (f, c: QueryOptions) =>
           c.copy(input = f)
         case _ =>
           throw new Exception
-      }.text("Input diko file to compile").required())
+      }.text("Compiled diko file to query").required())
 
+    note("")
+    note("Global options")
     opt[Unit]('t', "timing").action { (_, c) =>
       c.mkTimed
     }.text("Turn on phase timing")
