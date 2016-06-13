@@ -66,24 +66,17 @@ object DikoParser {
     keyword("rule") ~/ (pattern ~ "=>" ~/ replacement).rep(min = 1, sep = "|" ~/ Pass) ~ ";")
 
   val pattern: P[Pattern] = P(
-    (Index ~ "..".!.?.map(_.isDefined)
-      ~ ("\\" ~/ integer.map(CapturePattern)
-        | (!StringIn("=>", "..") ~ char).rep(min = 1).!.map(StringPattern)).rep(min = 0)
-        ~ "..".!.?.map(_.isDefined)
+    (Index
+      ~ (P("..").map(_ => CapturePattern)
+        | (!"=>" ~ char).rep(min = 1).!.map(StringPattern)).rep(min = 1)
         ~ ("/" ~ annotation).?.map(_.getOrElse((None, Seq.empty[TagEmission])))).map {
-          case (idx, suf, seq, pre, (cat, tags)) =>
-            if (pre && suf)
-              Pattern(Infix, seq, cat, tags)(idx)
-            else if (pre)
-              Pattern(Prefix, seq, cat, tags)(idx)
-            else if (suf)
-              Pattern(Suffix, seq, cat, tags)(idx)
-            else
-              Pattern(NoAffix, seq, cat, tags)(idx)
+          case (idx, seq, (cat, tags)) =>
+            Pattern(seq, cat, tags)(idx)
         })
 
   val replacement: P[Replacement] = P(
-    (Index ~ replacementText.rep(min = 0)
+    (Index
+      ~ replacementText.rep(min = 0)
       ~ ("/" ~ tagEmission.rep(min = 1)).?.map(_.getOrElse(Seq.empty[TagEmission]))).map {
         case (idx, seq, tags) =>
           Replacement(seq, tags)(idx)
@@ -91,8 +84,9 @@ object DikoParser {
 
   val replacementText: P[CaseReplacement] = P(
     "@" ~ "(" ~ (replacementText.rep(min = 1) ~ ")").map(RecursiveReplacement)
-      | char.rep(min = 1).!.map(StringReplacement)
-      | "\\" ~ integer.map(CaptureReplacement))
+      | "\\" ~ integer.map(i => CaptureReplacement(Some(i)))
+      | P("..").map(_ => CaptureReplacement(None))
+      | char.rep(min = 1).!.map(StringReplacement))
 
   val annotation: P[(Option[String], Seq[TagEmission])] = P(
     ("@" ~ name).? ~ tagEmission.rep(min = 0))

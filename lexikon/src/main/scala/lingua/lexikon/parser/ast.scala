@@ -33,21 +33,15 @@ final case class Word(input: Seq[WordChar], category: Option[String], tags: Seq[
 
 final case class Rewrite(name: String, tags: Seq[TagEmission], rules: Seq[Rule])(val offset: Int) extends Entry
 
-final case class Pattern(affix: Affix, seq: Seq[CasePattern], category: Option[String], tags: Seq[TagEmission])(val offset: Int)
+final case class Pattern(seq: Seq[CasePattern], category: Option[String], tags: Seq[TagEmission])(val offset: Int)
 
 sealed trait CasePattern
 final case class StringPattern(s: String) extends CasePattern
-final case class CapturePattern(n: Int) extends CasePattern
-
-sealed trait Affix
-case object Prefix extends Affix
-case object Suffix extends Affix
-case object Infix extends Affix
-case object NoAffix extends Affix
+case object CapturePattern extends CasePattern
 
 final case class Replacement(seq: Seq[CaseReplacement], tags: Seq[TagEmission])(val offset: Int)
 
 sealed trait CaseReplacement
 final case class StringReplacement(s: String) extends CaseReplacement
-final case class CaptureReplacement(n: Int) extends CaseReplacement
+final case class CaptureReplacement(n: Option[Int]) extends CaseReplacement
 final case class RecursiveReplacement(seq: Seq[CaseReplacement]) extends CaseReplacement

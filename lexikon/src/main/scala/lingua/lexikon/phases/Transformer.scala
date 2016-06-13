@@ -119,14 +119,14 @@ class Transformer(typer: Typer, diko: Diko) extends Phase[CompileOptions, NFst[C
     } yield rewritten
 
   private def applyPattern(word: Word, rule: Rule, rTags: Seq[TagEmission], pattern: Pattern, replacement: Replacement): Option[Word] = {
-    val Pattern(affix, seq, category, tags) = pattern
+    val Pattern(seq, category, tags) = pattern
     val (mustTags, mustntTags) =
       tags.foldLeft((Set.empty[String], Set.empty[String])) {
         case ((mustTags, mustntTags), (true, tag))  => (mustTags + tag, mustntTags)
         case ((mustTags, mustntTags), (false, tag)) => (mustTags, mustntTags + tag)
       }
 
-    val compiledPattern = compilePattern(affix, seq)
+    val compiledPattern = compilePattern(seq)
     rewriteWord(word, rule, compiledPattern, category, mustTags, mustntTags, rTags, replacement)
   }
 
@@ -138,23 +138,28 @@ class Transformer(typer: Typer, diko: Diko) extends Phase[CompileOptions, NFst[C
       applyPattern(word, origin, rTags, pat, repl).orElse(applyRule(word, origin, rTags, rule.tail))
     }
 
-  private def buildString(offset: Int, category: Option[String], rule: Rule, m: Match, seq: Seq[CaseReplacement], builder: StringBuilder): Unit =
-    for (repl <- seq)
-      repl match {
-        case StringReplacement(s) =>
-          builder.append(s)
-        case CaptureReplacement(n) =>
-          builder.append(m.group(n))
-        case RecursiveReplacement(seq) =>
-          val substring = new StringBuilder
-          buildString(offset, category, rule, m, seq, substring)
-          val newSeq = substring.toSeq.map(c => WordChar(Some(c), Some(c)))
-          val subword = Word(newSeq, category, Seq.empty)(offset)
-          applyRule(subword, rule, Seq.empty, rule) match {
-            case Some(w) => builder.append(w.word)
-            case None    => builder.append(subword.word)
-          }
-      }
+  private def buildString(offset: Int, category: Option[String], rule: Rule, m: Match, currentIdx: Int, seq: Seq[CaseReplacement], builder: StringBuilder): Int =
+    seq.foldLeft(currentIdx) {
+      case (currentIdx, StringReplacement(s)) =>
+        builder.append(s)
+        currentIdx
+      case (currentIdx, CaptureReplacement(Some(n))) =>
+        builder.append(m.group(n))
+        currentIdx
+      case (currentIdx, CaptureReplacement(None)) =>
+        builder.append(m.group(currentIdx))
+        currentIdx + 1
+      case (currentIdx, RecursiveReplacement(seq)) =>
+        val substring = new StringBuilder
+        val currentIdx1 = buildString(offset, category, rule, m, currentIdx, seq, substring)
+        val newSeq = substring.toSeq.map(c => WordChar(Some(c), Some(c)))
+        val subword = Word(newSeq, category, Seq.empty)(offset)
+        applyRule(subword, rule, Seq.empty, rule) match {
+          case Some(w) => builder.append(w.word)
+          case None    => builder.append(subword.word)
+        }
+        currentIdx1
+    }
 
   private def rewriteWord(original: Word, rule: Rule, pattern: Regex, mustCategory: Option[String], mustTags: Set[String], mustntTags: Set[String], rTags: Seq[TagEmission], replacement: Replacement): Option[Word] = {
     val normalized = normalizedTags(Seq.empty, original.tags)
@@ -163,9 +168,7 @@ class Transformer(typer: Typer, diko: Diko) extends Phase[CompileOptions, NFst[C
       for (m <- pattern.findFirstMatchIn(original.word)) yield {
         // build the new word based on original and replacement text
         val builder = new StringBuilder
-        if (m.start > 0)
-          builder.append(original.word.substring(0, m.start))
-        buildString(original.offset, original.category, rule, m, replacement.seq, builder)
+        buildString(original.offset, original.category, rule, m, 1, replacement.seq, builder)
         if (m.end < original.word.size)
           builder.append(original.word.substring(m.end, original.word.size))
         val chars = buildWordChars(original.word, builder.toString)
@@ -176,24 +179,15 @@ class Transformer(typer: Typer, diko: Diko) extends Phase[CompileOptions, NFst[C
     }
   }
 
-  private def compilePattern(affix: Affix, pattern: Seq[CasePattern]): Regex = {
+  private def compilePattern(pattern: Seq[CasePattern]): Regex = {
     val compiledPattern =
       pattern.foldLeft(new StringBuilder) {
         case (acc, StringPattern(s)) =>
           acc.append(Regex.quote(s))
-        case (acc, CapturePattern(n)) =>
+        case (acc, CapturePattern) =>
           acc.append(f"($lettersRe)")
       }
-    affix match {
-      case Prefix =>
-        new Regex(f"^$compiledPattern")
-      case Suffix =>
-        new Regex(f"$compiledPattern$$")
-      case Infix =>
-        new Regex(compiledPattern.toString)
-      case NoAffix =>
-        new Regex(f"^$compiledPattern$$")
-    }
+    compiledPattern.toString.r
   }
 
   private def buildWordChars(original: String, rewritten: String): Seq[WordChar] = {

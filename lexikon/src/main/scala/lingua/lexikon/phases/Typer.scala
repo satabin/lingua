@@ -133,7 +133,7 @@ class Typer(diko: Diko) extends Phase[CompileOptions, Typer](Some("typer")) {
   }
 
   def typeRule(rewriteName: String, r: Rule)(implicit reporter: Reporter): Unit =
-    for ((p @ Pattern(_, pattern, cat, pemissions), r @ Replacement(replacement, remissions)) <- r) {
+    for ((p @ Pattern(pattern, cat, pemissions), r @ Replacement(replacement, remissions)) <- r) {
       val poffset = p.offset
       val roffset = r.offset
       typeCategory(cat, poffset)
