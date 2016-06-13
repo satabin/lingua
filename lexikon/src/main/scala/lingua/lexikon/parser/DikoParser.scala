@@ -66,10 +66,10 @@ object DikoParser {
     keyword("rule") ~/ (pattern ~ "=>" ~/ replacement).rep(min = 1, sep = "|" ~/ Pass) ~ ";")
 
   val pattern: P[Pattern] = P(
-    (Index ~ ">".!.?.map(_.isDefined)
+    (Index ~ "..".!.?.map(_.isDefined)
       ~ ("\\" ~/ integer.map(CapturePattern)
-        | (!"=>" ~ char).rep(min = 1).!.map(StringPattern)).rep(min = 0)
-        ~ "<".!.?.map(_.isDefined)
+        | (!StringIn("=>", "..") ~ char).rep(min = 1).!.map(StringPattern)).rep(min = 0)
+        ~ "..".!.?.map(_.isDefined)
         ~ ("/" ~ annotation).?.map(_.getOrElse((None, Seq.empty[TagEmission])))).map {
           case (idx, suf, seq, pre, (cat, tags)) =>
             if (pre && suf)
@@ -103,7 +103,7 @@ object DikoParser {
     }.opaque("<tag emission>")
 
   val char: P[Unit] =
-    (!CharIn("@(){};:.<>/\\| _") ~ AnyChar).opaque("<character>")
+    (!CharIn("@(){};:./\\| _") ~ AnyChar).opaque("<character>")
 
   val integer: P[Int] =
     CharIn("0123456789").rep(min = 1).!.map(_.toInt).opaque("<integer>")
