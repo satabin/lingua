@@ -32,7 +32,7 @@ object DikoMain extends App {
 
   implicit val fileRead: Read[File] = Read.reads(File(_))
 
-  val optParser = new OptionParser[Options]("diko") {
+  val optParser = new OptionParser[DikoOptions]("diko") {
     head("diko", BuildInfo.version)
 
     cmd("compile").action { (_, c) =>
@@ -106,7 +106,7 @@ object DikoMain extends App {
     options match {
       case options: CompileOptions =>
         val input = options.input.contentAsString(codec = Codec.UTF8)
-        val reporter = new ConsoleReporter(input)
+        val reporter = new ConsoleReporter(options, input)
 
         // do stuff
         val sequence =
@@ -124,7 +124,7 @@ object DikoMain extends App {
         reporter.summary()
 
       case options: QueryOptions =>
-        val reporter = new ConsoleReporter("")
+        val reporter = new ConsoleReporter(options, "")
         val sequence =
           for {
             fst <- new DikoLoader()

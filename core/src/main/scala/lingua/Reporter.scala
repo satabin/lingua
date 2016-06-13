@@ -20,11 +20,11 @@ import scala.collection.mutable.ArrayBuffer
 
 object Reporter {
   object Level extends Enumeration {
-    val INFO, WARNING, ERROR = Value
+    val VERBOSE, INFO, WARNING, ERROR = Value
   }
 }
 
-abstract class Reporter(input: String) {
+abstract class Reporter(options: Options, input: String) {
 
   import Reporter._
 
@@ -35,7 +35,8 @@ abstract class Reporter(input: String) {
       errors += 1
     else if (level == Level.WARNING)
       warnings += 1
-    doReport(offset, level, msg, exn)
+    if (options.verbose || level != Level.VERBOSE)
+      doReport(offset, level, msg, exn)
   }
 
   def error(msg: String, offset: Int = -1, exn: Option[Throwable] = None): Unit =
@@ -46,6 +47,9 @@ abstract class Reporter(input: String) {
 
   def info(msg: String, offset: Int = -1, exn: Option[Throwable] = None): Unit =
     report(offset, Level.INFO, msg, exn)
+
+  def verbose(msg: String, offset: Int = -1): Unit =
+    report(offset, Level.VERBOSE, msg, None)
 
   def summary(): Unit = {
     doReport(-1, Level.INFO, f"number of warnings: $warnings", None)

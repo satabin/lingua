@@ -72,7 +72,7 @@ class Transformer(typer: Typer, diko: Diko) extends Phase[CompileOptions, NFst[C
           // a rewrite rule applies all its patterns in order to the words in this
           // lexicon (collected aboved). The first pattern that applies to a word
           // is the one taken, and the replacement is substituted to the word
-          val rewrittenWords = rewriteWords(words, tags, rules)
+          val rewrittenWords = rewriteWords(name, words, tags, rules)(reporter)
           for (Word(input, cat, tags) <- rewrittenWords) {
             val start = fstBuilder.newState.makeInitial
             val (inChars, outChars) = input.toVector.unzip { case WordChar(in, out) => (in, out) }
@@ -111,14 +111,14 @@ class Transformer(typer: Typer, diko: Diko) extends Phase[CompileOptions, NFst[C
     }
   }
 
-  private def rewriteWords(words: List[Word], rTags: Seq[TagEmission], rules: Seq[Rule]): List[Word] =
+  private def rewriteWords(rewriteName: String, words: List[Word], rTags: Seq[TagEmission], rules: Seq[Rule])(implicit reporter: Reporter): List[Word] =
     for {
       word <- words
       rule <- rules
-      rewritten <- applyRule(word, rule, rTags, rule)
+      rewritten <- applyRule(rewriteName, word, rule, rTags, rule)
     } yield rewritten
 
-  private def applyPattern(word: Word, rule: Rule, rTags: Seq[TagEmission], pattern: Pattern, replacement: Replacement): Option[Word] = {
+  private def applyPattern(rewriteName: String, word: Word, rule: Rule, rTags: Seq[TagEmission], pattern: Pattern, replacement: Replacement)(implicit reporter: Reporter): Option[Word] = {
     val Pattern(seq, category, tags) = pattern
     val (mustTags, mustntTags) =
       tags.foldLeft((Set.empty[String], Set.empty[String])) {
@@ -127,18 +127,18 @@ class Transformer(typer: Typer, diko: Diko) extends Phase[CompileOptions, NFst[C
       }
 
     val compiledPattern = compilePattern(seq)
-    rewriteWord(word, rule, compiledPattern, category, mustTags, mustntTags, rTags, replacement)
+    rewriteWord(rewriteName, word, rule, compiledPattern, category, mustTags, mustntTags, rTags, replacement)
   }
 
-  private def applyRule(word: Word, origin: Rule, rTags: Seq[TagEmission], rule: Rule): Option[Word] =
+  private def applyRule(rewriteName: String, word: Word, origin: Rule, rTags: Seq[TagEmission], rule: Rule)(implicit reporter: Reporter): Option[Word] =
     if (rule.isEmpty) {
       None
     } else {
       val (pat, repl) = rule.head
-      applyPattern(word, origin, rTags, pat, repl).orElse(applyRule(word, origin, rTags, rule.tail))
+      applyPattern(rewriteName, word, origin, rTags, pat, repl).orElse(applyRule(rewriteName, word, origin, rTags, rule.tail))
     }
 
-  private def buildString(offset: Int, category: Option[String], rule: Rule, m: Match, currentIdx: Int, seq: Seq[CaseReplacement], builder: StringBuilder): Int =
+  private def buildString(rewriteName: String, offset: Int, category: Option[String], rule: Rule, m: Match, currentIdx: Int, seq: Seq[CaseReplacement], builder: StringBuilder)(implicit reporter: Reporter): Int =
     seq.foldLeft(currentIdx) {
       case (currentIdx, StringReplacement(s)) =>
         builder.append(s)
@@ -151,28 +151,30 @@ class Transformer(typer: Typer, diko: Diko) extends Phase[CompileOptions, NFst[C
         currentIdx + 1
       case (currentIdx, RecursiveReplacement(seq)) =>
         val substring = new StringBuilder
-        val currentIdx1 = buildString(offset, category, rule, m, currentIdx, seq, substring)
+        val currentIdx1 = buildString(rewriteName, offset, category, rule, m, currentIdx, seq, substring)
         val newSeq = substring.toSeq.map(c => WordChar(Some(c), Some(c)))
         val subword = Word(newSeq, category, Seq.empty)(offset)
-        applyRule(subword, rule, Seq.empty, rule) match {
+        applyRule(rewriteName, subword, rule, Seq.empty, rule) match {
           case Some(w) => builder.append(w.word)
           case None    => builder.append(subword.word)
         }
         currentIdx1
     }
 
-  private def rewriteWord(original: Word, rule: Rule, pattern: Regex, mustCategory: Option[String], mustTags: Set[String], mustntTags: Set[String], rTags: Seq[TagEmission], replacement: Replacement): Option[Word] = {
+  private def rewriteWord(rewriteName: String, original: Word, rule: Rule, pattern: Regex, mustCategory: Option[String], mustTags: Set[String], mustntTags: Set[String], rTags: Seq[TagEmission], replacement: Replacement)(implicit reporter: Reporter): Option[Word] = {
     val normalized = normalizedTags(Seq.empty, original.tags)
     if ((mustCategory.isEmpty || mustCategory == original.category) && mustTags.forall(t => normalized.exists(tag => typer.isA(tag, t))) && mustntTags.forall(t => !normalized.exists(tag => typer.isA(tag, t)))) {
       val normalized1 = normalizedTags(normalized, replacement.tags)
       for (m <- pattern.findFirstMatchIn(original.word)) yield {
         // build the new word based on original and replacement text
         val builder = new StringBuilder
-        buildString(original.offset, original.category, rule, m, 1, replacement.seq, builder)
+        buildString(rewriteName, original.offset, original.category, rule, m, 1, replacement.seq, builder)
         if (m.end < original.word.size)
           builder.append(original.word.substring(m.end, original.word.size))
         val chars = buildWordChars(original.word, builder.toString)
-        Word(chars, original.category, normalizedTags(normalized1, rTags))(original.offset)
+        val res = Word(chars, original.category, normalizedTags(normalized1, rTags))(original.offset)
+        reporter.verbose(f"Word ${original.word} rewritten into ${res.word} by rule $rewriteName")
+        res
       }
     } else {
       None
@@ -180,13 +182,16 @@ class Transformer(typer: Typer, diko: Diko) extends Phase[CompileOptions, NFst[C
   }
 
   private def compilePattern(pattern: Seq[CasePattern]): Regex = {
+    val builder = new StringBuilder
+    builder.append("^")
     val compiledPattern =
-      pattern.foldLeft(new StringBuilder) {
+      pattern.foldLeft(builder) {
         case (acc, StringPattern(s)) =>
           acc.append(Regex.quote(s))
         case (acc, CapturePattern) =>
           acc.append(f"($lettersRe)")
       }
+    compiledPattern.append("$")
     compiledPattern.toString.r
   }
 

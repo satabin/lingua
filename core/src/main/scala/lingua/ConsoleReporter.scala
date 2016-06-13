@@ -14,7 +14,7 @@
  */
 package lingua
 
-class ConsoleReporter(input: String) extends Reporter(input) {
+class ConsoleReporter(options: Options, input: String) extends Reporter(options, input) {
 
   import Reporter._
 
@@ -27,6 +27,7 @@ class ConsoleReporter(input: String) extends Reporter(input) {
     }
     val severity =
       level match {
+        case Level.VERBOSE => f"[${Console.GREEN}verbose${Console.RESET}]"
         case Level.INFO    => "[info]"
         case Level.WARNING => f"[${Console.YELLOW}warning${Console.RESET}]"
         case Level.ERROR   => f"[${Console.RED}error${Console.RESET}]"
