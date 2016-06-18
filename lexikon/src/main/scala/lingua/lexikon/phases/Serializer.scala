@@ -16,7 +16,7 @@ package lingua
 package lexikon
 package phases
 
-import compiled._
+import compiled.fst._
 
 import scodec.Attempt
 

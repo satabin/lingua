@@ -16,7 +16,7 @@ package lingua
 package lexikon
 package phases
 
-import compiled.CompiledPSubFst
+import compiled.fst.CompiledPSubFst
 
 class Lookup(fst: CompiledPSubFst) extends Phase[QueryOptions, Set[DikoEntry]](Some("lookup")) {
 

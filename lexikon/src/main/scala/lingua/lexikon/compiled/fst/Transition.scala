@@ -14,6 +14,7 @@
  */
 package lingua.lexikon
 package compiled
+package fst
 
 /** A compiled transition.
  *  The `out` sequence contains the indices of outputs in the outputs array of the compiled Fst.

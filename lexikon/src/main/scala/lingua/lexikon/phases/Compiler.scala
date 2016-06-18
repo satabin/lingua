@@ -18,7 +18,7 @@ package phases
 
 import parser._
 
-import compiled._
+import compiled.fst._
 
 import fst.{
   PSubFst,

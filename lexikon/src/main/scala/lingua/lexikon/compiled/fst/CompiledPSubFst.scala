@@ -14,6 +14,7 @@
  */
 package lingua.lexikon
 package compiled
+package fst
 
 import scodec.bits._
 

@@ -19,7 +19,7 @@ package phases
 import scala.util.Try
 import scala.util.control.NonFatal
 
-import compiled._
+import compiled.fst._
 import io._
 
 import better.files._
