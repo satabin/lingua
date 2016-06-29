@@ -12,10 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package lingua.lexikon
-package parser
-
-import lingua.parser._
+package lingua
+package lexikon
 
 case class Diko(alphabet: Seq[Char], separators: Seq[Char], categories: Seq[Category], tags: Seq[Tag], lexika: Seq[Lexikon])
 

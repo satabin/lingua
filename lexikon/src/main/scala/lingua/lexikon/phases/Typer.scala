@@ -16,9 +16,6 @@ package lingua
 package lexikon
 package phases
 
-import parser._
-import lingua.parser._
-
 import scala.collection.mutable.Map
 
 /** The typer builds a typing environment for an input lexicon description.

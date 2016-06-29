@@ -14,8 +14,6 @@
  */
 package lingua
 
-package object parser {
+case class Tag(public: Boolean, fullname: String, alias: String, children: Seq[Tag])(val offset: Int)
 
-  type TagEmission = (Boolean, String)
-
-}
+case class Category(fullname: String, alias: String)(val offset: Int)

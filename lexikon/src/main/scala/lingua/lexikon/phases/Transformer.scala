@@ -16,8 +16,6 @@ package lingua
 package lexikon
 package phases
 
-import lingua.parser.TagEmission
-import parser._
 import fst._
 
 import scala.annotation.tailrec
