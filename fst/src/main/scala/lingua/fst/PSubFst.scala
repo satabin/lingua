@@ -16,40 +16,24 @@ package lingua
 package fst
 
 /** A p-subsequential finite-state transducer. */
-class PSubFst[In, Out] private (states: Set[State],
-    val initial: State,
-    finals: Map[State, Set[Seq[Out]]],
-    maps: (Map[(State, In), State], Map[(State, In), Seq[Out]])) extends Fst(states, Set(initial), finals) {
+class PSubFst[In, Out] private[fst] (states: Set[State],
+  val initial: State,
+  finals: Map[State, Set[Seq[Out]]],
+  val transitions: Map[(State, In), State],
+  val defaultTransitions: Map[State, State],
+  val outputs: Map[(State, In), Seq[Out]],
+  val defaultOutputs: Map[State, Seq[Out]])
+    extends Fst(states, Set(initial), finals) {
 
   /** The value of p */
   def p =
     finals.map(_._2.size).max
 
-  def this(states: Set[State], initial: State, finals: Map[State, Set[Seq[Out]]], transitions: Map[(State, In), State], outputs: Map[(State, In), Seq[Out]]) =
-    this(states, initial, finals, (transitions, outputs))
-
-  def this(states: Set[State], initial: State, finals: Map[State, Set[Seq[Out]]], transitions: Set[Transition[In, Out]]) =
-    this(states, initial, finals, transitions.foldLeft(
-      (Map.empty[(State, In), State],
-        Map.empty[(State, In), Seq[Out]])) {
-        case ((transAcc, outAcc), (origin, input, output, target)) =>
-          val key = (origin, input)
-          val transAcc1 =
-            if (transAcc.contains(key))
-              throw new Exception("Non deterministic Fst is not p-subsequential")
-            else
-              transAcc.updated(key, target)
-          val outAcc1 = outAcc.updated(key, output)
-          (transAcc1, outAcc1)
-      })
-
-  val (transitionMap, outputMap) = maps
-
   /** Returns the next state when reading `in` in state `state`.
    *  If no transition exists, returns `None`.
    */
   def delta(state: State, in: In): Option[State] =
-    transitionMap.get((state, in))
+    transitions.get((state, in)).orElse(defaultTransitions.get(state))
 
   /** Returns the state reached when reading word `ins` from state `state`.
    *  If at some point no transition can be found, returns `None`.
@@ -62,7 +46,7 @@ class PSubFst[In, Out] private (states: Set[State],
 
   /** Returns the output sequence encountered when reading `in` in state `state`. */
   def sigma(origin: State, in: In): Seq[Out] =
-    outputMap.getOrElse((origin, in), Seq.empty)
+    outputs.get((origin, in)).orElse(defaultOutputs.get(origin)).getOrElse(Seq.empty)
 
   /** Returns the output sequence encountered when reading `ins` from state `state`. */
   def sigma(state: State, ins: Seq[In]): Seq[Out] =
@@ -80,8 +64,8 @@ class PSubFst[In, Out] private (states: Set[State],
 
   def toDot: String = {
     val trans = for {
-      ((s1, in), s2) <- transitionMap
-      out = outputMap.getOrElse((s1, in), Seq()).mkString
+      ((s1, in), s2) <- transitions
+      out = outputs.getOrElse((s1, in), Seq()).mkString
     } yield f"""q$s1->q$s2[label="$in:$out"]"""
     toDot(trans)
   }
@@ -93,14 +77,14 @@ class PSubFst[In, Out] private (states: Set[State],
 
     val prefixes = mu.Map.empty[State, Seq[Out]]
 
-    val sigma2 = mu.Map.empty[(State, In), Seq[Out]] ++ outputMap
+    val sigma2 = mu.Map.empty[(State, In), Seq[Out]] ++ outputs
 
     val phi2 = mu.Map.empty[State, Set[Seq[Out]]] ++ finals
 
     def computePrefix(state: State, seen: Set[State]): Unit =
       if (!prefixes.contains(state) && !seen.contains(state)) {
         // first compute the prefixes of next states
-        for (((`state`, _), q) <- transitionMap)
+        for (((`state`, _), q) <- transitions)
           computePrefix(q, seen + state)
 
         val outs =
@@ -110,7 +94,7 @@ class PSubFst[In, Out] private (states: Set[State],
             Set.empty[Seq[Out]]
 
         val prefix =
-          lcp(outs ++ (for (((`state`, i), q) <- transitionMap) yield sigma(state, i) ++ (if (q != state) prefixes(q) else Seq.empty)))
+          lcp(outs ++ (for (((`state`, i), q) <- transitions) yield sigma(state, i) ++ (if (q != state) prefixes(q) else Seq.empty)))
 
         prefixes(state) = prefix
 
@@ -118,14 +102,14 @@ class PSubFst[In, Out] private (states: Set[State],
         if (isFinal(state))
           phi2(state) = for (o <- phi(state)) yield o.drop(prefix.size)
         else if (isInitial(state))
-          for (((`state`, i), o) <- outputMap) sigma2((state, i)) = (o ++ prefixes(transitionMap((state, i))))
+          for (((`state`, i), o) <- outputs) sigma2((state, i)) = (o ++ prefixes(transitions((state, i))))
         else
-          for (((`state`, i), o) <- outputMap) sigma2((state, i)) = (o ++ prefixes(transitionMap((state, i)))).drop(prefix.size)
+          for (((`state`, i), o) <- outputs) sigma2((state, i)) = (o ++ prefixes(transitions((state, i)))).drop(prefix.size)
       }
 
     computePrefix(initial, Set.empty[State])
 
-    new PSubFst(states, initial, phi2.toMap, transitionMap, sigma2.toMap)
+    new PSubFst(states, initial, phi2.toMap, transitions, defaultTransitions, sigma2.toMap, defaultOutputs)
 
   }
 

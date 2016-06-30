@@ -97,7 +97,7 @@ class Transformer(typer: Typer, diko: Diko) extends Phase[CompileOptions, NFst[C
           case (acc, _) =>
             acc
         }
-      previous.makeFinal.addOutput(tags1 :+ CatOut(cat))
+      previous.makeFinal.addFinalOutput(tags1 :+ CatOut(cat))
     } else {
       // add transition with the current character to a new state
       val st = fstBuilder.newState
