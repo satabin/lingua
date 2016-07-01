@@ -82,6 +82,8 @@ class Compiler(fst: PSubFst[Char, Out], diko: Diko) extends Phase[CompileOptions
 
     // the first free byte in the profile
     var firstFree = 0
+    var occupation = 0
+    var base = 0
 
     val queue = Queue.empty[State]
     queue.enqueue(fst.initial)
@@ -101,11 +103,14 @@ class Compiler(fst: PSubFst[Char, Out], diko: Diko) extends Phase[CompileOptions
       }
 
       var profile = BitVector.low(stateSize).patch(0, BitVector.high(5))
+      occupation += 5
 
       for (((`state`, c), target) <- fst.transitionMap) {
         val cidx = alphabet.indexOf(c)
         ti = ti.patch(5 + cidx * 6, ByteVector.fromShort(c.toShort) ++ ByteVector.fromInt(taSize))
         profile = profile.patch(5 + cidx * 6, BitVector.high(6))
+        occupation += 6
+
         ta += Transition(c, fst.outputMap(state -> c).map(outputs.indexOf(_)).toList, target)
         taSize += 1
         if (!processed.contains(target)) {
@@ -116,8 +121,8 @@ class Compiler(fst: PSubFst[Char, Out], diko: Diko) extends Phase[CompileOptions
       // insert the transition indices into the tia at the first place that does not overlap anything
       var idx = firstFree
       var cont = true
-      while (cont && idx < tiaProfile.size) {
-        val slice = tiaProfile.slice(idx, tiaProfile.size)
+      while (cont) {
+        val slice = tiaProfile.slice(idx, idx + profile.size)
         if ((slice & profile) === BitVector.low(profile.size)) {
           cont = false
         } else {
@@ -129,7 +134,13 @@ class Compiler(fst: PSubFst[Char, Out], diko: Diko) extends Phase[CompileOptions
       tia = tia.padRight(math.max(tia.size, ti.size + idx)) | ti.padLeft(ti.size + idx).padRight(math.max(tia.size, ti.size + idx))
       tiaProfile |= profile.padLeft(profile.size + idx).padRight(tiaProfile.size)
 
-      firstFree = tiaProfile.indexOfSlice(BitVector.low(1), firstFree).toInt
+      if (occupation * 100 / (tia.size - base) > options.occupation) {
+        occupation = 0
+        base = tia.size.toInt
+        firstFree = base
+      } else {
+        firstFree = tiaProfile.indexOfSlice(BitVector.low(1), firstFree).toInt
+      }
 
     }
 

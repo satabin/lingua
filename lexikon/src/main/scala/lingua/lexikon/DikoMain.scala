@@ -44,6 +44,13 @@ object DikoMain extends App {
         case _ =>
           throw new Exception
       }.text("The output .diko file (by default 'dikoput.diko'"),
+      opt[Int]('K', "occupation").action {
+        case (k, c: CompileOptions) =>
+          c.copy(occupation = k)
+        case _ =>
+          throw new Exception
+      }.text("Minimum segement occupation before skipping to the next one. Decreasing this number improves generation speed but results in bigger generated lexicon file.")
+        .validate(i => if (i >= 0 && i <= 100) success else failure("value must be between 0 and 100")),
       opt[File]('N', "save-nfst").action {
         case (f, c: CompileOptions) =>
           c.copy(saveNFst = Some(f))

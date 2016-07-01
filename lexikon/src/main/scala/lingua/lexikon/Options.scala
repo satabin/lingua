@@ -44,6 +44,7 @@ final case class NoCommandOptions(verbose: Boolean = false,
 }
 
 final case class CompileOptions(input: File = null,
+    occupation: Int = 70,
     output: File = File("dikput.diko"),
     saveNFst: Option[File] = None,
     saveFst: Option[File] = None,
