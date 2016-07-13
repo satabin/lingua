@@ -33,7 +33,7 @@ import scala.annotation.tailrec
  *
  *  @author Lucas Satabin
  */
-case class CompiledPSubFst(alphabet: Vector[Char], outputs: Vector[Out], tia: ByteVector, ta: Vector[Transition], oa: Vector[Set[Seq[Int]]]) {
+case class CompiledPSubFst(alphabet: Vector[Char], outputs: Vector[StaticOut], tia: ByteVector, ta: Vector[Transition], oa: Vector[Set[Seq[Int]]]) {
 
   private val alphabetMap =
     alphabet.zipWithIndex.toMap
@@ -87,7 +87,11 @@ case class CompiledPSubFst(alphabet: Vector[Char], outputs: Vector[Out], tia: By
             case TransitionIndex(`c`, trans) =>
               // there exists a transition for the read symbol, collect the output and goto target
               val Transition(_, out, target) = ta(trans)
-              step(idx + 1, target, out reverse_::: acc)
+              val acc1 = out.foldLeft(acc) {
+                case (acc, -1) => alphabetMap(c) :: acc
+                case (acc, n)  => n :: acc
+              }
+              step(idx + 1, target, acc1)
             case _ =>
               Set.empty
           }

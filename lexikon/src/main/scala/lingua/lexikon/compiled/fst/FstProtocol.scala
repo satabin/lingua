@@ -29,8 +29,8 @@ object FstProtocol {
   val char: Codec[Char] =
     utf8_32.xmap[Char](_(0), _.toString)
 
-  val output: Codec[Out] =
-    "output" | discriminated[Out].by(byte)
+  val output: Codec[StaticOut] =
+    "output" | discriminated[StaticOut].by(byte)
       .|(0) { case CharOut(c) => c }(CharOut)(char)
       .|(1) { case CatOut(s) => s }(CatOut)(utf8_32)
       .|(2) { case TagOut(t) => t }(TagOut)(utf8_32)

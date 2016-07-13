@@ -51,7 +51,7 @@ class Compiler(fst: PSubFst[Char, Out], diko: Diko) extends Phase[CompileOptions
     val stateSize =
       5 + 6 * alphabet.size
 
-    val outputsB = new VectorBuilder[Out]
+    val outputsB = new VectorBuilder[StaticOut]
     outputsB ++= diko.alphabet.map(CharOut(_))
     outputsB ++= diko.separators.map(CharOut(_))
     outputsB ++= diko.categories.map(c => CatOut(c.alias))
@@ -102,46 +102,89 @@ class Compiler(fst: PSubFst[Char, Out], diko: Diko) extends Phase[CompileOptions
         oaSize += 1
       }
 
-      var profile = BitVector.low(stateSize).patch(0, BitVector.high(5))
-      occupation += 5
+      fst.defaultTransitions.get(state) match {
 
-      for (((`state`, c), target) <- fst.transitions) {
-        val cidx = alphabet.indexOf(c)
-        ti = ti.patch(5 + cidx * 6, ByteVector.fromShort(c.toShort) ++ ByteVector.fromInt(taSize))
-        profile = profile.patch(5 + cidx * 6, BitVector.high(6))
-        occupation += 6
+        case Some(dfltTarget) =>
+          // there is a default transition, store it as a dense transition in the end of the current chunk and create a new chunk
+          // add the default transition
+          val dfltTrans = taSize
+          ta += Transition(0, fst.defaultOutputs(state).map(outputs.indexOf(_)).toList, dfltTarget)
+          taSize += 1
+          if (!processed.contains(dfltTarget)) {
+            queue.enqueue(dfltTarget)
+          }
+          // dense states start at the end of the current transition index array
+          val idx = tia.size.toInt
+          state2idx(state) = idx
 
-        ta += Transition(c, fst.outputs(state -> c).map(outputs.indexOf(_)).toList, target)
-        taSize += 1
-        if (!processed.contains(target)) {
-          queue.enqueue(target)
-        }
+          for (c <- alphabet) {
+            fst.transitions.get(state -> c) match {
+              case Some(target) =>
+                val cidx = alphabet.indexOf(c)
+                ti = ti.patch(5 + cidx * 6, ByteVector.fromShort(c.toShort) ++ ByteVector.fromInt(taSize))
+
+                ta += Transition(c, fst.outputs(state -> c).map(outputs.indexOf(_)).toList, target)
+                taSize += 1
+                if (!processed.contains(target)) {
+                  queue.enqueue(target)
+                }
+              case None =>
+                // use the default transition
+                val cidx = alphabet.indexOf(c)
+                ti = ti.patch(5 + cidx * 6, ByteVector.fromShort(c.toShort) ++ ByteVector.fromInt(dfltTrans))
+            }
+          }
+
+          tia ++= ti
+          tiaProfile ++= BitVector.high(stateSize)
+
+          occupation = 0
+          base = tia.size.toInt
+          firstFree = base
+
+        case None =>
+          // no default transition for this state, store the sparse transition using the first-fit algorithm
+          var profile = BitVector.low(stateSize).patch(0, BitVector.high(5))
+          occupation += 5
+
+          for (((`state`, c), target) <- fst.transitions) {
+            val cidx = alphabet.indexOf(c)
+            ti = ti.patch(5 + cidx * 6, ByteVector.fromShort(c.toShort) ++ ByteVector.fromInt(taSize))
+            profile = profile.patch(5 + cidx * 6, BitVector.high(6))
+            occupation += 6
+
+            ta += Transition(c, fst.outputs(state -> c).map(outputs.indexOf(_)).toList, target)
+            taSize += 1
+            if (!processed.contains(target)) {
+              queue.enqueue(target)
+            }
+          }
+
+          // insert the transition indices into the tia at the first place that does not overlap anything
+          var idx = firstFree
+          var cont = true
+          while (cont) {
+            val slice = tiaProfile.slice(idx, idx + profile.size)
+            if ((slice & profile) === BitVector.low(profile.size)) {
+              cont = false
+            } else {
+              idx += 1
+            }
+          }
+
+          state2idx(state) = idx
+          tia = tia.padRight(math.max(tia.size, ti.size + idx)) | ti.padLeft(ti.size + idx).padRight(math.max(tia.size, ti.size + idx))
+          tiaProfile |= profile.padLeft(profile.size + idx).padRight(tiaProfile.size)
+
+          if (occupation * 100 / (tia.size - base) > options.occupation) {
+            occupation = 0
+            base = tia.size.toInt
+            firstFree = base
+          } else {
+            firstFree = tiaProfile.indexOfSlice(BitVector.low(1), firstFree).toInt
+          }
+
       }
-
-      // insert the transition indices into the tia at the first place that does not overlap anything
-      var idx = firstFree
-      var cont = true
-      while (cont) {
-        val slice = tiaProfile.slice(idx, idx + profile.size)
-        if ((slice & profile) === BitVector.low(profile.size)) {
-          cont = false
-        } else {
-          idx += 1
-        }
-      }
-
-      state2idx(state) = idx
-      tia = tia.padRight(math.max(tia.size, ti.size + idx)) | ti.padLeft(ti.size + idx).padRight(math.max(tia.size, ti.size + idx))
-      tiaProfile |= profile.padLeft(profile.size + idx).padRight(tiaProfile.size)
-
-      if (occupation * 100 / (tia.size - base) > options.occupation) {
-        occupation = 0
-        base = tia.size.toInt
-        firstFree = base
-      } else {
-        firstFree = tiaProfile.indexOfSlice(BitVector.low(1), firstFree).toInt
-      }
-
     }
 
     CompiledPSubFst(alphabet, outputs, tia, ta.result.map(t => t.copy(target = state2idx(t.target))), oa.result)
