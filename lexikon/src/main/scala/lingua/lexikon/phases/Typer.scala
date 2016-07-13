@@ -18,6 +18,8 @@ package phases
 
 import scala.collection.mutable.Map
 
+import scala.annotation.tailrec
+
 /** The typer builds a typing environment for an input lexicon description.
  *  This environment can then be used to retrieve various information.
  *
@@ -91,11 +93,11 @@ class Typer(diko: Diko) extends Phase[CompileOptions, Typer](Some("typer")) {
     reset(reporter)
     val Diko(_, _, _, _, lexika) = diko
     for (l <- lexika)
-      typeLexikon(l)(reporter)
+      typeLexikon(l)(options, reporter)
     this
   }
 
-  def typeLexikon(lex: Lexikon)(implicit reporter: Reporter): Unit = {
+  def typeLexikon(lex: Lexikon)(implicit options: CompileOptions, reporter: Reporter): Unit = {
     val Lexikon(name, category, emissions, entries) = lex
     val offset = lex.offset
 
@@ -108,7 +110,7 @@ class Typer(diko: Diko) extends Phase[CompileOptions, Typer](Some("typer")) {
 
   }
 
-  def typeEntry(e: Entry)(implicit reporter: Reporter): Unit = e match {
+  def typeEntry(e: Entry)(implicit options: CompileOptions, reporter: Reporter): Unit = e match {
     case w @ Word(word, cat, emissions) =>
       // check that all characters in a word are either in the alphabet or a separator
       for (WordChar(c1, c2) <- word) {
@@ -129,40 +131,57 @@ class Typer(diko: Diko) extends Phase[CompileOptions, Typer](Some("typer")) {
         typeRule(name, r)
   }
 
-  def typeRule(rewriteName: String, r: Rule)(implicit reporter: Reporter): Unit =
+  def typeRule(rewriteName: String, r: Rule)(implicit options: CompileOptions, reporter: Reporter): Unit =
     for ((p @ Pattern(pattern, cat, pemissions), r @ Replacement(replacement, remissions)) <- r) {
       val poffset = p.offset
       val roffset = r.offset
       typeCategory(cat, poffset)
       typeEmissions(pemissions, poffset)
       typeEmissions(remissions, roffset)
-      for (p <- pattern)
-        typePattern(p, poffset)
-      for (r <- replacement)
-        typeReplacement(rewriteName, r, roffset)
+      val nbCaptures = typePattern(pattern, poffset)
+      typeReplacement(rewriteName, replacement, nbCaptures, roffset)
     }
 
-  def typePattern(p: CasePattern, offset: Int)(implicit reporter: Reporter): Unit = p match {
-    case StringPattern(s) =>
-      for {
-        c <- s
-        if !charSet.contains(c)
-      } reporter.error(f"Unknown letter $c", offset)
-    case _ =>
-    // ok
+  def typePattern(ps: Seq[CasePattern], offset: Int)(implicit reporter: Reporter): Int = {
+    @tailrec
+    def loop(ps: Seq[CasePattern], acc: Int): Int = ps match {
+      case Seq() =>
+        acc
+      case Seq(StringPattern(s), rest @ _*) =>
+        for {
+          c <- s
+          if !charSet.contains(c)
+        } reporter.error(f"Unknown letter $c", offset)
+        loop(rest, acc)
+      case Seq(CapturePattern, rest @ _*) =>
+        loop(rest, acc + 1)
+    }
+    loop(ps, 0)
   }
 
-  def typeReplacement(rewriteName: String, r: CaseReplacement, offset: Int)(implicit reporter: Reporter): Unit = r match {
-    case StringReplacement(s) =>
-      for {
-        c <- s
-        if !charSet.contains(c)
-      } reporter.error(f"Unknown letter $c", offset)
-    case RecursiveReplacement(rs) =>
-      for (r <- rs)
-        typeReplacement(rewriteName, r, offset)
-    case _ =>
-    // ok
+  def typeReplacement(rewriteName: String, rs: Seq[CaseReplacement], nbCaptures: Int, offset: Int)(implicit options: CompileOptions, reporter: Reporter): Int = {
+    @tailrec
+    def loop(rs: Seq[CaseReplacement], lastCapture: Int): Int = rs match {
+      case Seq() =>
+        lastCapture
+      case Seq(StringReplacement(s), rest @ _*) =>
+        for {
+          c <- s
+          if !charSet.contains(c)
+        } reporter.error(f"Unknown letter $c", offset)
+        loop(rest, lastCapture)
+      case Seq(RecursiveReplacement(rs), rest @ _*) =>
+        val lastCapture1 = typeReplacement(rewriteName, rs, nbCaptures, offset)
+        loop(rest, lastCapture1)
+      case Seq(CaptureReplacement, rest @ _*) =>
+        loop(rest, lastCapture + 1)
+    }
+    val replCaptures = loop(rs, 0)
+    if (options.generateInflections && replCaptures > nbCaptures)
+      reporter.error("Replacement has more captures than pattern and cannot be used to generate inflections", offset)
+    if (options.generateDeflections && nbCaptures > replCaptures)
+      reporter.error("Pattern has more captures than replacement and cannot be ised to generate deflections", offset)
+    replCaptures
   }
 
 }

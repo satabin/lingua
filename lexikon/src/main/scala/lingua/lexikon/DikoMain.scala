@@ -44,6 +44,18 @@ object DikoMain extends App {
         case _ =>
           throw new Exception
       }.text("The output .diko file (by default 'dikoput.diko'"),
+      opt[Boolean]('f', "inflections").action {
+        case (b, c: CompileOptions) =>
+          c.copy(generateInflections = b)
+        case _ =>
+          throw new Exception
+      }.text("Indicates whether inflections are generated for the base vocabulary"),
+      opt[Boolean]('d', "deflections").action {
+        case (b, c: CompileOptions) =>
+          c.copy(generateDeflections = b)
+        case _ =>
+          throw new Exception
+      }.text("Indicates whether deflections are generated from the rewrite rules"),
       opt[Int]('K', "occupation").action {
         case (k, c: CompileOptions) =>
           c.copy(occupation = k)

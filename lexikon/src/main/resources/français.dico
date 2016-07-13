@@ -120,26 +120,26 @@ lexikon Nom @N {
     rule ..al / -NC => ..aux
        | ..eau / -NC => ..eaux
        | .. / -NC => ..s
-       // après la flèche, le `\1` indique la première ascription `..` avant la flèche
-       // après la flèche, le `\2` indique la deuxième ascription `..` avant la flèche
-       | ..-.. / +VNI => \1-\2
+       // après la flèche, le `..` indique la première ascription `..` avant la flèche
+       // après la flèche, le `..` indique la deuxième ascription `..` avant la flèche
+       | ..-.. / +VNI => ..-..
        // la notation @(...) indique que la règle de réécriture courante est appliquée au résulat
        // du remplacement entre parenthèses de manière récursive. Le résultat a la même catégorie
        // et aucune étiquette
-       | ..-.. / +VN  => \1-@(\2)
+       | ..-.. / +VN  => ..-@(..)
 
-       | ..-.. / +NNI => @(\1)-\2
-       | ..-.. / +NN => @(\1)-@(\2)
+       | ..-.. / +NNI => @(..)-..
+       | ..-.. / +NN => @(..)-@(..)
 
        // utiliser `..` après la flèche fait référence aux captures du pattern de manière implicite
-       // le premier `..` est équivalent à `\1`, le deuxième à `\2` et ainsi de suite
+       // le premier `..` est équivalent à `..`, le deuxième à `..` et ainsi de suite
        // Cette notation est plutôt indiquée lorsque qu’il n’y a qu’un seul groupe capturé afin
        // d’éviter les ambiguïtés
        | ..o-.. / +AdjN => ..o-@(..)
-       | ..-.. / +AdjN => @(\1)-@(\2)
-       | ..-.. / +NAdj => @(\1)-@(\2)
+       | ..-.. / +AdjN => @(..)-@(..)
+       | ..-.. / +NAdj => @(..)-@(..)
 
-       | ..-.. / +AdvN => \1-@(\2) ;
+       | ..-.. / +AdvN => ..-@(..) ;
   }
 
 }

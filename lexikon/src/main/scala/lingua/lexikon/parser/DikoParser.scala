@@ -85,8 +85,7 @@ object DikoParser {
 
   val replacementText: P[CaseReplacement] = P(
     "@" ~ "(" ~ (replacementText.rep(min = 1) ~ ")").map(RecursiveReplacement)
-      | "\\" ~ integer.map(i => CaptureReplacement(Some(i)))
-      | P("..").map(_ => CaptureReplacement(None))
+      | P("..").map(_ => CaptureReplacement)
       | char.rep(min = 1).!.map(StringReplacement))
 
   val annotation: P[(Option[String], Seq[TagEmission])] = P(

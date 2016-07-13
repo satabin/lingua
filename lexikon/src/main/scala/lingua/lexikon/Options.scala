@@ -42,6 +42,8 @@ final case class NoCommandOptions(verbose: Boolean = false,
 }
 
 final case class CompileOptions(input: File = null,
+    generateInflections: Boolean = true,
+    generateDeflections: Boolean = false,
     occupation: Int = 70,
     output: File = File("dikput.diko"),
     saveNFst: Option[File] = None,

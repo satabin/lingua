@@ -141,10 +141,7 @@ class Transformer(typer: Typer, diko: Diko) extends Phase[CompileOptions, NFst[C
       case (currentIdx, StringReplacement(s)) =>
         builder.append(s)
         currentIdx
-      case (currentIdx, CaptureReplacement(Some(n))) =>
-        builder.append(m.group(n))
-        currentIdx
-      case (currentIdx, CaptureReplacement(None)) =>
+      case (currentIdx, CaptureReplacement) =>
         builder.append(m.group(currentIdx))
         currentIdx + 1
       case (currentIdx, RecursiveReplacement(seq)) =>
