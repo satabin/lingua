@@ -42,12 +42,16 @@ final case class NoCommandOptions(verbose: Boolean = false,
 }
 
 final case class CompileOptions(input: File = null,
-    generateInflections: Boolean = true,
-    generateDeflections: Boolean = false,
+    outputDir: File = File("out"),
+    generateLemmas: Boolean = false,
+    generateInflections: Boolean = false,
+    generateDeflexions: Boolean = false,
     occupation: Int = 70,
-    output: File = File("dikput.diko"),
-    saveNFst: Option[File] = None,
-    saveFst: Option[File] = None,
+    lemmasFile: String = "lemmas",
+    inflectionsFile: String = "inflections",
+    deflexionsFile: String = "deflexions",
+    saveNFst: Boolean = false,
+    saveFst: Boolean = false,
     verbose: Boolean = false,
     timing: Boolean = false) extends DikoOptions {
 

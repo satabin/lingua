@@ -38,24 +38,48 @@ object DikoMain extends App {
     cmd("compile").action { (_, c) =>
       c.mkCompile
     }.text("Compile a dictionary").children(
-      opt[File]('o', "output").action {
+      opt[File]('o', "output-dir").action {
         case (f, c: CompileOptions) =>
-          c.copy(output = f)
+          c.copy(outputDir = f)
         case _ =>
           throw new Exception
-      }.text("The output .diko file (by default 'dikoput.diko'"),
-      opt[Boolean]('f', "inflections").action {
+      },
+      opt[String]("inflections-file").action {
+        case (f, c: CompileOptions) =>
+          c.copy(inflectionsFile = f)
+        case _ =>
+          throw new Exception
+      }.text("The generated inflections files base name (by default 'inflections')"),
+      opt[String]("deflexions-file").action {
+        case (f, c: CompileOptions) =>
+          c.copy(deflexionsFile = f)
+        case _ =>
+          throw new Exception
+      }.text("The generated deflexions files base name (by default 'deflexions')"),
+      opt[String]("lemmas-file").action {
+        case (f, c: CompileOptions) =>
+          c.copy(lemmasFile = f)
+        case _ =>
+          throw new Exception
+      }.text("The generated lemmas files base name (by default 'lemmas')"),
+      opt[Unit]('i', "inflections").action {
         case (b, c: CompileOptions) =>
-          c.copy(generateInflections = b)
+          c.copy(generateInflections = true)
         case _ =>
           throw new Exception
-      }.text("Indicates whether inflections are generated for the base vocabulary"),
-      opt[Boolean]('d', "deflections").action {
+      }.text("Generate inflections from the lemmas and rewrite rules"),
+      opt[Unit]('d', "deflections").action {
         case (b, c: CompileOptions) =>
-          c.copy(generateDeflections = b)
+          c.copy(generateDeflexions = true)
         case _ =>
           throw new Exception
-      }.text("Indicates whether deflections are generated from the rewrite rules"),
+      }.text("Generate deflexions from the rewrite rules"),
+      opt[Unit]('l', "lemmas").action {
+        case (b, c: CompileOptions) =>
+          c.copy(generateLemmas = true)
+        case _ =>
+          throw new Exception
+      }.text("Generate lemmas"),
       opt[Int]('K', "occupation").action {
         case (k, c: CompileOptions) =>
           c.copy(occupation = k)
@@ -63,18 +87,18 @@ object DikoMain extends App {
           throw new Exception
       }.text("Minimum segement occupation before skipping to the next one. Decreasing this number improves generation speed but results in bigger generated lexicon file.")
         .validate(i => if (i >= 0 && i <= 100) success else failure("value must be between 0 and 100")),
-      opt[File]('N', "save-nfst").action {
+      opt[Unit]('N', "save-nfst").action {
         case (f, c: CompileOptions) =>
-          c.copy(saveNFst = Some(f))
+          c.copy(saveNFst = true)
         case _ =>
           throw new Exception
-      }.text("Save the dot representation of the non deterministic fst to the given file"),
-      opt[File]('F', "save-fst").action {
+      }.text("Save the dot representation of the non deterministic fst"),
+      opt[Unit]('F', "save-fst").action {
         case (f, c: CompileOptions) =>
-          c.copy(saveFst = Some(f))
+          c.copy(saveFst = true)
         case _ =>
           throw new Exception
-      }.text("Save the dot representation of the fst to the given file"),
+      }.text("Save the dot representation of the fst"),
       arg[File]("<file>").action {
         case (f, c: CompileOptions) =>
           c.copy(input = f)
@@ -125,14 +149,12 @@ object DikoMain extends App {
           for {
             diko <- new Parser(input)
             typer <- new Typer(diko)
-            nfst <- new Transformer(typer, diko)
-            fst <- new Determinize(nfst)
-            compiled <- new Compiler(fst, diko)
-            () <- new Serializer(compiled)
+            files <- new Transformer(typer, diko)
+            () <- new Serializer(files, diko)
           } yield ()
 
         sequence.run(options, reporter)
-        reporter.info(f"output written in ${options.output}")
+        reporter.info(f"Files written in ${options.outputDir}")
         reporter.summary()
 
       case options: QueryOptions =>

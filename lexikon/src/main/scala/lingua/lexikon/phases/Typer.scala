@@ -179,8 +179,8 @@ class Typer(diko: Diko) extends Phase[CompileOptions, Typer](Some("typer")) {
     val replCaptures = loop(rs, 0)
     if (options.generateInflections && replCaptures > nbCaptures)
       reporter.error("Replacement has more captures than pattern and cannot be used to generate inflections", offset)
-    if (options.generateDeflections && nbCaptures > replCaptures)
-      reporter.error("Pattern has more captures than replacement and cannot be ised to generate deflections", offset)
+    if (options.generateDeflexions && nbCaptures > replCaptures)
+      reporter.error("Pattern has more captures than replacement and cannot be ised to generate deflexions", offset)
     replCaptures
   }
 

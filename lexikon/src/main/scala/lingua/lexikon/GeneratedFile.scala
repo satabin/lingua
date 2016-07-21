@@ -14,26 +14,13 @@
  */
 package lingua
 package lexikon
-package phases
 
-import fst._
+import better.files.File
 
-import scala.io.Codec
+import fst.PSubFst
 
-class Determinize(nfst: NFst[Char, Out]) extends Phase[CompileOptions, PSubFst[Char, Out]](Some("determinizer")) {
+sealed trait GeneratedFile
 
-  def process(options: CompileOptions, reporter: Reporter): PSubFst[Char, Out] = {
+final case class FstFile(file: File, fst: PSubFst[Char, Out]) extends GeneratedFile
 
-    for (f <- options.saveNFst)
-      f.overwrite(nfst.toDot)(codec = Codec.UTF8)
-
-    val fst = nfst.determinize
-
-    for (f <- options.saveFst)
-      f.overwrite(fst.toDot)(codec = Codec.UTF8)
-
-    fst
-
-  }
-
-}
+final case class DotFile(file: File, dot: String) extends GeneratedFile

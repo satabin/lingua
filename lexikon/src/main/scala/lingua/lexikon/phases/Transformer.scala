@@ -26,65 +26,101 @@ import scala.util.matching.Regex.Match
 import gnieh.diff._
 
 /** The transformer is the core class of the lexicon generator. It takes a well-typed lexicon
- *  description and produces a non-deterministic Fst with epsilon transitions.
+ *  description and produces deterministic Fsts for lemmas, inflections and deflexions, depending on
+ *  what need to be generated.
  *
  *  @author Lucas Satabin
  */
-class Transformer(typer: Typer, diko: Diko) extends Phase[CompileOptions, NFst[Char, Out]](Some("transformer")) {
+class Transformer(typer: Typer, diko: Diko) extends Phase[CompileOptions, Seq[GeneratedFile]](Some("transformer")) {
 
   private val lcs = new Patience[Char]
-
-  private val fstBuilder = NFst.Builder.create[Char, Out]
-
-  private var fst: NFst[Char, Out] = null
 
   // a regular expression that matches a non empty sequence of letters from the alphabet
   private val lettersRe =
     f"[${Regex.quote(diko.alphabet.mkString)}]+"
 
-  def process(options: CompileOptions, reporter: Reporter): NFst[Char, Out] = {
-    // assume everything type-checks
-    if (fst == null) {
-      for (l @ Lexikon(name, gCat, gTags, entries) <- diko.lexika) {
-        val (words, rewrites) =
-          entries.foldLeft(List.empty[Word], List.empty[Rewrite]) {
-            case (acc, w @ Word(_, Some(_), _)) if gCat.isDefined =>
-              reporter.error(f"A global category is already defined on the lexikon", w.offset)
-              acc
-            case (acc, w @ Word(_, None, _)) if !gCat.isDefined =>
-              reporter.error(f"A category must be defined for the word", w.offset)
-              acc
-            case ((ws, rs), w @ Word(str, eCat, eTags)) =>
-              (Word(str, gCat.orElse(eCat), gTags ++ eTags)(w.offset) :: ws, rs)
-            case ((ws, rs), r @ Rewrite(name, eTags, rules)) =>
-              (ws, Rewrite(name, gTags ++ eTags, rules)(r.offset) :: rs)
-          }
+  def process(options: CompileOptions, reporter: Reporter): Seq[GeneratedFile] = {
 
-        for (Word(input, cat, tags) <- words) {
-          val start = fstBuilder.newState.makeInitial
-          val (inChars, outChars) = input.toVector.unzip { case WordChar(in, out) => (in, out) }
-          createStates(inChars, outChars, cat.get, tags, 0, start)
+    val lemmasBuilder = if (options.generateLemmas) Some(NFst.Builder.create[Char, Out]) else None
+    val inflectionsBuilder = if (options.generateInflections) Some(NFst.Builder.create[Char, Out]) else None
+    val deflexionsBuilder = if (options.generateDeflexions) Some(NFst.Builder.create[Char, Out]) else None
+
+    // assume everything type-checks
+    // first generate lemmas and inflections (no inversion of rules needed)
+    for (l @ Lexikon(name, gCat, gTags, entries) <- diko.lexika) {
+      val (words, rewrites) =
+        entries.foldLeft(List.empty[Word], List.empty[Rewrite]) {
+          case (acc, w @ Word(_, Some(_), _)) if gCat.isDefined =>
+            reporter.error(f"A global category is already defined on the lexikon", w.offset)
+            acc
+          case (acc, w @ Word(_, None, _)) if !gCat.isDefined =>
+            reporter.error(f"A category must be defined for the word", w.offset)
+            acc
+          case ((ws, rs), w @ Word(str, eCat, eTags)) =>
+            (Word(str, gCat.orElse(eCat), gTags ++ eTags)(w.offset) :: ws, rs)
+          case ((ws, rs), r @ Rewrite(name, eTags, rules)) =>
+            (ws, Rewrite(name, gTags ++ eTags, rules)(r.offset) :: rs)
         }
 
-        for (Rewrite(name, tags, rules) <- rewrites) {
-          // a rewrite rule applies all its patterns in order to the words in this
-          // lexicon (collected aboved). The first pattern that applies to a word
-          // is the one taken, and the replacement is substituted to the word
-          val rewrittenWords = rewriteWords(name, words, tags, rules)(reporter)
-          for (Word(input, cat, tags) <- rewrittenWords) {
-            val start = fstBuilder.newState.makeInitial
-            val (inChars, outChars) = input.toVector.unzip { case WordChar(in, out) => (in, out) }
-            createStates(inChars, outChars, cat.get, tags, 0, start)
-          }
+      for (Word(input, cat, tags) <- words) {
+        val builders = Seq(lemmasBuilder.map(b => (b.newState.makeInitial, b)), inflectionsBuilder.map(b => (b.newState.makeInitial, b))).flatten
+        val (inChars, outChars) = input.toVector.unzip { case WordChar(in, out) => (in, out) }
+        createStates(inChars, outChars, cat.get, tags, 0, builders)
+      }
+
+      for (Rewrite(name, tags, rules) <- rewrites) {
+        // a rewrite rule applies all its patterns in order to the words in this
+        // lexicon (collected aboved). The first pattern that applies to a word
+        // is the one taken, and the replacement is substituted to the word
+        val rewrittenWords = rewriteWords(name, words, tags, rules)(reporter)
+        for (Word(input, cat, tags) <- rewrittenWords) {
+          val builders = inflectionsBuilder.map(b => (b.newState.makeInitial, b)).toSeq
+          val (inChars, outChars) = input.toVector.unzip { case WordChar(in, out) => (in, out) }
+          createStates(inChars, outChars, cat.get, tags, 0, builders)
         }
       }
-      fst = fstBuilder.build().removeEpsilonTransitions
     }
-    fst
+
+    // build the NFst
+    val lemmasNFst =
+      for (b <- lemmasBuilder) yield b.build().removeEpsilonTransitions()
+    val inflectionsNFst =
+      for (b <- inflectionsBuilder) yield b.build().removeEpsilonTransitions()
+    val deflexionsNFst =
+      for (b <- deflexionsBuilder) yield b.build().removeEpsilonTransitions()
+
+    // generate dot files for NFsts if asked to
+    val lemmasNDot =
+      for (nfst <- lemmasNFst if options.saveNFst) yield DotFile(options.outputDir / f"${options.lemmasFile}-nfst.dot", nfst.toDot)
+    val inflectionsNDot =
+      for (nfst <- inflectionsNFst if options.saveNFst) yield DotFile(options.outputDir / f"${options.inflectionsFile}-nfst.dot", nfst.toDot)
+    val deflexionsNDot =
+      for (nfst <- deflexionsNFst if options.saveNFst) yield DotFile(options.outputDir / f"${options.deflexionsFile}-nfst.dot", nfst.toDot)
+
+    // determinize NFsts to get the Fsts and generate Fst files
+    val lemmasFst =
+      for (nfst <- lemmasNFst)
+        yield FstFile(options.outputDir / f"${options.lemmasFile}.diko", nfst.determinize)
+    val inflectionsFst =
+      for (nfst <- inflectionsNFst)
+        yield FstFile(options.outputDir / f"${options.inflectionsFile}.diko", nfst.determinize)
+    val deflexionsFst =
+      for (nfst <- deflexionsNFst)
+        yield FstFile(options.outputDir / f"${options.deflexionsFile}.diko", nfst.determinize)
+
+    // generated dot files for Fsts if asked to
+    val lemmasDot =
+      for (FstFile(_, fst) <- lemmasFst if options.saveFst) yield DotFile(options.outputDir / f"${options.lemmasFile}-fst.dot", fst.toDot)
+    val inflectionsDot =
+      for (FstFile(_, fst) <- inflectionsFst if options.saveFst) yield DotFile(options.outputDir / f"${options.inflectionsFile}-fst.dot", fst.toDot)
+    val deflexionsDot =
+      for (FstFile(_, fst) <- deflexionsFst if options.saveFst) yield DotFile(options.outputDir / f"${options.deflexionsFile}-fst.dot", fst.toDot)
+
+    Seq(lemmasFst, inflectionsFst, deflexionsFst, lemmasNDot, inflectionsNDot, deflexionsNDot, lemmasDot, inflectionsDot, deflexionsDot).flatten
   }
 
   @tailrec
-  private def createStates(inChars: Vector[Option[Char]], outChars: Vector[Option[Char]], cat: String, tags: Seq[TagEmission], idx: Int, previous: NFst.StateBuilder[Char, Out]): Unit = {
+  private def createStates(inChars: Vector[Option[Char]], outChars: Vector[Option[Char]], cat: String, tags: Seq[TagEmission], idx: Int, builders: Seq[(NFst.StateBuilder[Char, Out], NFst.Builder[Char, Out])]): Unit = {
     assert(inChars.size == outChars.size, "")
     if (idx == inChars.size) {
       // final state
@@ -95,17 +131,22 @@ class Transformer(typer: Typer, diko: Diko) extends Phase[CompileOptions, NFst[C
           case (acc, _) =>
             acc
         }
-      previous.makeFinal.addFinalOutput(tags1 :+ CatOut(cat))
+      for ((previous, _) <- builders) {
+        previous.makeFinal.addFinalOutput(tags1 :+ CatOut(cat))
+      }
     } else {
       // add transition with the current character to a new state
-      val st = fstBuilder.newState
       val outChar =
         outChars(idx) match {
           case Some(c) => Seq(CharOut(c))
           case None    => Seq()
         }
-      previous.addTransition(inChars(idx), outChar, st)
-      createStates(inChars, outChars, cat, tags, idx + 1, st)
+      val builders1 = for ((previous, builder) <- builders) yield {
+        val st = builder.newState
+        previous.addTransition(inChars(idx), outChar, st)
+        (st, builder)
+      }
+      createStates(inChars, outChars, cat, tags, idx + 1, builders1)
     }
   }
 

@@ -17,9 +17,9 @@ package lexikon
 
 abstract class Phase[O <: Options, T](val name: Option[String]) {
 
-  protected[lexikon] def process(options: O, reporter: Reporter): T
+  protected[this] def process(options: O, reporter: Reporter): T
 
-  def run(options: O, reporter: Reporter): T = {
+  final def run(options: O, reporter: Reporter): T = {
 
     for (name <- name) {
       if (options.verbose) {
@@ -69,7 +69,7 @@ abstract class Phase[O <: Options, T](val name: Option[String]) {
 private class FilteredPhase[O <: Options, T](phase: Phase[O, T], p: T => Boolean) extends Phase[O, T](None) {
 
   def process(options: O, reporter: Reporter): T = {
-    val t = phase.process(options, reporter)
+    val t = phase.run(options, reporter)
 
     if (!p(t)) {
       reporter.error("Returned value does not satisfy predicate", -1)
