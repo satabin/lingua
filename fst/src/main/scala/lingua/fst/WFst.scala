@@ -19,6 +19,8 @@ abstract class WFst[In, Out, Weight: Semiring](val states: Set[State],
     val initials: Set[State],
     val finals: Map[State, (Weight, Set[Seq[Out]])]) {
 
+  val semiring = implicitly[Semiring[Weight]]
+
   def isFinal(state: State): Boolean =
     finals.contains(state)
 

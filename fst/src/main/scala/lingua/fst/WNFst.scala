@@ -22,12 +22,97 @@ package lingua.fst
  */
 class WNFst[In, Out, Weight: Semiring] private[fst] (states: Set[State],
   initials: Set[State],
+  val initialWeight: Weight,
   finals: Map[State, (Weight, Set[Seq[Out]])],
   val transitions: Map[(State, In), Set[State]],
   val anyTransitions: Map[State, Set[State]],
   val outputs: Map[(State, In, State), Seq[Out]],
-  val anyOutputs: Map[(State, State), Seq[Out]])
-    extends WFst(states, initials, finals)
+  val anyOutputs: Map[(State, State), Seq[Out]],
+  val weights: Map[(State, In, State), Weight],
+  val anyWeights: Map[(State, State), Weight])
+    extends WFst(states, initials, finals) {
+
+  def delta(state: State, in: In): Set[State] =
+    transitions.getOrElse((state, in), Set.empty) ++ anyTransitions.getOrElse(state, Set.empty)
+
+  def sigma(origin: State, in: In, target: State): Seq[Out] =
+    outputs.get((origin, in, target)).orElse(anyOutputs.get((origin, target))).getOrElse(Seq.empty)
+
+  /** Provided we can prove that this non-deterministic Fst accepts epsilon transitions, returns
+   *  the equivalent non-deterministic Fst without any epsilon transitions.
+   */
+  def removeEpsilonTransitions[In1](implicit epsilonProof: EpsilonProof[In, In1]): WNFst[In1, Out, Weight] = {
+
+    import epsilonProof._
+
+    def epsReached(state: State, viewed: Set[State], accOut: Seq[Out], accW: Weight): Set[(State, Seq[Out], Weight)] =
+      transitions.get(state -> Eps) match {
+        case Some(targets) =>
+          for {
+            target <- targets
+            if !viewed.contains(target)
+            outputs = this.outputs.getOrElse((state, Eps, target), Seq.empty)
+            w = this.weights.getOrElse((state, Eps, target), semiring.one)
+            next <- epsReached(target, viewed + target, accOut ++ outputs, semiring.times(accW, w))
+          } yield next
+        case None =>
+          Set((state, accOut, accW))
+      }
+
+    // for each state, we merge the epsilon reachable targets with the following non epsilon transitions
+    // also push the epsilon transition to final states, so that the originating state becomes final with the outputs
+    val (newAnyOutputs, newOutputs, newAnyWeights, newWeights, newFinals) =
+      states.foldLeft((Map.empty[(State, State), Seq[Out]], Map.empty[(State, In1, State), Seq[Out]], Map.empty[(State, State), Weight], Map.empty[(State, In1, State), Weight], Map.empty[State, (Weight, Set[Seq[Out]])])) {
+        case (acc, state) =>
+          val eps = epsReached(state, Set(state), Seq.empty, semiring.one)
+          eps.foldLeft(acc) {
+            case ((accAnyOutputs, accOutputs, accAnyWeights, accWeights, accFinals), (target, out, weight)) =>
+              // for each non epsilon transition, prepend out to the transition output
+              val accOutputs1 = outputs.foldLeft(accOutputs) {
+                case (accOutputs, ((`target`, NoEps(c), target2), targetOut)) =>
+                  accOutputs.updated((state, c, target2), out ++ targetOut)
+                case (acc, _) =>
+                  acc
+              }
+              val accWeights1 = weights.foldLeft(accWeights) {
+                case (accWeights, ((`target`, NoEps(c), target2), targetW)) =>
+                  accWeights.updated((state, c, target2), semiring.times(weight, targetW))
+                case (acc, _) =>
+                  acc
+              }
+              val accFinals1 =
+                finals.get(target) match {
+                  case Some((fweight, outs)) =>
+                    val (prevStateW, prevStateOuts) = finals.getOrElse(state, (semiring.zero, Set.empty[Seq[Out]]))
+                    accFinals.updated(state, (semiring.plus(prevStateW, semiring.times(weight, fweight)), prevStateOuts ++ outs.map(out ++ _)))
+                  case None =>
+                    accFinals
+                }
+
+              val accAnyOutputs1 = anyOutputs.foldLeft(accAnyOutputs) {
+                case (accAnyOutputs, ((`target`, target2), targetOut)) =>
+                  accAnyOutputs.updated((state, target2), out ++ targetOut)
+                case (acc, _) =>
+                  acc
+              }
+              val accAnyWeights1 = anyWeights.foldLeft(accAnyWeights) {
+                case (accAnyWeights, ((`target`, target2), targetW)) =>
+                  accAnyWeights.updated((state, target2), semiring.times(weight, targetW))
+                case (acc, _) =>
+                  acc
+              }
+              (accAnyOutputs1, accOutputs1, accAnyWeights1, accWeights1, accFinals1)
+          }
+      }
+
+    val newTransitions =
+      for (((state, NoEps(c)), states) <- transitions)
+        yield (state, c) -> states
+
+    new WNFst(states, initials, initialWeight, newFinals, newTransitions, anyTransitions, newOutputs, newAnyOutputs, newWeights, newAnyWeights)
+  }
+
+}
 
 object WNFst {
 
@@ -98,7 +183,9 @@ object WNFst {
       val anyOuts = anyOutputs.toMap
       val finals = finalOutputs.map { case (st, out) => (st, (finalWeights(st), out.toSet)) }.toMap
       val states1 = states.map(_.id).toSet
-      new WNFst(states1, initials, finals, trans, anyTrans, outs, anyOuts)
+      val weights1 = weights.toMap
+      val anyWeights1 = anyWeights.toMap
+      new WNFst(states1, initials, initialWeight, finals, trans, anyTrans, outs, anyOuts, weights1, anyWeights1)
 
     }
 
