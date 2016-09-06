@@ -36,6 +36,68 @@ class NFst[In, Out] private[fst] (states: Set[State],
   def sigma(origin: State, in: In, target: State): Seq[Out] =
     outputs.get((origin, in, target)).orElse(anyOutputs.get((origin, target))).getOrElse(Seq.empty)
 
+  /** Provided we can prove that this non-deterministic Fst accepts epsilon transitions, returns
+   *  the equivalent non-deterministic Fst without any epsilon transitions.
+   */
+  def removeEpsilonTransitions[In1](implicit epsilonProof: EpsilonProof[In, In1]): NFst[In1, Out] = {
+
+    import epsilonProof._
+
+    def epsReached(state: State, viewed: Set[State], acc: Seq[Out]): Set[(State, Seq[Out])] =
+      transitions.get(state -> Eps) match {
+        case Some(targets) =>
+          for {
+            target <- targets
+            if !viewed.contains(target)
+            outputs = this.outputs.getOrElse((state, Eps, target), Seq.empty)
+            next <- epsReached(target, viewed + target, acc ++ outputs)
+          } yield next
+        case None =>
+          Set(state -> acc)
+      }
+
+    // for each state, we merge the epsilon reachable targets with the following non epsilon transitions
+    // also push the epsilon transition to final states, so that the originating state becomes final with the outputs
+    val (newAnyOutputs, newOutputs, newFinals) =
+      states.foldLeft((Map.empty[(State, State), Seq[Out]], Map.empty[(State, In1, State), Seq[Out]], Map.empty[State, Set[Seq[Out]]])) {
+        case (acc, state) =>
+          val eps = epsReached(state, Set(state), Seq.empty)
+          eps.foldLeft(acc) {
+            case ((accAnyOutputs, accOutputs, accFinals), (target, out)) =>
+              // for each non epsilon transition, prepend out to the transition output
+              val accOutputs1 = outputs.foldLeft(accOutputs) {
+                case (accOutputs, ((`target`, NoEps(c), target2), targetOut)) =>
+                  accOutputs.updated((state, c, target2), out ++ targetOut)
+                case (acc, _) =>
+                  acc
+              }
+              val accFinals1 =
+                finals.get(target) match {
+                  case Some(outs) =>
+                    val prevStateOuts = finals.getOrElse(state, Set.empty)
+                    accFinals.updated(state, prevStateOuts ++ outs.map(out ++ _))
+                  case None =>
+                    accFinals
+                }
+
+              val accAnyOutputs1 = anyOutputs.foldLeft(accAnyOutputs) {
+                case (accAnyOutputs, ((`target`, target2), targetOut)) =>
+                  accAnyOutputs.updated((state, target2), out ++ targetOut)
+                case (acc, _) =>
+                  acc
+              }
+              (accAnyOutputs1, accOutputs1, accFinals1)
+          }
+      }
+
+    val newTransitions =
+      for (((state, NoEps(c)), states) <- transitions)
+        yield (state, c) -> states
+
+    new NFst(states, initials, newFinals, newTransitions, anyTransitions, newOutputs, newAnyOutputs)
+  }
+
+  /** Build the determinisitc version of this non-deterministic Fst. */
   def determinize: PSubFst[In, Out] = {
 
     import scala.collection.{ mutable => mu }
