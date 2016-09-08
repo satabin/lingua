@@ -12,34 +12,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package lingua
-package fst
+package lingua.fst.semiring
 
-import scala.annotation.implicitNotFound
-
-/** A proof that some input accepts epsilons and how to extract a non-epsilon value.
+/** Semiring representation over elements of `K`.
  *
  *  @author Lucas Satabin
  */
-@implicitNotFound("Could not prove that ${EpsIn} accepts epsilon values")
-trait EpsilonProof[EpsIn, NoEpsIn] {
+trait Semiring[K] {
 
-  val Eps: EpsIn
+  def zero: K
 
-  def unapplyNoEps(in: EpsIn): Option[NoEpsIn]
+  def one: K
 
-  def applyEps(in: NoEpsIn): EpsIn
+  def plus(k1: K, k2: K): K
 
-  object NoEps {
+  def times(k1: K, k2: K): K
 
-    @inline
-    def unapply(in: EpsIn): Option[NoEpsIn] =
-      unapplyNoEps(in)
-
-    @inline
-    def apply(in: NoEpsIn): EpsIn =
-      applyEps(in)
-
-  }
+  def inverse(k: K): K
 
 }

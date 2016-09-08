@@ -16,15 +16,6 @@ package lingua.fst
 
 package object semiring {
 
-  implicit object Boolean extends Semiring[Boolean] {
-    val one = true
-    val zero = false
-    def plus(k1: Boolean, k2: Boolean): Boolean =
-      k1 || k2
-    def times(k1: Boolean, k2: Boolean): Boolean =
-      k1 && k2
-  }
-
   implicit object Log extends Semiring[Double] {
     val one = 0.0
     val zero = Double.PositiveInfinity
@@ -32,6 +23,8 @@ package object semiring {
       -math.log(math.exp(-k1) + math.exp(-k2))
     def times(k1: Double, k2: Double): Double =
       k1 + k2
+    def inverse(k: Double): Double =
+      -k
   }
 
   implicit object Probability extends Semiring[Double] {
@@ -41,6 +34,8 @@ package object semiring {
       k1 + k2
     def times(k1: Double, k2: Double): Double =
       k1 * k2
+    def inverse(k: Double): Double =
+      1 / k
   }
 
   implicit object Tropical extends Semiring[Double] {
@@ -50,6 +45,8 @@ package object semiring {
       math.min(k1, k2)
     def times(k1: Double, k2: Double): Double =
       k1 + k2
+    def inverse(k: Double): Double =
+      -k
   }
 
 }

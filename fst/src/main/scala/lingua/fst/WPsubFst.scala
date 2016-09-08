@@ -14,18 +14,15 @@
  */
 package lingua.fst
 
-/** Semiring representation over elements of `K`.
- *
- *  @author Lucas Satabin
- */
-trait Semiring[K] {
+import semiring.Semiring
 
-  def zero: K
-
-  def one: K
-
-  def plus(k1: K, k2: K): K
-
-  def times(k1: K, k2: K): K
-
-}
+class WPSubFst[In, Out, Weight: Semiring] private[fst] (states: Set[State],
+  initial: State,
+  val initialWeight: Weight,
+  finals: Map[State, Set[(Weight, Seq[Out])]],
+  val transitions: Map[(State, In), State],
+  val defaultTransitions: Map[State, State],
+  val outputs: Map[(State, In), Seq[Out]],
+  val defaultOutputs: Map[State, Seq[Out]],
+  val weights: Map[(State, In), Weight],
+  val defaultWeights: Map[State, Weight]) extends WFst(states, Map(initial -> initialWeight), finals)

@@ -15,9 +15,11 @@
 package lingua
 package fst
 
+import semiring.Semiring
+
 abstract class WFst[In, Out, Weight: Semiring](val states: Set[State],
-    val initials: Set[State],
-    val finals: Map[State, (Weight, Set[Seq[Out]])]) {
+    val initials: Map[State, Weight],
+    val finals: Map[State, Set[(Weight, Seq[Out])]]) {
 
   val semiring = implicitly[Semiring[Weight]]
 
@@ -35,7 +37,7 @@ abstract class WFst[In, Out, Weight: Semiring](val states: Set[State],
         if (finals.contains(s))
           f"""q$s[shape=doublecircle, label=""];
              |  end$s[shape=plaintext,label=""];
-             |  q$s->end$s[label="${finals(s)._2.map(_.mkString("[", ", ", "]")).mkString("\\n")} / ${finals(s)._1}"]""".stripMargin
+           |  q$s->end$s[label="${finals(s).map { case (w, o) => f"${o.mkString("[", ", ", "]")} / $w" }.mkString("\\n")}"]""".stripMargin
         else
           f"""q$s[shape=circle,label=""]"""
       }.mkString(";\n  ")

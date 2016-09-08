@@ -35,5 +35,6 @@ package object fst {
     new EpsilonProof[Option[T], T] {
       val Eps = None
       def unapplyNoEps(in: Option[T]): Option[T] = in
+      def applyEps(in: T): Option[T] = Option(in)
     }
 }

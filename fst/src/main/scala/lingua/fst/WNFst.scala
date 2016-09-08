@@ -14,6 +14,8 @@
  */
 package lingua.fst
 
+import semiring.Semiring
+
 /** A non-deterministic wieghted Fst implementation. Multi-Fst cannot be represented by this Fst.
  *  A multi-Fst is an Fst for which there are several transitions from the same state for
  *  the same input symbol leading to the same target state.
@@ -21,9 +23,8 @@ package lingua.fst
  *  @author Lucas Satabin
  */
 class WNFst[In, Out, Weight: Semiring] private[fst] (states: Set[State],
-  initials: Set[State],
-  val initialWeight: Weight,
-  finals: Map[State, (Weight, Set[Seq[Out]])],
+  initials: Map[State, Weight],
+  finals: Map[State, Set[(Weight, Seq[Out])]],
   val transitions: Map[(State, In), Set[State]],
   val anyTransitions: Map[State, Set[State]],
   val outputs: Map[(State, In, State), Seq[Out]],
@@ -37,6 +38,9 @@ class WNFst[In, Out, Weight: Semiring] private[fst] (states: Set[State],
 
   def sigma(origin: State, in: In, target: State): Seq[Out] =
     outputs.get((origin, in, target)).orElse(anyOutputs.get((origin, target))).getOrElse(Seq.empty)
+
+  def weight(origin: State, in: In, target: State): Weight =
+    weights.get((origin, in, target)).orElse(anyWeights.get((origin, target))).getOrElse(semiring.one)
 
   /** Provided we can prove that this non-deterministic Fst accepts epsilon transitions, returns
    *  the equivalent non-deterministic Fst without any epsilon transitions.
@@ -62,7 +66,7 @@ class WNFst[In, Out, Weight: Semiring] private[fst] (states: Set[State],
     // for each state, we merge the epsilon reachable targets with the following non epsilon transitions
     // also push the epsilon transition to final states, so that the originating state becomes final with the outputs
     val (newAnyOutputs, newOutputs, newAnyWeights, newWeights, newFinals) =
-      states.foldLeft((Map.empty[(State, State), Seq[Out]], Map.empty[(State, In1, State), Seq[Out]], Map.empty[(State, State), Weight], Map.empty[(State, In1, State), Weight], Map.empty[State, (Weight, Set[Seq[Out]])])) {
+      states.foldLeft((Map.empty[(State, State), Seq[Out]], Map.empty[(State, In1, State), Seq[Out]], Map.empty[(State, State), Weight], Map.empty[(State, In1, State), Weight], Map.empty[State, Set[(Weight, Seq[Out])]])) {
         case (acc, state) =>
           val eps = epsReached(state, Set(state), Seq.empty, semiring.one)
           eps.foldLeft(acc) {
@@ -82,9 +86,9 @@ class WNFst[In, Out, Weight: Semiring] private[fst] (states: Set[State],
               }
               val accFinals1 =
                 finals.get(target) match {
-                  case Some((fweight, outs)) =>
-                    val (prevStateW, prevStateOuts) = finals.getOrElse(state, (semiring.zero, Set.empty[Seq[Out]]))
-                    accFinals.updated(state, (semiring.plus(prevStateW, semiring.times(weight, fweight)), prevStateOuts ++ outs.map(out ++ _)))
+                  case Some(wouts) =>
+                    val prevStateWOuts = finals.getOrElse(state, Set.empty[(Weight, Seq[Out])])
+                    accFinals.updated(state, prevStateWOuts ++ wouts.map { case (w, o) => (semiring.times(weight, w), out ++ o) })
                   case None =>
                     accFinals
                 }
@@ -109,7 +113,134 @@ class WNFst[In, Out, Weight: Semiring] private[fst] (states: Set[State],
       for (((state, NoEps(c)), states) <- transitions)
         yield (state, c) -> states
 
-    new WNFst(states, initials, initialWeight, newFinals, newTransitions, anyTransitions, newOutputs, newAnyOutputs, newWeights, newAnyWeights)
+    new WNFst(states, initials, newFinals, newTransitions, anyTransitions, newOutputs, newAnyOutputs, newWeights, newAnyWeights)
+  }
+
+  /** Build the determinisitc version of this non-deterministic Fst. */
+  def determinize: WPSubFst[In, Out, Weight] = {
+
+    import scala.collection.{ mutable => mu }
+
+    val pfinals = new mu.HashMap[State, mu.Set[(Weight, Seq[Out])]] with mu.MultiMap[State, (Weight, Seq[Out])]
+
+    val ptransitions = mu.Map.empty[(State, In), State]
+    val panyTransitions = mu.Map.empty[State, State]
+    val poutputs = mu.Map.empty[(State, In), Seq[Out]]
+    val panyOutputs = mu.Map.empty[State, Seq[Out]]
+    val pweights = mu.Map.empty[(State, In), Weight]
+    val panyWeights = mu.Map.empty[State, Weight]
+    var pInitialWeight = semiring.one
+
+    val queue = mu.Queue.empty[(State, Set[(State, Seq[Out], Weight)])]
+
+    val initial = initials.map { case (s, w) => (s, Seq.empty[Out], w) }.toSet
+
+    queue.enqueue((0, initial))
+
+    val newStates = mu.Map[Set[State], State](initial.map(_._1) -> 0)
+    var nextStateId = 1
+
+    while (queue.nonEmpty) {
+
+      val (q2id, q2) = queue.dequeue
+
+      def j1(a: In) =
+        for {
+          (st, `a`) <- transitions.keys
+          (_, o, w) <- q2.find(_._1 == st)
+        } yield (st, o, w)
+
+      lazy val anyj1 =
+        for {
+          st <- anyTransitions.keys
+          (_, o, w) <- q2.find(_._1 == st)
+        } yield (st, o, w)
+
+      def j2(a: In) =
+        for {
+          (st, `a`) <- transitions.keys
+          (_, o, w) <- q2.find(_._1 == st).toSet
+          st1 <- delta(st, a)
+        } yield (st, o, w, st1)
+
+      lazy val anyj2 =
+        for {
+          (st, reached) <- anyTransitions
+          (_, o, w) <- q2.find(_._1 == st).toSet
+          st1 <- reached
+        } yield (st, o, w, st1)
+
+      for {
+        (q, o, w) <- q2
+        if this.finals.contains(q)
+        (weight, out) <- this.finals(q)
+      } pfinals.addBinding(q2id, (w, o ++ out))
+
+      for ((q, _, v) <- q2) {
+        for ((`q`, a) <- transitions.keys) {
+          val j1a = j1(a)
+          poutputs((q2id, a)) = lcp(
+            for ((q, o, _) <- j1a)
+              yield o ++ lcp(
+              for (q_ <- delta(q, a))
+                yield sigma(q, a, q_)))
+          val w1 =
+            j1a.foldLeft(semiring.zero) {
+              case (acc, (q, _, w)) =>
+                semiring.plus(acc, semiring.times(v, w))
+            }
+          pweights((q2id, a)) = w1
+
+          val nextState =
+            (for ((q, o, w, q_) <- j2(a))
+              yield (q_, (o ++ sigma(q, a, q_)).drop(poutputs((q2id, a)).size), semiring.times(semiring.inverse(w1), semiring.times(v, w)))).toSet
+
+          val nextId = newStates.get(nextState.map(_._1)) match {
+            case Some(id) =>
+              id
+            case None =>
+              newStates += (nextState.map(_._1) -> nextStateId)
+              queue.enqueue((nextStateId, nextState))
+              nextStateId += 1
+              nextStateId - 1
+          }
+
+          ptransitions((q2id, a)) = nextId
+        }
+
+        for (`q` <- anyTransitions.keys) {
+          panyOutputs(q2id) = lcp(
+            for ((q, o, w) <- anyj1)
+              yield o ++ lcp(
+              for (q_ <- anyTransitions.getOrElse(q, Set.empty))
+                yield anyOutputs((q, q_))))
+          val w1 =
+            anyj1.foldLeft(semiring.zero) {
+              case (acc, (q, _, w)) =>
+                semiring.plus(acc, semiring.times(v, w))
+            }
+          panyWeights(q2id) = w1
+
+          val nextState =
+            (for ((q, o, w, q_) <- anyj2)
+              yield (q_, (o ++ anyOutputs((q, q_))).drop(panyOutputs(q2id).size), semiring.times(semiring.inverse(w1), semiring.times(v, w)))).toSet
+
+          val nextId = newStates.get(nextState.map(_._1)) match {
+            case Some(id) =>
+              id
+            case None =>
+              newStates += (nextState.map(_._1) -> nextStateId)
+              queue.enqueue((nextStateId, nextState))
+              nextStateId += 1
+              nextStateId - 1
+          }
+
+          panyTransitions(q2id) = nextId
+        }
+      }
+    }
+
+    new WPSubFst(newStates.values.toSet, 0, pInitialWeight, pfinals.mapValues(_.toSet).toMap, ptransitions.toMap, panyTransitions.toMap, poutputs.toMap, panyOutputs.toMap, pweights.toMap, panyWeights.toMap)
   }
 
 }
@@ -143,13 +274,11 @@ object WNFst {
     private[fst] val outputs = Map.empty[(State, Option[In], State), Seq[Out]]
     private[fst] val anyOutputs = Map.empty[(State, State), Seq[Out]]
 
-    private[fst] var initialWeight: Weight = semiring.one
+    private[fst] var initialWeights = Map.empty[State, Weight].withDefaultValue(semiring.one)
     private[fst] val weights = Map.empty[(State, Option[In], State), Weight]
     private[fst] val anyWeights = Map.empty[(State, State), Weight]
 
-    private[fst] val finalOutputs: MultiMap[State, Seq[Out]] = new HashMap[State, Set[Seq[Out]]] with MultiMap[State, Seq[Out]]
-
-    private[fst] val finalWeights = Map.empty[State, Weight].withDefaultValue(semiring.one)
+    private[fst] val finalOutputs: MultiMap[State, (Weight, Seq[Out])] = new HashMap[State, Set[(Weight, Seq[Out])]] with MultiMap[State, (Weight, Seq[Out])]
 
     /** Creates a new state in this Fst and returns it */
     def newState: StateBuilder[In, Out, Weight] = {
@@ -158,11 +287,6 @@ object WNFst {
       val b = new StateBuilder[In, Out, Weight](this, id)
       states += b
       b
-    }
-
-    def setInitialWeight(w: Weight): this.type = {
-      initialWeight = w
-      this
     }
 
     private object InitState {
@@ -176,16 +300,16 @@ object WNFst {
     /** Builds a non-deterministic Fst with epsilon transitions. */
     def build(): WNFst[Option[In], Out, Weight] = {
       val initials =
-        states.collect { case InitState(s) => s }.toSet
+        states.collect { case InitState(s) => (s, initialWeights(s)) }.toMap
       val trans = transitions.mapValues(_.toSet).toMap
       val anyTrans = anyTransitions.mapValues(_.toSet).toMap
       val outs = outputs.toMap
       val anyOuts = anyOutputs.toMap
-      val finals = finalOutputs.map { case (st, out) => (st, (finalWeights(st), out.toSet)) }.toMap
+      val finals = finalOutputs.mapValues(_.toSet).toMap
       val states1 = states.map(_.id).toSet
       val weights1 = weights.toMap
       val anyWeights1 = anyWeights.toMap
-      new WNFst(states1, initials, initialWeight, finals, trans, anyTrans, outs, anyOuts, weights1, anyWeights1)
+      new WNFst(states1, initials, finals, trans, anyTrans, outs, anyOuts, weights1, anyWeights1)
 
     }
 
@@ -211,15 +335,15 @@ object WNFst {
       this
     }
 
-    def addFinalOutput(out: Seq[Out]): this.type = {
+    def addFinalOutputAndWeight(out: Seq[Out], weight: Weight = builder.semiring.one): this.type = {
       assert(f, "Final outputs may only be added to final states")
-      builder.finalOutputs.addBinding(id, out)
+      builder.finalOutputs.addBinding(id, (weight, out))
       this
     }
 
-    def setFinalWeight(w: Weight): this.type = {
-      assert(f, "Final weights may only be added to final states")
-      builder.finalWeights(id) = w
+    def setInitialWeight(w: Weight): this.type = {
+      assert(i, "Initial weight may only be set on initial states")
+      builder.initialWeights(id) = w
       this
     }
 
