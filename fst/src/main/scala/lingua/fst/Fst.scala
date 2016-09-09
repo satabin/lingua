@@ -15,7 +15,9 @@
 package lingua
 package fst
 
-abstract class Fst[In, Out](val states: Set[State], val initials: Set[State], val finals: Map[State, Set[Seq[Out]]]) {
+import scala.language.higherKinds
+
+abstract class Fst[F[_, _] <: Fst[F, _, _], In, Out](val states: Set[State], val initials: Set[State], val finals: Map[State, Set[Seq[Out]]]) {
 
   def isFinal(state: State): Boolean =
     finals.contains(state)

@@ -28,7 +28,7 @@ class NFst[In, Out] private[fst] (states: Set[State],
   val anyTransitions: Map[State, Set[State]],
   val outputs: Map[(State, In, State), Seq[Out]],
   val anyOutputs: Map[(State, State), Seq[Out]])
-    extends Fst(states, initials, finals) {
+    extends Fst[NFst, In, Out](states, initials, finals) {
 
   def delta(state: State, in: In): Set[State] =
     transitions.getOrElse((state, in), Set.empty) ++ anyTransitions.getOrElse(state, Set.empty)
