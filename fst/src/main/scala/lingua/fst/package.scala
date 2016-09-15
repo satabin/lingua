@@ -14,11 +14,15 @@
  */
 package lingua
 
+import scala.annotation.tailrec
+
 package object fst {
 
   type State = Int
 
-  type Transition[In, Out] = (State, In, Seq[Out], State)
+  type Transition[In, Out] = (In, Seq[Out], State)
+
+  type AnyTransition[Out] = (Seq[Out], State)
 
   def lcp[T](s1: Seq[T], s2: Seq[T]): Seq[T] =
     s1.zip(s2).takeWhile { case (t1, t2) => t1 == t2 }.unzip._1
@@ -29,57 +33,45 @@ package object fst {
       case (Some(s1), s2) => Some(lcp(s1, s2))
     }.getOrElse(Seq.empty[T])
 
-  implicit class EpsilonNFstOps[In, Out](val nfst: NFst[Option[In], Out]) extends AnyVal {
-
-    def removeEpsilonTransitions(): NFst[In, Out] = {
-
-      // for each state, we merge the epsilon reachable targets with the following non epsilon transitions
-      // also push the epsilon transition to final states, so that the originating state becomes final with the outputs
-      val (newOutputs, newFinals) =
-        nfst.states.foldLeft((Map.empty[(State, In, State), Seq[Out]], Map.empty[State, Set[Seq[Out]]])) {
-          case (acc, state) =>
-            val eps = epsReached(state, Set(state), Seq.empty)
-            eps.foldLeft(acc) {
-              case ((accOutputs, accFinals), (target, out)) =>
-                // for each non epsilon transition, prepend out to the transition output
-                val accOutputs1 = nfst.outputMap.foldLeft(accOutputs) {
-                  case (accOutputs, ((`target`, Some(c), target2), targetOut)) =>
-                    accOutputs.updated((state, c, target2), out ++ targetOut)
-                  case (acc, _) =>
-                    acc
-                }
-                val accFinals1 =
-                  nfst.finals.get(target) match {
-                    case Some(outs) =>
-                      val prevStateOuts = nfst.finals.getOrElse(state, Set.empty)
-                      accFinals.updated(state, prevStateOuts ++ outs.map(out ++ _))
-                    case None =>
-                      accFinals
-                  }
-                (accOutputs1, accFinals1)
-            }
-        }
-
-      val newTransitions =
-        for (((state, Some(c)), states) <- nfst.transitionMap)
-          yield (state, c) -> states
-
-      new NFst(nfst.states, nfst.initials, newFinals, newTransitions, newOutputs)
+  implicit def OptionEpsilon[T]: EpsilonProof[Option[T], T] =
+    new EpsilonProof[Option[T], T] {
+      val Eps = None
+      def unapplyNoEps(in: Option[T]): Option[T] = in
+      def applyEps(in: T): Option[T] = Option(in)
     }
 
-    private def epsReached(state: State, viewed: Set[State], acc: Seq[Out]): Set[(State, Seq[Out])] =
-      nfst.transitionMap.get(state -> None) match {
-        case Some(targets) =>
-          for {
-            target <- targets
-            if !viewed.contains(target)
-            outputs = nfst.outputMap.getOrElse((state, None, target), Seq.empty)
-            next <- epsReached(target, viewed + target, acc ++ outputs)
-          } yield next
-        case None =>
-          Set(state -> acc)
+  implicit def SeqOrdering[T: Ordering]: Ordering[Seq[T]] =
+    new Ordering[Seq[T]] {
+      def compare(seq1: Seq[T], seq2: Seq[T]): Int = {
+        val size1 = seq1.size
+        val size2 = seq2.size
+        val size = math.min(size1, size2)
+        @tailrec
+        def loop(idx: Int): Int =
+          if (idx >= size) {
+            if (size1 == size2) {
+              // both are equal
+              0
+            } else if (size > size1) {
+              // first is prefix of second, then it is smaller
+              -1
+            } else {
+              // second is prefix of first, then it is greater
+              1
+            }
+          } else {
+            val v1 = seq1(idx)
+            val v2 = seq2(idx)
+            val order = implicitly[Ordering[T]].compare(v1, v2)
+            if (order == 0) {
+              loop(idx + 1)
+            } else if (order < 0) {
+              -1
+            } else {
+              1
+            }
+          }
+        loop(0)
       }
-
-  }
-
+    }
 }

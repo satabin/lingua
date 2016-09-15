@@ -105,13 +105,13 @@ class Compiler(fst: PSubFst[Char, Out], diko: Diko) extends Phase[CompileOptions
       var profile = BitVector.low(stateSize).patch(0, BitVector.high(5))
       occupation += 5
 
-      for (((`state`, c), target) <- fst.transitionMap) {
+      for (((`state`, c), target) <- fst.transitions) {
         val cidx = alphabet.indexOf(c)
         ti = ti.patch(5 + cidx * 6, ByteVector.fromShort(c.toShort) ++ ByteVector.fromInt(taSize))
         profile = profile.patch(5 + cidx * 6, BitVector.high(6))
         occupation += 6
 
-        ta += Transition(c, fst.outputMap(state -> c).map(outputs.indexOf(_)).toList, target)
+        ta += Transition(c, fst.outputs(state -> c).map(outputs.indexOf(_)).toList, target)
         taSize += 1
         if (!processed.contains(target)) {
           queue.enqueue(target)

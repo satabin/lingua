@@ -1,4 +1,4 @@
-/* Copyright (c) 2015 Lucas Satabin
+/* Copyright (c) 2016 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,13 @@
 package lingua
 package fst
 
-import scala.language.higherKinds
+import semiring.Semiring
 
-abstract class Fst[F[_, _] <: Fst[F, _, _], In, Out](val states: Set[State], val initials: Set[State], val finals: Map[State, Set[Seq[Out]]]) {
+abstract class WFst[In, Out, Weight: Semiring](val states: Set[State],
+    val initials: Map[State, Weight],
+    val finals: Map[State, Set[(Weight, Seq[Out])]]) {
+
+  val semiring = implicitly[Semiring[Weight]]
 
   def isFinal(state: State): Boolean =
     finals.contains(state)
@@ -33,7 +37,7 @@ abstract class Fst[F[_, _] <: Fst[F, _, _], In, Out](val states: Set[State], val
         if (finals.contains(s))
           f"""q$s[shape=doublecircle, label=""];
              |  end$s[shape=plaintext,label=""];
-             |  q$s->end$s[label="${finals(s).map(_.mkString("[", ", ", "]")).mkString("\\n")}"]""".stripMargin
+           |  q$s->end$s[label="${finals(s).map { case (w, o) => f"${o.mkString("[", ", ", "]")} / $w" }.mkString("\\n")}"]""".stripMargin
         else
           f"""q$s[shape=circle,label=""]"""
       }.mkString(";\n  ")
@@ -43,3 +47,4 @@ abstract class Fst[F[_, _] <: Fst[F, _, _], In, Out](val states: Set[State], val
   }
 
 }
+

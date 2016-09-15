@@ -36,15 +36,13 @@ class Transformer(typer: Typer, diko: Diko) extends Phase[CompileOptions, NFst[C
 
   private val lcs = new Patience[Char]
 
-  private val fstBuilder = Builder.create[Char, Out]
+  private val fstBuilder = NFst.Builder.create[Char, Out]
 
   private var fst: NFst[Char, Out] = null
 
   // a regular expression that matches a non empty sequence of letters from the alphabet
   private val lettersRe =
     f"[${Regex.quote(diko.alphabet.mkString)}]+"
-
-  import Builder._
 
   def process(options: CompileOptions, reporter: Reporter): NFst[Char, Out] = {
     // assume everything type-checks
@@ -88,7 +86,7 @@ class Transformer(typer: Typer, diko: Diko) extends Phase[CompileOptions, NFst[C
   }
 
   @tailrec
-  private def createStates(inChars: Vector[Option[Char]], outChars: Vector[Option[Char]], cat: String, tags: Seq[TagEmission], idx: Int, previous: StateBuilder[Char, Out]): Unit = {
+  private def createStates(inChars: Vector[Option[Char]], outChars: Vector[Option[Char]], cat: String, tags: Seq[TagEmission], idx: Int, previous: NFst.StateBuilder[Char, Out]): Unit = {
     assert(inChars.size == outChars.size, "")
     if (idx == inChars.size) {
       // final state
@@ -99,7 +97,7 @@ class Transformer(typer: Typer, diko: Diko) extends Phase[CompileOptions, NFst[C
           case (acc, _) =>
             acc
         }
-      previous.makeFinal.addOutput(tags1 :+ CatOut(cat))
+      previous.makeFinal.addFinalOutput(tags1 :+ CatOut(cat))
     } else {
       // add transition with the current character to a new state
       val st = fstBuilder.newState
