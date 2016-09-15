@@ -23,6 +23,8 @@ import scala.annotation.tailrec
 import scala.util.matching.Regex
 import scala.util.matching.Regex.Match
 
+import scala.collection.immutable.VectorBuilder
+
 import gnieh.diff._
 
 /** The transformer is the core class of the lexicon generator. It takes a well-typed lexicon
@@ -41,8 +43,8 @@ class Transformer(typer: Typer, diko: Diko) extends Phase[CompileOptions, Seq[Ge
 
   def process(options: CompileOptions, reporter: Reporter): Seq[GeneratedFile] = {
 
-    val lemmasBuilder = if (options.generateLemmas) Some(NFst.Builder.create[Char, Out]) else None
-    val inflectionsBuilder = if (options.generateInflections) Some(NFst.Builder.create[Char, Out]) else None
+    val lemmasBuilder = if (options.generateLemmas) Some(new VectorBuilder[(Seq[Char], Seq[Out])]) else None
+    val inflectionsBuilder = if (options.generateInflections) Some(new VectorBuilder[(Seq[Char], Seq[Out])]) else None
     val deflexionsBuilder = if (options.generateDeflexions) Some(NFst.Builder.create[Char, Out]) else None
 
     // assume everything type-checks
@@ -63,9 +65,9 @@ class Transformer(typer: Typer, diko: Diko) extends Phase[CompileOptions, Seq[Ge
         }
 
       for (Word(input, cat, tags) <- words) {
-        val builders = Seq(lemmasBuilder.map(b => (b.newState.makeInitial, b)), inflectionsBuilder.map(b => (b.newState.makeInitial, b))).flatten
+        val builders = Seq(lemmasBuilder, inflectionsBuilder).flatten
         val (inChars, outChars) = input.toVector.unzip { case WordChar(in, out) => (in, out) }
-        createStates(inChars, outChars, cat.get, tags, 0, builders)
+        createStates(inChars, outChars, cat.get, tags, builders)
       }
 
       for (Rewrite(name, tags, rules) <- rewrites) {
@@ -74,36 +76,28 @@ class Transformer(typer: Typer, diko: Diko) extends Phase[CompileOptions, Seq[Ge
         // is the one taken, and the replacement is substituted to the word
         val rewrittenWords = rewriteWords(name, words, tags, rules)(reporter)
         for (Word(input, cat, tags) <- rewrittenWords) {
-          val builders = inflectionsBuilder.map(b => (b.newState.makeInitial, b)).toSeq
+          val builders = inflectionsBuilder.toSeq
           val (inChars, outChars) = input.toVector.unzip { case WordChar(in, out) => (in, out) }
-          createStates(inChars, outChars, cat.get, tags, 0, builders)
+          createStates(inChars, outChars, cat.get, tags, builders)
         }
       }
     }
 
     // build the NFst
-    val lemmasNFst =
-      for (b <- lemmasBuilder) yield b.build().removeEpsilonTransitions()
-    val inflectionsNFst =
-      for (b <- inflectionsBuilder) yield b.build().removeEpsilonTransitions()
     val deflexionsNFst =
-      for (b <- deflexionsBuilder) yield b.build().removeEpsilonTransitions()
+      for (b <- deflexionsBuilder) yield b.build().removeEpsilonTransitions
 
     // generate dot files for NFsts if asked to
-    val lemmasNDot =
-      for (nfst <- lemmasNFst if options.saveNFst) yield DotFile(options.outputDir / f"${options.lemmasFile}-nfst.dot", nfst.toDot)
-    val inflectionsNDot =
-      for (nfst <- inflectionsNFst if options.saveNFst) yield DotFile(options.outputDir / f"${options.inflectionsFile}-nfst.dot", nfst.toDot)
     val deflexionsNDot =
       for (nfst <- deflexionsNFst if options.saveNFst) yield DotFile(options.outputDir / f"${options.deflexionsFile}-nfst.dot", nfst.toDot)
 
     // determinize NFsts to get the Fsts and generate Fst files
     val lemmasFst =
-      for (nfst <- lemmasNFst)
-        yield FstFile(options.outputDir / f"${options.lemmasFile}.diko", nfst.determinize)
+      for (b <- lemmasBuilder)
+        yield FstFile(options.outputDir / f"${options.lemmasFile}.diko", PSubFst.Builder.fromEntries(b.result))
     val inflectionsFst =
-      for (nfst <- inflectionsNFst)
-        yield FstFile(options.outputDir / f"${options.inflectionsFile}.diko", nfst.determinize)
+      for (b <- inflectionsBuilder)
+        yield FstFile(options.outputDir / f"${options.inflectionsFile}.diko", PSubFst.Builder.fromEntries(b.result))
     val deflexionsFst =
       for (nfst <- deflexionsNFst)
         yield FstFile(options.outputDir / f"${options.deflexionsFile}.diko", nfst.determinize)
@@ -116,37 +110,19 @@ class Transformer(typer: Typer, diko: Diko) extends Phase[CompileOptions, Seq[Ge
     val deflexionsDot =
       for (FstFile(_, fst) <- deflexionsFst if options.saveFst) yield DotFile(options.outputDir / f"${options.deflexionsFile}-fst.dot", fst.toDot)
 
-    Seq(lemmasFst, inflectionsFst, deflexionsFst, lemmasNDot, inflectionsNDot, deflexionsNDot, lemmasDot, inflectionsDot, deflexionsDot).flatten
+    Seq(lemmasFst, inflectionsFst, deflexionsFst, deflexionsNDot, lemmasDot, inflectionsDot, deflexionsDot).flatten
   }
 
-  @tailrec
-  private def createStates(inChars: Vector[Option[Char]], outChars: Vector[Option[Char]], cat: String, tags: Seq[TagEmission], idx: Int, builders: Seq[(NFst.StateBuilder[Char, Out], NFst.Builder[Char, Out])]): Unit = {
-    assert(inChars.size == outChars.size, "")
-    if (idx == inChars.size) {
-      // final state
-      val tags1 =
-        normalizedTags(Seq.empty, tags).foldLeft(Seq.empty[TagOut]) {
-          case (acc, (true, t)) if typer.isPublic(t) =>
-            acc :+ TagOut(t)
-          case (acc, _) =>
-            acc
-        }
-      for ((previous, _) <- builders) {
-        previous.makeFinal.addFinalOutput(tags1 :+ CatOut(cat))
+  private def createStates(inChars: Vector[Option[Char]], outChars: Vector[Option[Char]], cat: String, tags: Seq[TagEmission], builders: Seq[VectorBuilder[(Seq[Char], Seq[Out])]]): Unit = {
+    val tags1 =
+      normalizedTags(Seq.empty, tags).foldLeft(Seq.empty[TagOut]) {
+        case (acc, (true, t)) if typer.isPublic(t) =>
+          acc :+ TagOut(t)
+        case (acc, _) =>
+          acc
       }
-    } else {
-      // add transition with the current character to a new state
-      val outChar =
-        outChars(idx) match {
-          case Some(c) => Seq(CharOut(c))
-          case None    => Seq()
-        }
-      val builders1 = for ((previous, builder) <- builders) yield {
-        val st = builder.newState
-        previous.addTransition(inChars(idx), outChar, st)
-        (st, builder)
-      }
-      createStates(inChars, outChars, cat, tags, idx + 1, builders1)
+    for (b <- builders) {
+      b += (inChars.flatten -> ((outChars.flatten.map(CharOut(_)) :+ CatOut(cat)) ++ tags1))
     }
   }
 
