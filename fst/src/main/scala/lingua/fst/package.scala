@@ -74,4 +74,5 @@ package object fst {
         loop(0)
       }
     }
+
 }
