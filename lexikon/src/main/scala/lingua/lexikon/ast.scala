@@ -42,4 +42,4 @@ final case class Replacement(seq: Seq[CaseReplacement], tags: Seq[TagEmission])(
 sealed trait CaseReplacement
 final case class StringReplacement(s: String) extends CaseReplacement
 case object CaptureReplacement extends CaseReplacement
-final case class RecursiveReplacement(seq: Seq[CaseReplacement]) extends CaseReplacement
+case object RecursiveReplacement extends CaseReplacement

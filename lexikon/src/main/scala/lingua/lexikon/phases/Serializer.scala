@@ -52,7 +52,7 @@ class Serializer(files: Seq[GeneratedFile], diko: Diko) extends Phase[CompileOpt
     for (file <- files) file match {
       case DotFile(file, content) =>
         file.overwrite(content)
-      case FstFile(file, fst) =>
+      case PSubFstFile(file, fst) =>
         FstProtocol.file.encode(compile(fst, options)) match {
           case Attempt.Successful(bytes) =>
             for (raf <- file.newFileChannel(Seq(StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)).autoClosed) {
@@ -61,6 +61,8 @@ class Serializer(files: Seq[GeneratedFile], diko: Diko) extends Phase[CompileOpt
           case Attempt.Failure(err) =>
             reporter.error(err.toString)
         }
+      case QPFstFile(file, fst) =>
+
     }
   }
 

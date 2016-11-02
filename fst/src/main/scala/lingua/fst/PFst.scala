@@ -51,41 +51,43 @@ class PNFst[In, Out] private[fst] (states: Set[State],
         val trans = transitions(p)
 
         val protoTransitions =
-          (for ((pos, neg) <- splits(trans.keySet)) yield {
+          for ((pos, neg) <- splits(trans.keySet)) {
             // in the current P, is there any state for which a positive predicate was associated
             // to an identity transition in the original PNFst?
             val hasId = p.exists(p => hasIdentity(p._1, pos))
-            (hasId, neg.fold(pos.fold(AnyPredicate)(_ && _))(_ && !_), (pos.foldLeft(Set.empty[(State, Boolean, Seq[Output[Out]])]) {
-              case (acc, p) =>
-                // if there was an identity, then for each state in p for which no identity
-                // existed in the original NFst, then append a pop output
-                if (hasId)
-                  acc.union(trans(p).map { case (st, originalHasId, outs) => (st, originalHasId, if (originalHasId) outs else outs :+ PopOutput) })
-                else
-                  acc.union(trans(p))
-            }))
-          }).toSet
+            val pred = neg.fold(pos.fold(AnyPredicate)(_ && _))(_ && !_)
+            pred match {
+              case NonEmptyPredicate(pred) =>
+                // only add non empty transitions
+                val tgts = pos.foldLeft(Set.empty[(State, Boolean, Seq[Output[Out]])]) {
+                  case (acc, p) =>
+                    // if there was an identity, then for each state in p for which no identity
+                    // existed in the original NFst, then append a pop output
+                    if (hasId)
+                      acc.union(trans(p).map { case (st, originalHasId, outs) => (st, originalHasId, if (originalHasId) outs else outs :+ PopOutput) })
+                    else
+                      acc.union(trans(p))
+                }
+                // compute the lcp of outputs
+                val outLcp = lcp(tgts.map(_._3))
+                // remove it from the new state set
+                val newP = tgts.map { case (st, originalHasId, outs) => (st, originalHasId, outs.drop(outLcp.size)) }
+                // get the new state identifier
+                val tgtState =
+                  newStates.get(newP.map(_._1)) match {
+                    case Some(id) => id
+                    case None =>
+                      val id = nextStatedId
+                      nextStatedId += 1
+                      newStates(newP.map(_._1)) = id
+                      queue.enqueue((id, newP))
+                      id
+                  }
 
-        // create the transitions out of proto-transitions
-        for ((hasId, NonEmptyPredicate(pred), tgts) <- protoTransitions) {
-          // compute the lcp of outputs
-          val outLcp = lcp(tgts.map(_._3))
-          // remove it from the new state set
-          val newP = tgts.map { case (st, originalHasId, outs) => (st, originalHasId, outs.drop(outLcp.size)) }
-          // get the new state identifier
-          val tgtState =
-            newStates.get(newP.map(_._1)) match {
-              case Some(id) => id
-              case None =>
-                val id = nextStatedId
-                nextStatedId += 1
-                newStates(newP.map(_._1)) = id
-                queue.enqueue((id, newP))
-                id
+                ptransitions(pid) = ptransitions.getOrElse(pid, Seq()) :+ (((pred, hasId), outLcp, tgtState))
+              case _ => // ignore it
             }
-
-          ptransitions(pid) = ptransitions.getOrElse(pid, Seq()) :+ (((pred, hasId), outLcp, tgtState))
-        }
+          }
 
         // update the finals set for each final state in P
         for {

@@ -170,9 +170,8 @@ class Typer(diko: Diko) extends Phase[CompileOptions, Typer](Some("typer")) {
           if !charSet.contains(c)
         } reporter.error(f"Unknown letter $c", offset)
         loop(rest, lastCapture)
-      case Seq(RecursiveReplacement(rs), rest @ _*) =>
-        val lastCapture1 = typeReplacement(rewriteName, rs, nbCaptures, offset)
-        loop(rest, lastCapture1)
+      case Seq(RecursiveReplacement, rest @ _*) =>
+        loop(rest, lastCapture + 1)
       case Seq(CaptureReplacement, rest @ _*) =>
         loop(rest, lastCapture + 1)
     }
@@ -180,7 +179,7 @@ class Typer(diko: Diko) extends Phase[CompileOptions, Typer](Some("typer")) {
     if (options.generateInflections && replCaptures > nbCaptures)
       reporter.error("Replacement has more captures than pattern and cannot be used to generate inflections", offset)
     if (options.generateDeflexions && nbCaptures > replCaptures)
-      reporter.error("Pattern has more captures than replacement and cannot be ised to generate deflexions", offset)
+      reporter.error("Pattern has more captures than replacement and cannot be used to generate deflexions", offset)
     replCaptures
   }
 

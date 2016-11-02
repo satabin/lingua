@@ -45,7 +45,14 @@ class Transformer(typer: Typer, diko: Diko) extends Phase[CompileOptions, Seq[Ge
 
     val lemmasBuilder = if (options.generateLemmas) Some(new VectorBuilder[(Seq[Char], Seq[Out])]) else None
     val inflectionsBuilder = if (options.generateInflections) Some(new VectorBuilder[(Seq[Char], Seq[Out])]) else None
-    val deflexionsBuilder = if (options.generateDeflexions) Some(NFst.Builder.create[Char, Out]) else None
+    val deflexionsBuilder =
+      if (options.generateDeflexions) {
+        val b = PNFst.Builder.create[Char, Out]
+        val i = b.newState.makeInitial
+        Some(b -> i)
+      } else {
+        None
+      }
 
     // assume everything type-checks
     // first generate lemmas and inflections (no inversion of rules needed)
@@ -59,9 +66,9 @@ class Transformer(typer: Typer, diko: Diko) extends Phase[CompileOptions, Seq[Ge
             reporter.error(f"A category must be defined for the word", w.offset)
             acc
           case ((ws, rs), w @ Word(str, eCat, eTags)) =>
-            (Word(str, gCat.orElse(eCat), gTags ++ eTags)(w.offset) :: ws, rs)
+            (Word(str, gCat.orElse(eCat), gTags.normalizeWith(eTags))(w.offset) :: ws, rs)
           case ((ws, rs), r @ Rewrite(name, eTags, rules)) =>
-            (ws, Rewrite(name, gTags ++ eTags, rules)(r.offset) :: rs)
+            (ws, Rewrite(name, gTags.normalizeWith(eTags), rules)(r.offset) :: rs)
         }
 
       for (Word(input, cat, tags) <- words) {
@@ -80,12 +87,29 @@ class Transformer(typer: Typer, diko: Diko) extends Phase[CompileOptions, Seq[Ge
           val (inChars, outChars) = input.toVector.unzip { case WordChar(in, out) => (in, out) }
           createStates(inChars, outChars, cat.get, tags, builders)
         }
+
+        // invert the rule and add it to the deflexions
+        // only non recursive cases are handled, emit a warning for each recursive case
+        for {
+          (builder, i) <- deflexionsBuilder
+          patterns <- rules
+          (p @ Pattern(pattern, pCat, pTags), Replacement(repl, rTags)) <- patterns
+        } {
+          if (repl.exists(_ == RecursiveReplacement)) {
+            reporter.warning("Cannot invert case with recusrive replacement, ignoring it", p.offset)
+          } else {
+            val tags1 = tags.normalizeWith(pTags).normalizeWith(rTags).collect { case (true, t) => TagOut(t) }
+            val cat = gCat.orElse(pCat).map(CatOut)
+            addDeflexion(pattern, cat, tags1, repl, builder, i, p.offset)(reporter)
+          }
+        }
+
       }
     }
 
     // build the NFst
     val deflexionsNFst =
-      for (b <- deflexionsBuilder) yield b.build().removeEpsilonTransitions
+      for ((b, _) <- deflexionsBuilder) yield b.build()
 
     // generate dot files for NFsts if asked to
     val deflexionsNDot =
@@ -94,21 +118,21 @@ class Transformer(typer: Typer, diko: Diko) extends Phase[CompileOptions, Seq[Ge
     // determinize NFsts to get the Fsts and generate Fst files
     val lemmasFst =
       for (b <- lemmasBuilder)
-        yield FstFile(options.outputDir / f"${options.lemmasFile}.diko", PSubFst.Builder.fromEntries(b.result))
+        yield PSubFstFile(options.outputDir / f"${options.lemmasFile}.diko", PSubFst.Builder.fromEntries(b.result))
     val inflectionsFst =
       for (b <- inflectionsBuilder)
-        yield FstFile(options.outputDir / f"${options.inflectionsFile}.diko", PSubFst.Builder.fromEntries(b.result))
+        yield PSubFstFile(options.outputDir / f"${options.inflectionsFile}.diko", PSubFst.Builder.fromEntries(b.result))
     val deflexionsFst =
       for (nfst <- deflexionsNFst)
-        yield FstFile(options.outputDir / f"${options.deflexionsFile}.diko", nfst.determinize)
+        yield QPFstFile(options.outputDir / f"${options.deflexionsFile}.diko", nfst.determinize)
 
     // generated dot files for Fsts if asked to
     val lemmasDot =
-      for (FstFile(_, fst) <- lemmasFst if options.saveFst) yield DotFile(options.outputDir / f"${options.lemmasFile}-fst.dot", fst.toDot)
+      for (PSubFstFile(_, fst) <- lemmasFst if options.saveFst) yield DotFile(options.outputDir / f"${options.lemmasFile}-fst.dot", fst.toDot)
     val inflectionsDot =
-      for (FstFile(_, fst) <- inflectionsFst if options.saveFst) yield DotFile(options.outputDir / f"${options.inflectionsFile}-fst.dot", fst.toDot)
+      for (PSubFstFile(_, fst) <- inflectionsFst if options.saveFst) yield DotFile(options.outputDir / f"${options.inflectionsFile}-fst.dot", fst.toDot)
     val deflexionsDot =
-      for (FstFile(_, fst) <- deflexionsFst if options.saveFst) yield DotFile(options.outputDir / f"${options.deflexionsFile}-fst.dot", fst.toDot)
+      for (QPFstFile(_, fst) <- deflexionsFst if options.saveFst) yield DotFile(options.outputDir / f"${options.deflexionsFile}-fst.dot", fst.toDot)
 
     Seq(lemmasFst, inflectionsFst, deflexionsFst, deflexionsNDot, lemmasDot, inflectionsDot, deflexionsDot).flatten
   }
@@ -161,16 +185,14 @@ class Transformer(typer: Typer, diko: Diko) extends Phase[CompileOptions, Seq[Ge
       case (currentIdx, CaptureReplacement) =>
         builder.append(m.group(currentIdx))
         currentIdx + 1
-      case (currentIdx, RecursiveReplacement(seq)) =>
-        val substring = new StringBuilder
-        val currentIdx1 = buildString(rewriteName, offset, category, rule, m, currentIdx, seq, substring)
-        val newSeq = substring.toSeq.map(c => WordChar(Some(c), Some(c)))
+      case (currentIdx, RecursiveReplacement) =>
+        val newSeq = m.group(currentIdx).toSeq.map(c => WordChar(Some(c), Some(c)))
         val subword = Word(newSeq, category, Seq.empty)(offset)
         applyRule(rewriteName, subword, rule, Seq.empty, rule) match {
           case Some(w) => builder.append(w.word)
           case None    => builder.append(subword.word)
         }
-        currentIdx1
+        currentIdx + 1
     }
 
   private def rewriteWord(rewriteName: String, original: Word, rule: Rule, pattern: Regex, mustCategory: Option[String], mustTags: Set[String], mustntTags: Set[String], rTags: Seq[TagEmission], replacement: Replacement)(implicit reporter: Reporter): Option[Word] = {
@@ -242,5 +264,46 @@ class Transformer(typer: Typer, diko: Diko) extends Phase[CompileOptions, Seq[Ge
       case (acc, tage) =>
         acc :+ tage
     }
+
+  private def addDeflexion(pattern: Seq[CasePattern], cat: Option[CatOut], tags: Seq[TagOut], repl: Seq[CaseReplacement], builder: PNFst.Builder[Char, Out], init: PNFst.StateBuilder[Char, Out], offset: Int)(implicit reporter: Reporter): Unit = {
+    @tailrec
+    def loop(last: PNFst.StateBuilder[Char, Out], pattern: Seq[CasePattern], repl: Seq[CaseReplacement], accOut: Seq[Out]): Unit =
+      (pattern, repl) match {
+        case (Seq(StringPattern(pat), pattern1 @ _*), Seq(StringReplacement(rep), repl1 @ _*)) =>
+          val word = buildWordChars(pat, rep)
+          val (outState, accOut1) = word.foldLeft(last -> accOut) {
+            case ((st, accOut), WordChar(Some(in), Some(out))) =>
+              val st1 = builder.newState
+              st.addTransition(Predicate(in), (accOut :+ CharOut(out)).map(Predicate(_) -> false), st1)
+              st1 -> Seq.empty[Out]
+            case ((st, accOut), WordChar(Some(in), None)) =>
+              val st1 = builder.newState
+              st.addTransition(Predicate(in), accOut.map(Predicate(_) -> false), st1)
+              st1 -> Seq.empty[Out]
+            case ((st, accOut), WordChar(None, Some(out))) =>
+              st -> (accOut :+ CharOut(out))
+            case (acc, WordChar(None, None)) =>
+              acc
+          }
+          loop(outState, pattern1, repl1, accOut1)
+        case (Seq(StringPattern(pat), pattern1 @ _*), _) =>
+          loop(last, pattern1, repl, accOut ++ pat.map(CharOut(_)))
+        case (_, Seq(StringReplacement(rep), repl1 @ _*)) =>
+          val outState = rep.foldLeft(last) { (st, c) =>
+            val st1 = builder.newState
+            st.addTransition(Predicate(c), Seq(), st1)
+            st1
+          }
+          loop(outState, pattern, repl1, accOut)
+        case (Seq(CapturePattern, pattern1 @ _*), Seq(CaptureReplacement, repl1 @ _*)) =>
+          last.addTransition(AnyPredicate, accOut.map(Predicate(_) -> false) :+ (AnyPredicate -> true), last)
+          loop(last, pattern1, repl1, Seq())
+        case (Seq(), Seq()) =>
+          last.makeFinal.addFinalOutput(accOut ++ cat.toSeq ++ tags)
+        case (_, _) =>
+          reporter.error("Malformed rewrite rule", offset)
+      }
+    loop(init, pattern, repl, Seq())
+  }
 
 }

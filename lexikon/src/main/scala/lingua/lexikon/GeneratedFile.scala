@@ -17,10 +17,15 @@ package lexikon
 
 import better.files.File
 
-import fst.PSubFst
+import fst.{
+  PSubFst,
+  QPFst
+}
 
 sealed trait GeneratedFile
 
-final case class FstFile(file: File, fst: PSubFst[Char, Out]) extends GeneratedFile
+final case class PSubFstFile(file: File, fst: PSubFst[Char, Out]) extends GeneratedFile
+
+final case class QPFstFile(file: File, fst: QPFst[Char, Out]) extends GeneratedFile
 
 final case class DotFile(file: File, dot: String) extends GeneratedFile
