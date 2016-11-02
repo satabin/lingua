@@ -33,7 +33,7 @@ import scala.annotation.tailrec
  *
  *  @author Lucas Satabin
  */
-case class CompiledPSubFst(alphabet: Vector[Char], outputs: Vector[StaticOut], tia: ByteVector, ta: Vector[Transition], oa: Vector[Set[Seq[Int]]]) {
+case class CompiledPSubFst(alphabet: Vector[Char], outputs: Vector[Out], tia: ByteVector, ta: Vector[Transition], oa: Vector[Set[Seq[Int]]]) {
 
   private val alphabetMap =
     alphabet.zipWithIndex.toMap

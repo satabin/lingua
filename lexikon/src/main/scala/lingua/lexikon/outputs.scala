@@ -17,15 +17,9 @@ package lexikon
 
 sealed trait Out
 
-case object CurrentChar extends Out {
-  override def toString = "."
-}
+sealed trait Annotation extends Out
 
-sealed trait StaticOut extends Out
-
-sealed trait Annotation extends StaticOut
-
-final case class CharOut(c: Char) extends StaticOut {
+final case class CharOut(c: Char) extends Out {
   override def toString = c.toString
 }
 final case class CatOut(c: String) extends Annotation {

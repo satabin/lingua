@@ -74,7 +74,7 @@ class Serializer(files: Seq[GeneratedFile], diko: Diko) extends Phase[CompileOpt
     val stateSize =
       5 + 6 * alphabet.size
 
-    val outputsB = new VectorBuilder[StaticOut]
+    val outputsB = new VectorBuilder[Out]
     outputsB ++= diko.alphabet.map(CharOut(_))
     outputsB ++= diko.separators.map(CharOut(_))
     outputsB ++= diko.categories.map(c => CatOut(c.alias))

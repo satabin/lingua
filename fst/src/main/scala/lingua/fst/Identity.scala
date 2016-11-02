@@ -1,4 +1,4 @@
-/* Copyright (c) 2015 Lucas Satabin
+/* Copyright (c) 2016 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,18 +13,15 @@
  * limitations under the License.
  */
 package lingua
+package fst
 
-import fst._
+/** The identity allows for converting an input into its identity in the output satisfying the predicate.
+ *  If no such element exists, then `None` is returned.
+ *
+ *  @author Lucas Satabin
+ */
+trait Identity[In, Out] {
 
-package object lexikon {
-  type Rule = Seq[(Pattern, Replacement)]
-
-  implicit object CharOutIdentiy extends Identity[Char, Out] {
-    def convert(c: Char, pout: Predicate[Out]) = pout match {
-      case AnyPredicate => Some(CharOut(c))
-      case SetPredicate(s, pos) if s.contains(c) == pos => Some(CharOut(c))
-      case _ => None
-    }
-  }
+  def convert(in: In, pout: Predicate[Out]): Option[Out]
 
 }
