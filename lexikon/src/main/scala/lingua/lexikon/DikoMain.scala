@@ -21,7 +21,7 @@ import parser._
 import compiled._
 import phases._
 
-import better.files._
+import better.files.{ Read => _, _ }
 
 import scala.io.Codec
 

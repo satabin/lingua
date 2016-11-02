@@ -15,7 +15,9 @@ val globalSettings = scalariformSettings ++ Seq(
       .setPreference(MultilineScaladocCommentsStartOnFirstLine, true)
   })
 
-lazy val root = project.in(file(".")).aggregate(core, fst, lexikon)
+lazy val root = project.in(file("."))
+  .settings(globalSettings: _*)
+  .aggregate(core, fst, lexikon)
 
 lazy val fst = project.in(file("fst"))
   .settings(globalSettings: _*)
@@ -27,13 +29,13 @@ lazy val core = project.in(file("core"))
   .settings(globalSettings: _*)
   .settings(
     version := "0.1.0-SNAPSHOT",
-    libraryDependencies += "com.lihaoyi" %% "fastparse" % "0.3.5",
+    libraryDependencies += "com.lihaoyi" %% "fastparse" % "0.4.2",
     name := "lingua-core")
 
 lazy val lexikonDependencies = Seq(
-  "com.github.scopt" %% "scopt" % "3.4.0",
-  "com.github.pathikrit" %% "better-files" % "2.15.0",
-  "org.scodec" %% "scodec-core" % "1.9.0",
+  "com.github.scopt" %% "scopt" % "3.5.0",
+  "com.github.pathikrit" %% "better-files" % "2.16.0",
+  "org.scodec" %% "scodec-core" % "1.10.3",
   "org.gnieh" %% "tekstlib" % "0.1.0-SNAPSHOT")
 
 lazy val lexikon = project.in(file("lexikon"))

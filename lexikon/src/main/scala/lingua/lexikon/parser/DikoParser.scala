@@ -52,7 +52,7 @@ object DikoParser {
 
   val optChar: P[Option[Char]] = P(
     char.!.map(c => Some(c(0)))
-      | fastparse.parsers.Terminals.CharLiteral('_').map(_ => None))
+      | LiteralStr("_").map(_ => None))
 
   val wordChar: P[WordChar] = P(
     (optChar ~ ":" ~ optChar).map { case (c1, c2) => WordChar(c1, c2) }
