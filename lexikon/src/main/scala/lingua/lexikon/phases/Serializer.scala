@@ -26,10 +26,7 @@ import java.nio.file.StandardOpenOption
 
 import compiled.fst._
 
-import fst.{
-  PSubFst,
-  State
-}
+import fst._
 
 import scala.collection.immutable.{
   VectorBuilder,
@@ -44,6 +41,8 @@ import scala.collection.mutable.{
 }
 
 import scodec.bits._
+
+import scala.reflect._
 
 class Serializer(files: Seq[GeneratedFile], diko: Diko) extends Phase[CompileOptions, Unit](Some("serializer")) {
 
@@ -62,12 +61,20 @@ class Serializer(files: Seq[GeneratedFile], diko: Diko) extends Phase[CompileOpt
             reporter.error(err.toString)
         }
       case QPFstFile(file, fst) =>
-
+        val compiled = compile(fst, options, reporter)
+        if (!reporter.hasErrors)
+          FstProtocol.file.encode(compiled) match {
+            case Attempt.Successful(bytes) =>
+              for (raf <- file.newFileChannel(Seq(StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)).autoClosed) {
+                raf.write(bytes.toByteBuffer)
+              }
+            case Attempt.Failure(err) =>
+              reporter.error(err.toString)
+          }
     }
   }
 
-  private def compile(fst: PSubFst[Char, Out], options: CompileOptions) = {
-
+  private lazy val (alphabet, outputs, stateSize) = {
     val alphabetB = new VectorBuilder[Char]
     alphabetB ++= diko.alphabet
     alphabetB ++= diko.separators
@@ -90,8 +97,82 @@ class Serializer(files: Seq[GeneratedFile], diko: Diko) extends Phase[CompileOpt
         None
     }
     val outputs = outputsB.result
+    (alphabet, outputs, stateSize)
+  }
 
-    val ta = new VectorBuilder[Transition]
+  private val CharSet = classTag[IMSet[Char]]
+  private def enumerate(pred: Predicate[Char]): IMSet[Char] = pred match {
+    case AnyPredicate                      => alphabet.toSet
+    case EmptyPredicate                    => IMSet()
+    case SetPredicate(CharSet(set), true)  => set
+    case SetPredicate(CharSet(set), false) => alphabet.toSet.diff(set)
+  }
+
+  private def toCompiedOutputs(out: Output[Out], reporter: Reporter) = out match {
+    case PredicateOutput(AnyPredicate, true) => QPIdentity
+    case PredicateOutput(SetPredicate(Singleton(c), true), false) => QPOut(outputs.indexOf(c))
+    case PopOutput => QPPop
+    case out =>
+      reporter.error(f"Unsupported output $out")
+      QPPop
+  }
+
+  private def compile(fst: QPFst[Char, Out], options: CompileOptions, reporter: Reporter) = {
+
+    val ta = new VectorBuilder[QPTransition]
+    var taSize = 0
+
+    val oa = new VectorBuilder[IMSet[Seq[QPOutput]]]
+    var oaSize = 0
+
+    val state2idx = Map.empty[State, Int]
+
+    var tia = ByteVector.low(0)
+
+    val queue = Queue.empty[State]
+    queue.enqueue(fst.initial)
+    val processed = Set.empty[State]
+    while (queue.nonEmpty) {
+      val state = queue.dequeue
+      processed += state
+
+      // compute the transition indices for the state
+      var ti = ByteVector.low(stateSize)
+
+      for (outs <- fst.finals.get(state)) {
+        ti = ti.update(0, 1)
+        ti = ti.patch(1, ByteVector.fromInt(oaSize))
+        oa += outs.map(_.map(toCompiedOutputs(_, reporter)))
+        oaSize += 1
+      }
+
+      for {
+        ((pred, capture), out, target) <- fst.transitions(state)
+        c <- enumerate(pred)
+      } {
+        val cidx = alphabet.indexOf(c)
+        if (cidx < 0)
+          println(f"$c -> $cidx")
+        ti = ti.patch(5 + cidx * 6, ByteVector.fromShort(c.toShort) ++ ByteVector.fromInt(taSize))
+
+        ta += QPTransition(c, capture, out.map(toCompiedOutputs(_, reporter)).toList, target)
+        taSize += 1
+        if (!processed.contains(target)) {
+          queue.enqueue(target)
+        }
+      }
+
+      state2idx(state) = tia.size.toInt
+      tia ++= ti
+
+    }
+
+    CompiledQPFst(alphabet, outputs, tia, ta.result.map(t => t.copy(target = state2idx(t.target))), oa.result)
+  }
+
+  private def compile(fst: PSubFst[Char, Out], options: CompileOptions) = {
+
+    val ta = new VectorBuilder[PSubTransition]
     var taSize = 0
 
     val oa = new VectorBuilder[IMSet[Seq[Int]]]
@@ -133,7 +214,7 @@ class Serializer(files: Seq[GeneratedFile], diko: Diko) extends Phase[CompileOpt
           // there is a default transition, store it as a dense transition in the end of the current chunk and create a new chunk
           // add the default transition
           val dfltTrans = taSize
-          ta += Transition(0, fst.defaultOutputs(state).map(outputs.indexOf(_)).toList, dfltTarget)
+          ta += PSubTransition(0, fst.defaultOutputs(state).map(outputs.indexOf(_)).toList, dfltTarget)
           taSize += 1
           if (!processed.contains(dfltTarget)) {
             queue.enqueue(dfltTarget)
@@ -148,7 +229,7 @@ class Serializer(files: Seq[GeneratedFile], diko: Diko) extends Phase[CompileOpt
                 val cidx = alphabet.indexOf(c)
                 ti = ti.patch(5 + cidx * 6, ByteVector.fromShort(c.toShort) ++ ByteVector.fromInt(taSize))
 
-                ta += Transition(c, fst.outputs(state -> c).map(outputs.indexOf(_)).toList, target)
+                ta += PSubTransition(c, fst.outputs(state -> c).map(outputs.indexOf(_)).toList, target)
                 taSize += 1
                 if (!processed.contains(target)) {
                   queue.enqueue(target)
@@ -178,7 +259,7 @@ class Serializer(files: Seq[GeneratedFile], diko: Diko) extends Phase[CompileOpt
             profile = profile.patch(5 + cidx * 6, BitVector.high(6))
             occupation += 6
 
-            ta += Transition(c, fst.outputs(state -> c).map(outputs.indexOf(_)).toList, target)
+            ta += PSubTransition(c, fst.outputs(state -> c).map(outputs.indexOf(_)).toList, target)
             taSize += 1
             if (!processed.contains(target)) {
               queue.enqueue(target)

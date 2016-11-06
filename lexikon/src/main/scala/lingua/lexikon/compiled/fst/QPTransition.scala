@@ -12,15 +12,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package lingua
-package lexikon
-package phases
+package lingua.lexikon
+package compiled
+package fst
 
-import compiled.fst.CompiledFst
+/** A compiled transition for [[QPFst]].
+ *  The `out` sequence contains the indices of outputs in the outputs array of the compiled Fst,
+ *  or a pop identity from the stack or a pop and forget from the stack.
+ *
+ *  @author Lucas Satabin
+ */
+final case class QPTransition(in: Char, capture: Boolean, out: List[QPOutput], target: Int)
 
-class Lookup(fst: CompiledFst) extends Phase[QueryOptions, Set[AnnotatedLemma]](Some("lookup")) {
-
-  def process(options: QueryOptions, reporter: Reporter): Set[AnnotatedLemma] =
-    fst.lookup(options.query)
-
-}
+sealed trait QPOutput
+final case class QPOut(idx: Int) extends QPOutput
+case object QPIdentity extends QPOutput
+case object QPPop extends QPOutput

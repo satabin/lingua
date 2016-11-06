@@ -116,7 +116,7 @@ class PNFst[In, Out] private[fst] (states: Set[State],
       case (acc, (state, _, predsOut1)) =>
         transitions.getOrElse(state, Seq.empty).foldLeft(acc) {
           case (acc, (predIn, predsOut2, q)) =>
-            val hasId = hasIdentity(predsOut2)
+            val hasId = hasNIdentity(predsOut2)
             acc.updated(predIn, acc.getOrElse(predIn, Set.empty) + ((q, hasId, (predsOut1 ++ predsOut2.map { case (pred, id) => PredicateOutput(pred, id) }))))
         }
     }
@@ -129,7 +129,7 @@ class PNFst[In, Out] private[fst] (states: Set[State],
     } yield (pos.toSet, p.diff(pos.toSet))
   }
 
-  private def hasIdentity(seq: Seq[(Predicate[Out], Boolean)]): Boolean =
+  private def hasNIdentity(seq: Seq[(Predicate[Out], Boolean)]): Boolean =
     seq.exists(_._2)
 
   private def hasIdentity(seq: Seq[Output[Out]]): Boolean =

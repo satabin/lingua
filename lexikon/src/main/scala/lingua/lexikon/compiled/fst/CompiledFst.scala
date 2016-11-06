@@ -16,9 +16,9 @@ package lingua.lexikon
 package compiled
 package fst
 
-/** A compiled transition.
- *  The `out` sequence contains the indices of outputs in the outputs array of the compiled Fst.
- *
- *  @author Lucas Satabin
- */
-final case class Transition(in: Char, out: List[Int], target: Int)
+abstract class CompiledFst {
+
+  /** Lookup for the word in this Fst and returns the ordered sequence of outputs if it is found. */
+  def lookup(word: String): Set[AnnotatedLemma]
+
+}

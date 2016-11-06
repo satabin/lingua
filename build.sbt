@@ -3,7 +3,7 @@ import scalariform.formatter.preferences._
 
 val globalSettings = scalariformSettings ++ Seq(
   organization := "lingua",
-  scalaVersion := "2.11.8",
+  scalaVersion := "2.12.0",
   resolvers +=
     "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
   licenses += ("The Apache Software License, Version 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),

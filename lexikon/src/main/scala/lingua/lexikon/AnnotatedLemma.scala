@@ -14,13 +14,5 @@
  */
 package lingua
 package lexikon
-package phases
 
-import compiled.fst.CompiledFst
-
-class Lookup(fst: CompiledFst) extends Phase[QueryOptions, Set[AnnotatedLemma]](Some("lookup")) {
-
-  def process(options: QueryOptions, reporter: Reporter): Set[AnnotatedLemma] =
-    fst.lookup(options.query)
-
-}
+case class AnnotatedLemma(root: String, annotations: Set[Annotation])
