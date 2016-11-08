@@ -14,25 +14,24 @@
  */
 package lingua
 package lexikon
-package phases
+package typed
 
-import parser._
-import untyped._
+sealed trait Tag {
+  val alias: String
+  val fullname: String
+  val public: Boolean
+  val concrete: Boolean
 
-import fastparse.core.Parsed
+  val uname: String
+  val offset: Int
+}
 
-class Parser(inputs: Map[String, String]) extends Phase[CompileOptions, Seq[DikoUnit]](Some("parser")) {
+/** A typed simple tag with its parent and visibility resolved. */
+final case class ConcreteTag(alias: String, fullname: String, public: Boolean, parent: Option[AbstractTag])(val uname: String, val offset: Int) extends Tag {
+  val concrete = true
+}
 
-  def process(options: CompileOptions, reporter: Reporter): Seq[DikoUnit] =
-    (for {
-      (name, input) <- inputs
-      unit <- DikoParser.unit(name).parse(input) match {
-        case Parsed.Success(unit, _) =>
-          Some(unit)
-        case failure @ Parsed.Failure(_, offset, extra) =>
-          reporter.error(f"Unexpected input. Expected: ${extra.traced.expected}", name, offset)
-          None
-      }
-    } yield unit).toSeq
-
+/** A typed abstract tag. */
+final case class AbstractTag(alias: String, fullname: String, public: Boolean)(val uname: String, val offset: Int) extends Tag {
+  val concrete = false
 }

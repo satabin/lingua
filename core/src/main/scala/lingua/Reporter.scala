@@ -24,36 +24,36 @@ object Reporter {
   }
 }
 
-abstract class Reporter(options: Options, input: String) {
+abstract class Reporter(options: Options, inputs: Map[String, String]) {
 
   import Reporter._
 
-  protected def doReport(offset: Int, level: Level.Value, msg: String, exn: Option[Throwable]): Unit
+  protected def doReport(name: String, offset: Int, level: Level.Value, msg: String, exn: Option[Throwable]): Unit
 
-  def report(offset: Int, level: Level.Value, msg: String, exn: Option[Throwable]): Unit = {
+  def report(name: String, offset: Int, level: Level.Value, msg: String, exn: Option[Throwable]): Unit = {
     if (level == Level.ERROR)
       errors += 1
     else if (level == Level.WARNING)
       warnings += 1
     if (options.verbose || level != Level.VERBOSE)
-      doReport(offset, level, msg, exn)
+      doReport(name, offset, level, msg, exn)
   }
 
-  def error(msg: String, offset: Int = -1, exn: Option[Throwable] = None): Unit =
-    report(offset, Level.ERROR, msg, exn)
+  def error(msg: String, name: String = "", offset: Int = -1, exn: Option[Throwable] = None): Unit =
+    report(name, offset, Level.ERROR, msg, exn)
 
-  def warning(msg: String, offset: Int = -1, exn: Option[Throwable] = None): Unit =
-    report(offset, Level.WARNING, msg, exn)
+  def warning(msg: String, name: String = "", offset: Int = -1, exn: Option[Throwable] = None): Unit =
+    report(name, offset, Level.WARNING, msg, exn)
 
-  def info(msg: String, offset: Int = -1, exn: Option[Throwable] = None): Unit =
-    report(offset, Level.INFO, msg, exn)
+  def info(msg: String, name: String = "", offset: Int = -1, exn: Option[Throwable] = None): Unit =
+    report(name, offset, Level.INFO, msg, exn)
 
-  def verbose(msg: String, offset: Int = -1): Unit =
-    report(offset, Level.VERBOSE, msg, None)
+  def verbose(msg: String, name: String = "", offset: Int = -1): Unit =
+    report(name, offset, Level.VERBOSE, msg, None)
 
   def summary(): Unit = {
-    doReport(-1, Level.INFO, f"number of warnings: $warnings", None)
-    doReport(-1, Level.INFO, f"number of errors: $errors", None)
+    doReport("", -1, Level.INFO, f"number of warnings: $warnings", None)
+    doReport("", -1, Level.INFO, f"number of errors: $errors", None)
   }
 
   private var errors = 0
@@ -62,12 +62,18 @@ abstract class Reporter(options: Options, input: String) {
   def hasErrors: Boolean =
     errors > 0
 
-  private val lines = ArrayBuffer(0)
+  private val lines =
+    for ((name, input) <- inputs) yield {
+      val lines = """\r?\n""".r.findAllMatchIn(input).foldLeft(ArrayBuffer(0)) {
+        case (acc, m) =>
+          acc.append(m.end)
+          acc
+      }
+      (name, lines.result)
+    }
 
-  for (m <- """\r?\n""".r.findAllMatchIn(input))
-    lines.append(m.end)
-
-  protected def lineColOf(offset: Int): (Int, Int) = {
+  protected def lineColOf(name: String, offset: Int): (Int, Int) = {
+    val lines = this.lines(name)
     @tailrec
     def start(idx: Int): Int =
       if (offset < lines(idx))

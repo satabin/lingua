@@ -1,4 +1,4 @@
-/* Copyright (c) 2015 Lucas Satabin
+/* Copyright (c) 2016 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,23 @@
  * limitations under the License.
  */
 package lingua
+package lexikon
+package typed
 
-import fst._
+import gnieh.pp._
 
-package object lexikon {
+/** A resolved replacement with normalized tags. */
+final case class Replacement(seq: Seq[CaseReplacement], tags: Seq[TagEmission])(val uname: String, val offset: Int) {
 
-  implicit object CharOutIdentiy extends Identity[Char, Out] {
-    def convert(c: Char, pout: Predicate[Out]) = pout match {
-      case AnyPredicate => Some(CharOut(c))
-      case SetPredicate(s, pos) if s.contains(c) == pos => Some(CharOut(c))
-      case _ => None
+  def pp = {
+    val annotations = tags match {
+      case Seq() => None
+      case _ => Some(text("/") :+: hsep(tags.map {
+        case (true, t)  => text(f"+${t.alias}")
+        case (false, t) => text(f"-${t.alias}")
+      }))
     }
+    group(text(seq.mkString) :+: annotations)
   }
 
 }

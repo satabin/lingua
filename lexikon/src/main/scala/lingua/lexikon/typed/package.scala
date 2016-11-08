@@ -1,4 +1,4 @@
-/* Copyright (c) 2015 Lucas Satabin
+/* Copyright (c) 2016 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,9 +12,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package object lingua {
+package lingua
+package lexikon
 
-  type TagEmission = (Boolean, String)
+/** This package contains the typed and resolved elements that are handled
+ *  after the typing phase.
+ */
+package object typed {
+
+  type TagEmission = (Boolean, Tag)
 
   implicit class TagEmissionsOps(val tags: Seq[TagEmission]) extends AnyVal {
 

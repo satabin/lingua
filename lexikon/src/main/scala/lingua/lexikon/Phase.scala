@@ -72,7 +72,7 @@ private class FilteredPhase[O <: Options, T](phase: Phase[O, T], p: T => Boolean
     val t = phase.run(options, reporter)
 
     if (!p(t)) {
-      reporter.error("Returned value does not satisfy predicate", -1)
+      reporter.error("Returned value does not satisfy predicate")
     }
 
     t

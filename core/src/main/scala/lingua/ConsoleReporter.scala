@@ -14,14 +14,14 @@
  */
 package lingua
 
-class ConsoleReporter(options: Options, input: String) extends Reporter(options, input) {
+class ConsoleReporter(options: Options, inputs: Map[String, String]) extends Reporter(options, inputs) {
 
   import Reporter._
 
-  protected def doReport(offset: Int, level: Level.Value, msg: String, exn: Option[Throwable]): Unit = {
+  protected def doReport(name: String, offset: Int, level: Level.Value, msg: String, exn: Option[Throwable]): Unit = {
     val pos = if (offset >= 0) {
-      val (line, col) = lineColOf(offset)
-      f"[$line,$col] "
+      val (line, col) = lineColOf(name, offset)
+      f"[$line,$col] in $name:\n\t"
     } else {
       ""
     }

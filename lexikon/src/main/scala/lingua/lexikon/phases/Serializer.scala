@@ -27,6 +27,7 @@ import java.nio.file.StandardOpenOption
 import compiled.fst._
 
 import fst._
+import typed._
 
 import scala.collection.immutable.{
   VectorBuilder,
@@ -44,7 +45,7 @@ import scodec.bits._
 
 import scala.reflect._
 
-class Serializer(files: Seq[GeneratedFile], diko: Diko) extends Phase[CompileOptions, Unit](Some("serializer")) {
+class Serializer(files: Seq[GeneratedFile], typed: Diko) extends Phase[CompileOptions, Unit](Some("serializer")) {
 
   def process(options: CompileOptions, reporter: Reporter): Unit = {
     options.outputDir.createDirectories
@@ -76,25 +77,20 @@ class Serializer(files: Seq[GeneratedFile], diko: Diko) extends Phase[CompileOpt
 
   private lazy val (alphabet, outputs, stateSize) = {
     val alphabetB = new VectorBuilder[Char]
-    alphabetB ++= diko.alphabet
-    alphabetB ++= diko.separators
+    alphabetB ++= typed.alphabet
+    alphabetB ++= typed.separators
     val alphabet = alphabetB.result
 
     val stateSize =
       5 + 6 * alphabet.size
 
     val outputsB = new VectorBuilder[Out]
-    outputsB ++= diko.alphabet.map(CharOut(_))
-    outputsB ++= diko.separators.map(CharOut(_))
-    outputsB ++= diko.categories.map(c => CatOut(c.alias))
-    outputsB ++= diko.tags.flatMap { t =>
-      if (t.public)
-        if (t.children.isEmpty)
-          Some(TagOut(t.alias))
-        else
-          t.children.flatMap(t => if (t.public) Some(TagOut(t.alias)) else None)
-      else
-        None
+    outputsB ++= typed.alphabet.map(CharOut(_))
+    outputsB ++= typed.separators.map(CharOut(_))
+    outputsB ++= typed.categories.map(c => CatOut(c.alias))
+    outputsB ++= typed.tags.flatMap {
+      case ConcreteTag(name, _, true, _) => Some(TagOut(name))
+      case _                             => None
     }
     val outputs = outputsB.result
     (alphabet, outputs, stateSize)
@@ -241,8 +237,8 @@ class Serializer(files: Seq[GeneratedFile], diko: Diko) extends Phase[CompileOpt
             }
           }
 
+          tiaProfile = tiaProfile.patch(tia.size, BitVector.high(stateSize))
           tia ++= ti
-          tiaProfile ++= BitVector.high(stateSize)
 
           occupation = 0
           base = tia.size.toInt

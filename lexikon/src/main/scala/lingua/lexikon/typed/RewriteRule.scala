@@ -1,4 +1,4 @@
-/* Copyright (c) 2015 Lucas Satabin
+/* Copyright (c) 2016 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,15 @@
  * limitations under the License.
  */
 package lingua
+package lexikon
+package typed
 
-import fst._
+import gnieh.pp._
 
-package object lexikon {
+/** A typed rule with all cases resolved for category and tags. */
+final case class RewriteRule(name: String, cases: Seq[Case])(uname: String, offset: Int) {
 
-  implicit object CharOutIdentiy extends Identity[Char, Out] {
-    def convert(c: Char, pout: Predicate[Out]) = pout match {
-      case AnyPredicate => Some(CharOut(c))
-      case SetPredicate(s, pos) if s.contains(c) == pos => Some(CharOut(c))
-      case _ => None
-    }
-  }
+  def pp = group(nest(2)(text("rewrite") :+: name :+: "{" :|:
+    vsep(cases.map(_.pp))) :|: "}")
 
 }

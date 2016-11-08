@@ -99,9 +99,9 @@ object DikoMain extends App {
         case _ =>
           throw new Exception
       }.text("Save the dot representation of the fst"),
-      arg[File]("<file>").action {
+      arg[File]("<file>...").unbounded().action {
         case (f, c: CompileOptions) =>
-          c.copy(input = f)
+          c.copy(inputs = f :: c.inputs)
         case _ =>
           throw new Exception
       }.text("Input diko file to compile").required())
@@ -141,16 +141,16 @@ object DikoMain extends App {
 
     options match {
       case options: CompileOptions =>
-        val input = options.input.contentAsString(codec = Codec.UTF8)
-        val reporter = new ConsoleReporter(options, input)
+        val inputs = options.inputs.map(f => (f.path.toString, f.contentAsString(codec = Codec.UTF8))).toMap
+        val reporter = new ConsoleReporter(options, inputs)
 
         // do stuff
         val sequence =
           for {
-            diko <- new Parser(input)
-            typer <- new Typer(diko)
-            files <- new Transformer(typer, diko)
-            () <- new Serializer(files, diko)
+            units <- new Parser(inputs)
+            typed <- new Typer(units)
+            files <- new Transformer(typed)
+            () <- new Serializer(files, typed)
           } yield ()
 
         sequence.run(options, reporter)
@@ -158,7 +158,7 @@ object DikoMain extends App {
         reporter.summary()
 
       case options: QueryOptions =>
-        val reporter = new ConsoleReporter(options, "")
+        val reporter = new ConsoleReporter(options, Map())
         val sequence =
           for {
             fst <- new DikoLoader()

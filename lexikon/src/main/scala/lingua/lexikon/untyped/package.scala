@@ -1,4 +1,4 @@
-/* Copyright (c) 2015 Lucas Satabin
+/* Copyright (c) 2016 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,18 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package lingua
+package lingua.lexikon
 
-import fst._
+package object untyped {
 
-package object lexikon {
-
-  implicit object CharOutIdentiy extends Identity[Char, Out] {
-    def convert(c: Char, pout: Predicate[Out]) = pout match {
-      case AnyPredicate => Some(CharOut(c))
-      case SetPredicate(s, pos) if s.contains(c) == pos => Some(CharOut(c))
-      case _ => None
-    }
-  }
+  type TagEmission = (Boolean, String)
 
 }

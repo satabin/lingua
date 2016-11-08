@@ -14,25 +14,22 @@
  */
 package lingua
 package lexikon
-package phases
+package typed
 
-import parser._
-import untyped._
+import gnieh.pp._
 
-import fastparse.core.Parsed
+/** A resolved pattern where category and tags are normalized. */
+final case class Pattern(seq: Seq[CasePattern], category: Option[Category], tags: Seq[TagEmission])(val uname: String, val offset: Int) {
 
-class Parser(inputs: Map[String, String]) extends Phase[CompileOptions, Seq[DikoUnit]](Some("parser")) {
-
-  def process(options: CompileOptions, reporter: Reporter): Seq[DikoUnit] =
-    (for {
-      (name, input) <- inputs
-      unit <- DikoParser.unit(name).parse(input) match {
-        case Parsed.Success(unit, _) =>
-          Some(unit)
-        case failure @ Parsed.Failure(_, offset, extra) =>
-          reporter.error(f"Unexpected input. Expected: ${extra.traced.expected}", name, offset)
-          None
-      }
-    } yield unit).toSeq
+  def pp = {
+    val annotations = (category, tags) match {
+      case (None, Seq()) => None
+      case (_, _) => Some(text("/") :+: category.map(c => text(f"@${c.alias}")) :+: hsep(tags.map {
+        case (true, t)  => text(f"+${t.alias}")
+        case (false, t) => text(f"-${t.alias}")
+      }))
+    }
+    group(text(seq.mkString) :+: annotations)
+  }
 
 }

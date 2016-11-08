@@ -1,4 +1,4 @@
-/* Copyright (c) 2015 Lucas Satabin
+/* Copyright (c) 2016 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,27 @@
  * limitations under the License.
  */
 package lingua
+package lexikon
 
-case class Tag(public: Boolean, fullname: String, alias: String, children: Seq[Tag])(val offset: Int)
+/** A rewrite rule pattern.
+ *
+ *  @group Pattern
+ */
+sealed trait CasePattern
 
-case class Category(fullname: String, alias: String)(val offset: Int)
+/** A sequence of characters to be matched in order.
+ *
+ *  @group Pattern
+ */
+final case class StringPattern(s: String) extends CasePattern {
+  override def toString = s
+}
+
+/** matches any (possible empty) sequence of characters and capture the matched
+ *  sequence to be used in [[Replacement]].
+ *
+ *  @group Pattern
+ */
+case object CapturePattern extends CasePattern {
+  override def toString = ".."
+}

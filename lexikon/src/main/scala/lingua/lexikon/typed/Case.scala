@@ -1,4 +1,4 @@
-/* Copyright (c) 2015 Lucas Satabin
+/* Copyright (c) 2016 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,12 @@
  * limitations under the License.
  */
 package lingua
+package lexikon
+package typed
 
-import fst._
+import gnieh.pp._
 
-package object lexikon {
-
-  implicit object CharOutIdentiy extends Identity[Char, Out] {
-    def convert(c: Char, pout: Predicate[Out]) = pout match {
-      case AnyPredicate => Some(CharOut(c))
-      case SetPredicate(s, pos) if s.contains(c) == pos => Some(CharOut(c))
-      case _ => None
-    }
-  }
-
+/** A resolved case with category and tags normalized in the pattern and replacement. */
+final case class Case(pattern: Pattern, replacement: Replacement) {
+  def pp = group(nest(2)("case" :+: pattern.pp :+: "=>" :|: replacement.pp))
 }
