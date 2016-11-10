@@ -8,6 +8,7 @@ val globalSettings = scalariformSettings ++ Seq(
     "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
   licenses += ("The Apache Software License, Version 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
   scalacOptions ++= Seq("-feature", "-deprecation", "-unchecked"),
+  scalacOptions in (Compile, doc) ++= Seq("-groups"),
   ScalariformKeys.preferences := {
     ScalariformKeys.preferences.value
       .setPreference(AlignSingleLineCaseStatements, true)
@@ -17,6 +18,7 @@ val globalSettings = scalariformSettings ++ Seq(
 
 lazy val root = project.in(file("."))
   .settings(globalSettings: _*)
+  .settings(unidocSettings: _*)
   .aggregate(core, fst, lexikon)
 
 lazy val fst = project.in(file("fst"))

@@ -21,7 +21,7 @@ class ConsoleReporter(options: Options, inputs: Map[String, String]) extends Rep
   protected def doReport(name: String, offset: Int, level: Level.Value, msg: String, exn: Option[Throwable]): Unit = {
     val pos = if (offset >= 0) {
       val (line, col) = lineColOf(name, offset)
-      f"[$line,$col] in $name:\n\t"
+      f"[$line,$col] in $name:\n"
     } else {
       ""
     }

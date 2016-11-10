@@ -10,7 +10,7 @@ tags
 
 partizip-zwei as P2;
 
-lexikon Schwache @V {
+lexicon Schwache @V {
 
   machen ;
   sagen ;
@@ -30,86 +30,86 @@ lexikon Schwache @V {
   mitmachen ;
   ausbilden ;
 
-  // Bildung von schwachen Verben
-  rewrite partizip-zwei +P2 {
-    rule
-       // Verben, die mit `ieren` enden, werden ohne `ge` gebildet
-         ..ieren => ..iert
-       // Nicht trennbare Verben werden ohne `ge` gebildet
-       | ge..ten => ge..tet
-       | ge..den => ge..det
-       | ge..en => ge..t
-       | miss..ten => miss..tet
-       | miss..den => miss..det
-       | miss..en => miss..t
-       | zer..ten => zer..tet
-       | zer..den => zer..det
-       | zer..en => zer..t
-       | be..ten => be..tet
-       | be..den => be..det
-       | be..en => be..t
-       | er..ten => er..tet
-       | er..den => er..det
-       | er..en => er..t
-       | ent..ten => ent..tet
-       | ent..den => ent..det
-       | ent..en => ent..t
-       | emp..ten => emp..tet
-       | emp..den => emp..det
-       | emp..en => emp..t
-       | ver..ten => ver..tet
-       | ver..den => ver..det
-       | ver..en => ver..t
-       // Bei ternnbaren Verben, steht `ge' hinter dem Präfix
-       | ab..ten => abge..tet
-       | an..ten => ange..tet
-       | auf..ten => aufge..tet
-       | aus..ten => ausge..tet
-       | bei..ten => beige..tet
-       | ein..ten => einge..tet
-       | los..ten => losge..tet
-       | mit..ten => mitge..tet
-       | nach..ten => nachge..tet
-       | her..ten => herge..tet
-       | hin..ten => hinge..tet
-       | vor..ten => vorge..tet
-       | weg..ten => wegge..tet
-       | zu..ten => zuge..tet
-       | zurück..ten => zurückge..tet
-       | ab..den => abge..det
-       | an..den => ange..det
-       | auf..den => aufge..det
-       | aus..den => ausge..det
-       | bei..den => beige..det
-       | ein..den => einge..det
-       | los..den => losge..det
-       | mit..den => mitge..det
-       | nach..den => nachge..det
-       | her..den => herge..det
-       | hin..den => hinge..det
-       | vor..den => vorge..det
-       | weg..den => wegge..det
-       | zu..den => zuge..det
-       | zurück..den => zurückge..det
-       | ab..en => abge..et
-       | an..en => ange..et
-       | auf..en => aufge..t
-       | aus..en => ausge..t
-       | bei..en => beige..t
-       | ein..en => einge..t
-       | los..en => losge..t
-       | mit..en => mitge..t
-       | nach..en => nachge..t
-       | her..en => herge..t
-       | hin..en => hinge..t
-       | vor..en => vorge..t
-       | weg..en => wegge..t
-       | zu..en => zuge..t
-       | zurück..en => zurückge..t
-       // Normale Bildung
-       | ..ten => ge..tet
-       | ..den => ge..det
-       | ..en => ge..t ;
-  }
+}
+
+// Bildung von schwachen Verben
+rewrite partizip-zwei @V => +P2 {
+  // Verben, die mit `ieren` enden, werden ohne `ge` gebildet
+    ..ieren => ..iert
+  // Nicht trennbare Verben werden ohne `ge` gebildet
+  | ge..ten => ge..tet
+  | ge..den => ge..det
+  | ge..en => ge..t
+  | miss..ten => miss..tet
+  | miss..den => miss..det
+  | miss..en => miss..t
+  | zer..ten => zer..tet
+  | zer..den => zer..det
+  | zer..en => zer..t
+  | be..ten => be..tet
+  | be..den => be..det
+  | be..en => be..t
+  | er..ten => er..tet
+  | er..den => er..det
+  | er..en => er..t
+  | ent..ten => ent..tet
+  | ent..den => ent..det
+  | ent..en => ent..t
+  | emp..ten => emp..tet
+  | emp..den => emp..det
+  | emp..en => emp..t
+  | ver..ten => ver..tet
+  | ver..den => ver..det
+  | ver..en => ver..t
+  // Bei trennbaren Verben, steht `ge' hinter dem Präfix
+  | ab..ten => abge..tet
+  | an..ten => ange..tet
+  | auf..ten => aufge..tet
+  | aus..ten => ausge..tet
+  | bei..ten => beige..tet
+  | ein..ten => einge..tet
+  | los..ten => losge..tet
+  | mit..ten => mitge..tet
+  | nach..ten => nachge..tet
+  | her..ten => herge..tet
+  | hin..ten => hinge..tet
+  | vor..ten => vorge..tet
+  | weg..ten => wegge..tet
+  | zurück..ten => zurückge..tet
+  | zu..ten => zuge..tet
+  | ab..den => abge..det
+  | an..den => ange..det
+  | auf..den => aufge..det
+  | aus..den => ausge..det
+  | bei..den => beige..det
+  | ein..den => einge..det
+  | los..den => losge..det
+  | mit..den => mitge..det
+  | nach..den => nachge..det
+  | her..den => herge..det
+  | hin..den => hinge..det
+  | vor..den => vorge..det
+  | weg..den => wegge..det
+  | zurück..den => zurückge..det
+  | zu..den => zuge..det
+  | ab..en => abge..et
+  | an..en => ange..et
+  | auf..en => aufge..t
+  | aus..en => ausge..t
+  | bei..en => beige..t
+  | ein..en => einge..t
+  | los..en => losge..t
+  | mit..en => mitge..t
+  | nach..en => nachge..t
+  | her..en => herge..t
+  | hin..en => hinge..t
+  | vor..en => vorge..t
+  | weg..en => wegge..t
+  | zurück..en => zurückge..t
+  | zu..en => zuge..t
+  // Normale Bildung
+  | ..ten => ge..tet
+  | ..den => ge..det
+  | ..en => ge..t
 
 }

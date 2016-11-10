@@ -20,10 +20,20 @@ import lingua.parser.Lexical
 
 import untyped._
 
+/** Collection of parsers used to parse `.dico` files.
+ *  A file is a [[untyped.DikoUnit unit]] and is composed of a sequence of [[untyped.Section sections]].
+ *
+ *
+ *  @author Lucas Satabin
+ */
 object DikoParser {
 
+  /** The set of keywords that are part of the description language.
+   *  Keywords are shaped like identifiers but cannot used as such if they are not escaped
+   *  between backticks (e.g. `alphabet`).
+   */
   val keywords =
-    Set("alphabet", "as", "categories", "lexicon", "private", "rewrite", "separators", "tags")
+    Set("alphabet", "as", "categories", "lexicon", "morphology", "private", "rewrite", "separators", "tags")
 
   val lexical = new Lexical(keywords)
 
@@ -31,11 +41,22 @@ object DikoParser {
   import lexical._
   import WsApi._
 
+  /** {{{
+   *  Category ::= Name `as' Name `;'
+   *  }}}
+   */
   val category: P[Category] = P(
     (Index ~ name ~ keyword("as") ~ name ~ ";").map {
       case (idx, n, a) => Category(n, a)(idx)
     })
 
+  /** {{{
+   *  Tag ::= SimpleTag
+   *        | Name `as` Name `{' SimpleTag* ' }'
+   *
+   *  SimpleTag ::= `private'? Name `as' Name `;'
+   *  }}}
+   */
   val tag: P[Tag] = P(
     (Index ~ keyword("private").!.?.map(_.isEmpty) ~ name ~ keyword("as") ~ name ~ "{" ~/ (Index ~ keyword("private").!.?.map(_.isEmpty) ~ name ~ keyword("as") ~/ name ~ ";").map({
       case (idx, p, n, a) => Tag(p, n, a, Nil)(idx)
@@ -46,9 +67,22 @@ object DikoParser {
         case (idx, p, n, a) => Tag(p, n, a, Nil)(idx)
       })
 
+  /** {{{
+   *  DikoUnit ::= Section*
+   *  }}}
+   */
   def unit(name: String): P[DikoUnit] = P(
-    section.rep(min = 0)).map(DikoUnit(name, _)) ~ End
+    section.rep(min = 0)).map(DikoUnit(name, _)) ~ End.opaque("EOF")
 
+  /** {{{
+   *  Section ::= Alphabet
+   *            | Separators
+   *            | Tags
+   *            | Categories
+   *            | Lexicon
+   *            | RewriteRule
+   *  }}}
+   */
   val section: P[Section] = P(
     alphabet
       | separators
@@ -57,48 +91,95 @@ object DikoParser {
       | lexicon
       | rewriteRule)
 
+  /** {{{
+   *  Alphabet ::= `alphabet' Character* `;'
+   *  }}}
+   */
   val alphabet: P[Alphabet] = P(
     Index ~ keyword("alphabet") ~/ (!";" ~ AnyChar.!.map(_(0))).rep(min = 0) ~ ";").map {
       case (idx, chars) => Alphabet(chars)(idx)
     }
 
+  /** {{{
+   *  Separators ::= `separators' Character* `;'
+   *  }}}
+   */
   val separators: P[Separators] = P(
     keyword("separators") ~/ (!";" ~ AnyChar.!.map(_(0))).rep(min = 1) ~ ";").map(Separators)
 
+  /** {{{
+   *  Categories ::= `categories' Category*
+   *  }}}
+   */
   val categories: P[Categories] = P(
     keyword("categories") ~/ category.rep(min = 1)).map(Categories)
 
+  /** {{{
+   *  Tags ::= `tags' Tag*
+   *  }}}
+   */
   val tags: P[Tags] = P(
     keyword("tags") ~/ tag.rep(min = 1)).map(Tags)
 
+  /** {{{
+   *  Lexicon ::= `lexicon' Name (`@' Name)? (`+' Name | `-` Name)* `{' Word* `}'
+   *  }}}
+   */
   val lexicon: P[Lexicon] = P(
     (Index ~ keyword("lexicon") ~/ name ~ annotation ~ "{" ~/ word.rep(min = 0) ~/ "}").map {
       case (idx, name, (cat, tags), words) => Lexicon(name, cat, tags, words)(idx)
     })
 
+  /** {{{
+   *  Word ::= WordChar+ (`/' (`@' Name)? (`+' Name | `-` Name)*)?
+   *
+   *  WordChar ::= Char
+   *             | Char `:' Char
+   *             | `_' : Char
+   *             | Char `:' `_'
+   *             | `_' `:' `_'
+   *  }}}
+   */
   val word: P[Word] = P(
     (Index ~ wordChar.rep(min = 1) ~ ("/" ~/ annotation).?.map(_.getOrElse((None, Seq.empty[TagEmission]))) ~ ";").map {
       case (idx, chars, (cat, tags)) => Word(chars, cat, tags)(idx)
     })
 
-  val optChar: P[Option[Char]] = P(
+  private val optChar: P[Option[Char]] = P(
     char.!.map(c => Some(c(0)))
       | LiteralStr("_").map(_ => None))
 
-  val wordChar: P[WordChar] = P(
+  private val wordChar: P[WordChar] = P(
     (optChar ~ ":" ~ optChar).map { case (c1, c2) => WordChar(c1, c2) }
       | char.!.map(c => WordChar(Some(c(0)), Some(c(0)))))
 
+  /** {{{
+   *  RewriteRule ::= `rewrite' Name (`@' Name)? (`+' Name | `-` Name)* (`=>' (`+' Name | `-` Name)*)? `{' Case (`|' Case)* `}'
+   *
+   *  Case ::= Pattern `=>' Replacement
+   *
+   *  Pattern ::= LexicalPattern+ (`/' (`@' Name)? (`+' Name | `-` Name)*)?
+   *
+   *  LexicalPattern ::= `..'
+   *                   | Char
+   *
+   *  Replacement ::= LexicalReplacement* (`/' (`@' Name)? (`+' Name | `-` Name)*)?
+   *
+   *  LexicalReplacement ::= `..'
+   *                       | Char
+   *                       | `@' `(' `..' `)'
+   *  }}}
+   */
   val rewriteRule: P[RewriteRule] = P(
     (Index ~ keyword("rewrite") ~ name ~ annotation ~ ("=>" ~ tagEmission.rep(min = 1)).? ~ "{" ~/ `case`.rep(min = 1, sep = "|" ~/ Pass) ~ "}").map {
       case (idx, name, (cat, tagsin), Some(tagsout), cases) => RewriteRule(name, cat, tagsin, tagsout, cases)(idx)
       case (idx, name, (cat, tagsin), None, cases)          => RewriteRule(name, cat, tagsin, tagsin, cases)(idx)
     })
 
-  val `case`: P[Case] = P(
+  private val `case`: P[Case] = P(
     pattern ~ "=>" ~/ replacement).map { case (pat, repl) => Case(pat, repl) }
 
-  val pattern: P[Pattern] = P(
+  private val pattern: P[Pattern] = P(
     (Index
       ~ (P("..").map(_ => CapturePattern)
         | (!"=>" ~ char).rep(min = 1).!.map(StringPattern)).rep(min = 1)
@@ -107,23 +188,23 @@ object DikoParser {
             Pattern(seq, cat, tags)(idx)
         })
 
-  val replacement: P[Replacement] = P(
+  private val replacement: P[Replacement] = P(
     (Index
       ~ replacementText.rep(min = 0)
-      ~ ("/" ~ tagEmission.rep(min = 1)).?.map(_.getOrElse(Seq.empty[TagEmission]))).map {
+      ~ ("/" ~ tagEmission.rep(min = 0)).?.map(_.getOrElse(Seq.empty[TagEmission]))).map {
         case (idx, seq, tags) =>
           Replacement(seq, tags)(idx)
       })
 
-  val replacementText: P[CaseReplacement] = P(
+  private val replacementText: P[CaseReplacement] = P(
     ("@" ~ "(" ~ ".." ~ ")").map(_ => RecursiveReplacement)
       | P("..").map(_ => CaptureReplacement)
       | char.rep(min = 1).!.map(StringReplacement))
 
-  val annotation: P[(Option[String], Seq[TagEmission])] = P(
+  private val annotation: P[(Option[String], Seq[TagEmission])] = P(
     ("@" ~ name).? ~ tagEmission.rep(min = 0))
 
-  val tagEmission: P[TagEmission] =
+  private val tagEmission: P[TagEmission] =
     (("+" | "-").! ~ name).map {
       case (pres, name) => (pres == "+", name)
     }.opaque("<tag emission>")

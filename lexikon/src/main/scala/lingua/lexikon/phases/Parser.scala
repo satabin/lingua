@@ -19,7 +19,10 @@ package phases
 import parser._
 import untyped._
 
-import fastparse.core.Parsed
+import fastparse.core.{
+  Parsed,
+  ParseError
+}
 
 class Parser(inputs: Map[String, String]) extends Phase[CompileOptions, Seq[DikoUnit]](Some("parser")) {
 
@@ -30,7 +33,7 @@ class Parser(inputs: Map[String, String]) extends Phase[CompileOptions, Seq[Diko
         case Parsed.Success(unit, _) =>
           Some(unit)
         case failure @ Parsed.Failure(_, offset, extra) =>
-          reporter.error(f"Unexpected input. Expected: ${extra.traced.expected}", name, offset)
+          reporter.error(ParseError(failure).getMessage, name, offset)
           None
       }
     } yield unit).toSeq
