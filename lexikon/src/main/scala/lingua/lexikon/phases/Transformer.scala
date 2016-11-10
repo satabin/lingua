@@ -58,7 +58,7 @@ class Transformer(typed: Diko) extends Phase[CompileOptions, Seq[GeneratedFile]]
     for (Word(input, cat, tags, lname) <- typed.words) {
       val builders = Seq(lemmasBuilder, inflectionsBuilder).flatten
       val (inChars, outChars) = input.toVector.unzip { case WordChar(in, out) => (in, out) }
-      createStates(inChars, outChars, cat, tags, builders)
+      addInflection(inChars, outChars, cat, tags, builders)
     }
 
     for (rewrite @ RewriteRule(_, cases) <- typed.rewrites) {
@@ -70,7 +70,7 @@ class Transformer(typed: Diko) extends Phase[CompileOptions, Seq[GeneratedFile]]
         val rewrittenWords = rewriteWords(rewrite, typed.words, reporter)
         for (Word(input, cat, tags, lname) <- rewrittenWords) {
           val (inChars, outChars) = input.toVector.unzip { case WordChar(in, out) => (in, out) }
-          createStates(inChars, outChars, cat, tags, Seq(builder))
+          addInflection(inChars, outChars, cat, tags, Seq(builder))
         }
       }
 
@@ -83,8 +83,9 @@ class Transformer(typed: Diko) extends Phase[CompileOptions, Seq[GeneratedFile]]
         if (repl.exists(_ == RecursiveReplacement)) {
           reporter.warning("Cannot invert case with recusrive replacement, ignoring it", p.uname, p.offset)
         } else {
-          val tags1 = tags.collect { case (true, ConcreteTag(name, _, _, _)) => TagOut(name) }
-          addDeflexion(pattern, cat.map(c => CatOut(c.alias)), tags1, repl, builder, i, p.uname, p.offset, reporter)
+          val tags1 = tags.collect { case (true, t @ ConcreteTag(name, _, _, _)) => t }
+          val tags2 = normalizeWith(tags1, rTags).map(t => TagOut(t.alias))
+          addDeflexion(pattern, cat.map(c => CatOut(c.alias)), tags2, repl, builder, i, p.uname, p.offset, reporter)
         }
       }
 
@@ -120,7 +121,7 @@ class Transformer(typed: Diko) extends Phase[CompileOptions, Seq[GeneratedFile]]
     Seq(lemmasFst, inflectionsFst, deflexionsFst, deflexionsNDot, lemmasDot, inflectionsDot, deflexionsDot).flatten
   }
 
-  private def createStates(inChars: Vector[Option[Char]], outChars: Vector[Option[Char]], cat: Category, tags: Seq[Tag], builders: Seq[VectorBuilder[(Seq[Char], Seq[Out])]]): Unit = {
+  private def addInflection(inChars: Vector[Option[Char]], outChars: Vector[Option[Char]], cat: Category, tags: Seq[Tag], builders: Seq[VectorBuilder[(Seq[Char], Seq[Out])]]): Unit = {
     for (b <- builders) {
       b += (inChars.flatten -> ((outChars.flatten.map(CharOut(_)) :+ CatOut(cat.alias)) ++ tags.map(t => TagOut(t.alias))))
     }
