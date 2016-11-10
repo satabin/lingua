@@ -14,26 +14,14 @@
  */
 package lingua
 package lexikon
-package phases
+package typed
 
-import fst._
+import gnieh.pp._
 
-import scala.io.Codec
+/** A typed rule with all cases resolved for category and tags. */
+final case class RewriteRule(name: String, cases: Seq[Case])(uname: String, offset: Int) {
 
-class Determinize(nfst: NFst[Char, Out]) extends Phase[CompileOptions, PSubFst[Char, Out]](Some("determinizer")) {
-
-  def process(options: CompileOptions, reporter: Reporter): PSubFst[Char, Out] = {
-
-    for (f <- options.saveNFst)
-      f.overwrite(nfst.toDot)(codec = Codec.UTF8)
-
-    val fst = nfst.determinize
-
-    for (f <- options.saveFst)
-      f.overwrite(fst.toDot)(codec = Codec.UTF8)
-
-    fst
-
-  }
+  def pp = group(nest(2)(text("rewrite") :+: name :+: "{" :|:
+    vsep(cases.map(_.pp))) :|: "}")
 
 }

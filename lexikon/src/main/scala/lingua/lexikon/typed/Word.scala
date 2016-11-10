@@ -14,13 +14,9 @@
  */
 package lingua
 package lexikon
-package phases
+package typed
 
-import compiled.fst.CompiledFst
-
-class Lookup(fst: CompiledFst) extends Phase[QueryOptions, Set[AnnotatedLemma]](Some("lookup")) {
-
-  def process(options: QueryOptions, reporter: Reporter): Set[AnnotatedLemma] =
-    fst.lookup(options.query)
-
+/** A typed tag with its category and tags resolved. */
+final case class Word(input: Seq[WordChar], category: Category, tags: Seq[ConcreteTag], lexicon: String)(val uname: String, val offset: Int) {
+  val word = input.collect { case WordChar(Some(c), _) => c }.mkString
 }

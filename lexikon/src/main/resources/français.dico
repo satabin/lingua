@@ -99,7 +99,7 @@ troisième-personne as 3ème;
 
 private exception as Exn;
 
-lexikon Nom @N {
+lexicon Nom @N {
 
   arbre / +Masc ;
 
@@ -114,117 +114,159 @@ lexikon Nom @N {
   pince-sans-rire / +Fém ;
   pince-sans-rire / +Masc ;
 
-  // pour les noms composés d'un verbe et d'un nom, seul le nom prend la marque
-  // du pluriel s'il est dénombrable, sinon le nom reste invariable
-  rewrite pluriel +Pl {
-    rule >al / -NC => aux
-       | >eau / -NC => eaux
-       | > / -NC => s
-       // avant la flèche, le "\1" indique "n'importe quelle séquence qui est capturée et numérotée 1"
-       // après la flèche, le "\1" indique la première étoile avant la flèche
-       | \1-\2 / +VNI => \1-\2
-       // la notation @(...) indique que la règle de réécriture courante est appliquée au résulat
-       // du remplacement entre parenthèses de manière récursive. Le résultat a la même catégorie
-       // et aucune étiquette
-       | \1-\2 / +VN  => \1-@(\2)
-
-       | \1-\2 / +NNI => @(\1)-\2
-       | \1-\2 / +NN => @(\1)-@(\2)
-
-       | >o-\1 / +AdjN => o-@(\1)
-       | \1-\2 / +AdjN => @(\1)-@(\2)
-       | \1-\2 / +NAdj => @(\1)-@(\2)
-
-       | \1-\2 / +AdvN => \1-@(\2) ;
-  }
-
 }
 
-lexikon Nom-Exceptions @N {
+// pour les noms composés d'un verbe et d'un nom, seul le nom prend la marque
+// du pluriel s'il est dénombrable, sinon le nom reste invariable
+rewrite pluriel @N => +Pl {
+  ..al / -Exn -NC => ..aux
+  | ..eau / -NC => ..eaux
+  | .. / -NC => ..s
+  // après la flèche, le `..` indique la première ascription `..` avant la flèche
+  // après la flèche, le `..` indique la deuxième ascription `..` avant la flèche
+  | ..-.. / +VNI => ..-..
+  // la notation @(..) indique que la règle de réécriture courante est appliquée au résulat
+  // du remplacement entre parenthèses de manière récursive. Le résultat a la même catégorie
+  // et aucune étiquette
+  | ..-.. / +VN  => ..-@(..)
+
+  | ..-.. / +NNI => @(..)-..
+  | ..-.. / +NN => @(..)-@(..)
+
+  // utiliser `..` après la flèche fait référence aux captures du pattern de manière implicite
+  // le premier `..` est équivalent à `..`, le deuxième à `..` et ainsi de suite
+  // Cette notation est plutôt indiquée lorsque qu’il n’y a qu’un seul groupe capturé afin
+  // d’éviter les ambiguïtés
+  | ..o-.. / +AdjN => ..o-@(..)
+  | ..-.. / +AdjN => @(..)-@(..)
+  | ..-.. / +NAdj => @(..)-@(..)
+
+  | ..-.. / +AdvN => ..-@(..)
+}
+
+lexicon Nom-Exceptions @N {
 
   festival / +Masc +Exn ;
-  // le `s` suivi de `:_` permet de spécifier la racinisation de `festivals` en `festival`
-  festival s:_ / +Masc +Pl +Exn ;
 
 }
 
 // `@V` signifie que la catégorie `V` est affectée au mot en entrée de ce lexique
-lexikon VG1 @V +G1 {
+lexicon VG1 @V +G1 {
 
   manger ;
   tracer ;
   danser ;
 
-  rewrite présent-indicatif +Prés +Ind {
-    // ce cas signifie que le suffixe `r` (noté `>r`, un préfixe est noté `r<`)
-    // est remplacé par une transition vide
-    // qui ajoute les traits +Sg et +1ère
-    // ainsi `mange` est annoté comme suit:
-    // `manger{V +G1 +Prés +Ind +Sg +1ère}`
-    // cette règle est équivalente à la suite de transitions suivante :
-    // `mange _/r @V +G1 +Prés +Ind +Sg +1ère`
-    rule >r => / +Sg +1ère ;
-    rule >r => s / +Sg +2ème ;
-    // avec cette règle nous voyons que `mange` est annoté comme
-    // {V +G1 +Prés +Ind +Sg +1ère} et comme
-    // {V +G1 +Prés +Ind +Sg +3ème}
-    rule >r => / +Sg +3ème ;
-    // ici nous écrivons un patron plus complexe avec des sous-cas
-    // les sous-cas sont appliqués en séquence, et le premier qui correspond
-    // est choisi. Si aucun ne correspond la règle ne s'applique pas ici.
-    // contrairement aux `rule`s dont l'ordre n'a pas d'importance, il faut veiller
-    // ici à correctement ordonner les cas afin que les plus spécifiques arrivent avant
-    // les plus généraux
-    rule >ger => geons / +Pl +1ère
-       | >cer => çons / +Pl +1ère
-       | >er => ons / +Pl +1ère ;
-    rule >r => z / +Pl +2ème ;
-    rule >r => nt / +Pl +3ème ;
-  }
+}
 
-  rewrite futur-indicatif +Fut +Ind {
-    rule > => ai / +Fut +Ind +Sg +1ère ;
-    rule > => as / +Fut +Ind +Sg +2ème ;
-    rule > => a / +Fut +Ind +Sg +3ème ;
-    rule > => ons / +Fut +Ind +Pl +1ère ;
-    rule > => ez / +Fut +Ind +Pl +2ème ;
-    rule > => ont / +Fut +Ind +Pl +3ème ;
-  }
+rewrite présent-indicatif1 @V +G1 -Exn => +Sg +1ère +Prés +Ind {
+  // ce cas signifie que le suffixe `r` (noté `..r`, un préfixe est noté `r..`)
+  // est remplacé par une transition vide
+  // qui ajoute les traits +Sg et +1ère
+  // ainsi `mange` est annoté comme suit:
+  // `manger{V +G1 +Prés +Ind +Sg +1ère}`
+  // cette règle est équivalente à la suite de transitions suivante :
+  // `mange _:r @V +G1 +Prés +Ind +Sg +1ère`
+  ..er => ..e
+}
+rewrite présent-indicatif2 @V +G1 -Exn => +Sg +2ème +Prés +Ind {
+  ..er => ..es
+}
+rewrite présent-indicatif3 @V +G1 => +Sg +3ème +Prés +Ind {
+  // avec cette règle nous voyons que `mange` est annoté comme
+  // {V +G1 +Prés +Ind +Sg +1ère} et comme
+  // {V +G1 +Prés +Ind +Sg +3ème}
+  ..er => ..e
+}
+rewrite présent-indicatif4  @V +G1 -Exn => +Pl +1ère +Prés +Ind {
+  // ici nous écrivons un patron plus complexe avec des sous-cas
+  // les sous-cas sont appliqués en séquence, et le premier qui correspond
+  // est choisi. Si aucun ne correspond la règle ne s'applique pas ici.
+  // contrairement aux `rule`s dont l'ordre n'a pas d'importance, il faut veiller
+  // ici à correctement ordonner les cas afin que les plus spécifiques arrivent avant
+  // les plus généraux
+  ..ger => ..geons
+  | ..cer => ..çons
+  | ..er => ..ons
+}
+rewrite présent-indicatif5 @V +G1 -Exn => +Pl +2ème +Prés +Ind {
+  ..er => ..ez
+}
+rewrite présent-indicatif6 @V +G1 -Exn => +Pl +3ème +Prés +Ind {
+  ..er => ..ent
+}
 
-  rewrite passé-simple-indicatif +PassSimp +Ind {
-    rule >ger => geai / +Sg +1ère
-       | >cer => çai / +Sg +1ère
-       | >er => ai / +Sg +1ère ;
-    rule >ger => geas / +Sg +2ème
-       | >cer => ças / +Sg +2ème
-       | >er => as / +Sg +2ème ;
-    rule >ger => gea / +Sg +3ème
-       | >cer => ça / +Sg +3ème
-       | >er => a / +Sg +3ème ;
-    rule >ger => geâmes / +Pl +1ère
-       | >cer => çâmes / +Pl +1ère
-       | >er => âmes / +Pl +1ère ;
-    rule >ger => geâtes / +Pl +2ème
-       | >cer => çâtes / +Pl +2ème
-       | >er => âtes / +Pl +2ème ;
-    rule >er => èrent / +Pl +3ème ;
-  }
+rewrite futur-indicatif1 @V +G1 -Exn => +Sg +1ère +Fut +Ind {
+  ..er => ..erai
+}  
+rewrite futur-indicatif2 @V +G1 -Exn => +Sg +2ème +Fut +Ind {
+  ..er => ..eras
+}
+rewrite futur-indicatif3 @V +G1 -Exn => +Sg +3ème +Fut +Ind {
+  ..er => ..era
+}
+rewrite futur-indicatif4 @V +G1 -Exn => +Pl +1ère +Fut +Ind {
+  ..er => ..erons
+}
+rewrite futur-indicatif5 @V +G1 -Exn => +Pl +2ème +Fut +Ind {
+  ..er => ..erez
+}
+rewrite futur-indicatif6 @V +G1 -Exn => +Pl +3ème +Fut +Ind {
+  ..er => ..eront
+}
 
-  rewrite imparfait-indicatif +Imp +Ind {
-    rule >ger => geais / +Sg +1ère
-       | >cer => çais / +Sg +1ère
-       | >er => ais / +Sg +1ère ;
-    rule >ger => geais / +Sg +2ème
-       | >cer => çais / +Sg +2ème
-       | >er => ais / +Sg +2ème ;
-    rule >ger => geait / +Sg +3ème
-       | >cer => çait / +Sg +3ème
-       | >er => ait / +Sg +3ème ;
-    rule >er => ions / +Pl +1ère ;
-    rule >er => iez / +Pl +2ème ;
-    rule >ger => geaient / +Pl +3ème
-       | >cer => çaient / +Pl +3ème
-       | >er => aient / +Pl +3ème ;
-  }
+rewrite passé-simple-indicatif1 @V +G1 -Exn => +Sg +1ère +PassSimp +Ind {
+  ..ger => ..geai
+  | ..cer => ..çai
+  | ..er => ..ai
+}
+rewrite passé-simple-indicatif2 @V +G1 -Exn => +Sg +2ème +PassSimp +Ind {
+  ..ger => ..geas
+  | ..cer => ..ças
+  | ..er => ..as
+}
+rewrite passé-simple-indicatif3 @V +G1 -Exn => +Sg +3ème +PassSimp +Ind {
+  ..ger => ..gea
+  | ..cer => ..ça
+  | ..er => ..a
+}
+rewrite passé-simple-indicatif4 @V +G1 -Exn => +Pl +1ère +PassSimp +Ind {
+  ..ger => ..geâmes
+  | ..cer => ..çâmes
+  | ..er => ..âmes
+}
+rewrite passé-simple-indicatif5 @V +G1 -Exn => +Pl +2ème +PassSimp +Ind {
+  ..ger => ..geâtes
+  | ..cer => ..çâtes
+  | ..er => ..âtes
+}
+rewrite passé-simple-indicatif6 @V +G1 -Exn => +Pl +3ème +PassSimp +Ind {
+  ..er => ..èrent
+}
 
+rewrite imparfait-indicatif1 @V +G1 -Exn => +Sg +1ère +Imp +Ind {
+  ..ger => ..geais
+  | ..cer => ..çais
+  | ..er => ..ais
+}
+rewrite imparfait-indicatif2 @V +G1 -Exn => +Sg +2ème +Imp +Ind {
+  ..ger => ..geais
+  | ..cer => ..çais
+  | ..er => ..ais
+}
+rewrite imparfait-indicatif3 @V +G1 -Exn => +Sg +3ème +Imp +Ind {
+  ..ger => ..geait
+  | ..cer => ..çait
+  | ..er => ..ait
+}
+rewrite imparfait-indicatif4 @V +G1 -Exn => +Pl +1ère +Imp +Ind {
+  ..er => ..ions
+}
+rewrite imparfait-indicatif5 @V +G1 -Exn => +Pl +2ème +Imp +Ind {
+  ..er => ..iez
+}
+rewrite imparfait-indicatif6 @V +G1 -Exn => +Pl +3ème +Imp +Ind {
+  ..ger => ..geaient
+  | ..cer => ..çaient
+  | ..er => ..aient
 }

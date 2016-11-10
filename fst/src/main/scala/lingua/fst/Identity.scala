@@ -13,14 +13,15 @@
  * limitations under the License.
  */
 package lingua
-package lexikon
-package phases
+package fst
 
-import compiled.fst.CompiledFst
+/** The identity allows for converting an input into its identity in the output satisfying the predicate.
+ *  If no such element exists, then `None` is returned.
+ *
+ *  @author Lucas Satabin
+ */
+trait Identity[In, Out] {
 
-class Lookup(fst: CompiledFst) extends Phase[QueryOptions, Set[AnnotatedLemma]](Some("lookup")) {
-
-  def process(options: QueryOptions, reporter: Reporter): Set[AnnotatedLemma] =
-    fst.lookup(options.query)
+  def convert(in: In, pout: Predicate[Out]): Option[Out]
 
 }

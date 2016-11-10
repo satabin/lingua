@@ -17,19 +17,22 @@ package lexikon
 package phases
 
 import parser._
+import untyped._
 
 import fastparse.core.Parsed
 
-class Parser(input: String) extends Phase[CompileOptions, Diko](Some("parser")) {
+class Parser(inputs: Map[String, String]) extends Phase[CompileOptions, Seq[DikoUnit]](Some("parser")) {
 
-  def process(options: CompileOptions, reporter: Reporter): Diko = {
-    DikoParser.diko.parse(input) match {
-      case Parsed.Success(diko, _) =>
-        diko
-      case Parsed.Failure(_, offset, _) =>
-        reporter.error(f"Parse error", offset)
-        Diko(Seq.empty, Seq.empty, Seq.empty, Seq.empty, Seq.empty)
-    }
-  }
+  def process(options: CompileOptions, reporter: Reporter): Seq[DikoUnit] =
+    (for {
+      (name, input) <- inputs
+      unit <- DikoParser.unit(name).parse(input) match {
+        case Parsed.Success(unit, _) =>
+          Some(unit)
+        case failure @ Parsed.Failure(_, offset, extra) =>
+          reporter.error(f"Unexpected input. Expected: ${extra.traced.expected}", name, offset)
+          None
+      }
+    } yield unit).toSeq
 
 }

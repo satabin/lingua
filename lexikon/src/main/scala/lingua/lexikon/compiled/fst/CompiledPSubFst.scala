@@ -14,6 +14,7 @@
  */
 package lingua.lexikon
 package compiled
+package fst
 
 import scodec.bits._
 
@@ -32,7 +33,7 @@ import scala.annotation.tailrec
  *
  *  @author Lucas Satabin
  */
-case class CompiledPSubFst(alphabet: Vector[Char], outputs: Vector[Out], tia: ByteVector, ta: Vector[Transition], oa: Vector[Set[Seq[Int]]]) {
+case class CompiledPSubFst(alphabet: Vector[Char], outputs: Vector[Out], tia: ByteVector, ta: Vector[PSubTransition], oa: Vector[Set[Seq[Int]]]) extends CompiledFst {
 
   private val alphabetMap =
     alphabet.zipWithIndex.toMap
@@ -42,10 +43,10 @@ case class CompiledPSubFst(alphabet: Vector[Char], outputs: Vector[Out], tia: By
     5 + 6 * alphabet.size
 
   /** Lookup for the word in this Fst and returns the ordered sequence of outputs if it is found. */
-  def lookup(word: String): Set[DikoEntry] = {
+  def lookup(word: String): Set[AnnotatedLemma] = {
 
     @tailrec
-    def step(idx: Int, state: Int, acc: List[Int]): Set[DikoEntry] =
+    def step(idx: Int, state: Int, acc: List[Int]): Set[AnnotatedLemma] =
       if (state >= 0) {
         val isFinal = tia(state) == 1
         if (idx >= word.size) {
@@ -59,7 +60,7 @@ case class CompiledPSubFst(alphabet: Vector[Char], outputs: Vector[Out], tia: By
                     case a: Annotation => (root, anns + a)
                   }
                 }
-              Set(DikoEntry(root.toString, anns))
+              Set(AnnotatedLemma(root.toString.reverse, anns))
             } else {
               val res =
                 for (out <- outs) yield {
@@ -70,7 +71,7 @@ case class CompiledPSubFst(alphabet: Vector[Char], outputs: Vector[Out], tia: By
                         case a: Annotation => (root, anns + a)
                       }
                     }
-                  DikoEntry(root.toString.reverse, anns)
+                  AnnotatedLemma(root.toString.reverse, anns)
                 }
               res
             }
@@ -85,8 +86,12 @@ case class CompiledPSubFst(alphabet: Vector[Char], outputs: Vector[Out], tia: By
           ti match {
             case TransitionIndex(`c`, trans) =>
               // there exists a transition for the read symbol, collect the output and goto target
-              val Transition(_, out, target) = ta(trans)
-              step(idx + 1, target, out reverse_::: acc)
+              val PSubTransition(_, out, target) = ta(trans)
+              val acc1 = out.foldLeft(acc) {
+                case (acc, -1) => alphabetMap(c) :: acc
+                case (acc, n)  => n :: acc
+              }
+              step(idx + 1, target, acc1)
             case _ =>
               Set.empty
           }
@@ -98,4 +103,11 @@ case class CompiledPSubFst(alphabet: Vector[Char], outputs: Vector[Out], tia: By
     step(0, 0, Nil)
   }
 
+}
+
+object CompiledPSubFst {
+  def apply(fst: CompiledFst): Option[CompiledPSubFst] = fst match {
+    case fst @ CompiledPSubFst(_, _, _, _, _) => Some(fst)
+    case _                                    => None
+  }
 }

@@ -21,7 +21,7 @@ import parser._
 import compiled._
 import phases._
 
-import better.files._
+import better.files.{ Read => _, _ }
 
 import scala.io.Codec
 
@@ -32,18 +32,54 @@ object DikoMain extends App {
 
   implicit val fileRead: Read[File] = Read.reads(File(_))
 
-  val optParser = new OptionParser[Options]("diko") {
+  val optParser = new OptionParser[DikoOptions]("diko") {
     head("diko", BuildInfo.version)
 
     cmd("compile").action { (_, c) =>
       c.mkCompile
     }.text("Compile a dictionary").children(
-      opt[File]('o', "output").action {
+      opt[File]('o', "output-dir").action {
         case (f, c: CompileOptions) =>
-          c.copy(output = f)
+          c.copy(outputDir = f)
         case _ =>
           throw new Exception
-      }.text("The output .diko file (by default 'dikoput.diko'"),
+      },
+      opt[String]("inflections-file").action {
+        case (f, c: CompileOptions) =>
+          c.copy(inflectionsFile = f)
+        case _ =>
+          throw new Exception
+      }.text("The generated inflections files base name (by default 'inflections')"),
+      opt[String]("deflexions-file").action {
+        case (f, c: CompileOptions) =>
+          c.copy(deflexionsFile = f)
+        case _ =>
+          throw new Exception
+      }.text("The generated deflexions files base name (by default 'deflexions')"),
+      opt[String]("lemmas-file").action {
+        case (f, c: CompileOptions) =>
+          c.copy(lemmasFile = f)
+        case _ =>
+          throw new Exception
+      }.text("The generated lemmas files base name (by default 'lemmas')"),
+      opt[Unit]('i', "inflections").action {
+        case (b, c: CompileOptions) =>
+          c.copy(generateInflections = true)
+        case _ =>
+          throw new Exception
+      }.text("Generate inflections from the lemmas and rewrite rules"),
+      opt[Unit]('d', "deflections").action {
+        case (b, c: CompileOptions) =>
+          c.copy(generateDeflexions = true)
+        case _ =>
+          throw new Exception
+      }.text("Generate deflexions from the rewrite rules"),
+      opt[Unit]('l', "lemmas").action {
+        case (b, c: CompileOptions) =>
+          c.copy(generateLemmas = true)
+        case _ =>
+          throw new Exception
+      }.text("Generate lemmas"),
       opt[Int]('K', "occupation").action {
         case (k, c: CompileOptions) =>
           c.copy(occupation = k)
@@ -51,25 +87,26 @@ object DikoMain extends App {
           throw new Exception
       }.text("Minimum segement occupation before skipping to the next one. Decreasing this number improves generation speed but results in bigger generated lexicon file.")
         .validate(i => if (i >= 0 && i <= 100) success else failure("value must be between 0 and 100")),
-      opt[File]('N', "save-nfst").action {
+      opt[Unit]('N', "save-nfst").action {
         case (f, c: CompileOptions) =>
-          c.copy(saveNFst = Some(f))
+          c.copy(saveNFst = true)
         case _ =>
           throw new Exception
-      }.text("Save the dot representation of the non deterministic fst to the given file"),
-      opt[File]('F', "save-fst").action {
+      }.text("Save the dot representation of the non deterministic fst"),
+      opt[Unit]('F', "save-fst").action {
         case (f, c: CompileOptions) =>
-          c.copy(saveFst = Some(f))
+          c.copy(saveFst = true)
         case _ =>
           throw new Exception
-      }.text("Save the dot representation of the fst to the given file"),
-      arg[File]("<file>").action {
+      }.text("Save the dot representation of the fst"),
+      arg[File]("<file>...").unbounded().action {
         case (f, c: CompileOptions) =>
-          c.copy(input = f)
+          c.copy(inputs = f :: c.inputs)
         case _ =>
           throw new Exception
       }.text("Input diko file to compile").required())
 
+    note("")
     cmd("query").action { (_, c) =>
       c.mkQuery
     }.text("Query a dictionary").children(
@@ -78,14 +115,16 @@ object DikoMain extends App {
           c.copy(query = q)
         case _ =>
           throw new Exception
-      }.text("The word to query if reading a compiled diko file").required(),
+      }.text("The word to query in the compiled diko file").required(),
       arg[File]("<file>").action {
         case (f, c: QueryOptions) =>
           c.copy(input = f)
         case _ =>
           throw new Exception
-      }.text("Input diko file to compile").required())
+      }.text("Compiled diko file to query").required())
 
+    note("")
+    note("Global options")
     opt[Unit]('t', "timing").action { (_, c) =>
       c.mkTimed
     }.text("Turn on phase timing")
@@ -102,26 +141,24 @@ object DikoMain extends App {
 
     options match {
       case options: CompileOptions =>
-        val input = options.input.contentAsString(codec = Codec.UTF8)
-        val reporter = new ConsoleReporter(input)
+        val inputs = options.inputs.map(f => (f.path.toString, f.contentAsString(codec = Codec.UTF8))).toMap
+        val reporter = new ConsoleReporter(options, inputs)
 
         // do stuff
         val sequence =
           for {
-            diko <- new Parser(input)
-            typer <- new Typer(diko)
-            nfst <- new Transformer(typer, diko)
-            fst <- new Determinize(nfst)
-            compiled <- new Compiler(fst, diko)
-            () <- new Serializer(compiled)
+            units <- new Parser(inputs)
+            typed <- new Typer(units)
+            files <- new Transformer(typed)
+            () <- new Serializer(files, typed)
           } yield ()
 
         sequence.run(options, reporter)
-        reporter.info(f"output written in ${options.output}")
+        reporter.info(f"Files written in ${options.outputDir}")
         reporter.summary()
 
       case options: QueryOptions =>
-        val reporter = new ConsoleReporter("")
+        val reporter = new ConsoleReporter(options, Map())
         val sequence =
           for {
             fst <- new DikoLoader()

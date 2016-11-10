@@ -14,13 +14,24 @@
  */
 package lingua
 package lexikon
-package phases
+package typed
 
-import compiled.fst.CompiledFst
+sealed trait Tag {
+  val alias: String
+  val fullname: String
+  val public: Boolean
+  val concrete: Boolean
 
-class Lookup(fst: CompiledFst) extends Phase[QueryOptions, Set[AnnotatedLemma]](Some("lookup")) {
+  val uname: String
+  val offset: Int
+}
 
-  def process(options: QueryOptions, reporter: Reporter): Set[AnnotatedLemma] =
-    fst.lookup(options.query)
+/** A typed simple tag with its parent and visibility resolved. */
+final case class ConcreteTag(alias: String, fullname: String, public: Boolean, parent: Option[AbstractTag])(val uname: String, val offset: Int) extends Tag {
+  val concrete = true
+}
 
+/** A typed abstract tag. */
+final case class AbstractTag(alias: String, fullname: String, public: Boolean)(val uname: String, val offset: Int) extends Tag {
+  val concrete = false
 }

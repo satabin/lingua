@@ -17,9 +17,7 @@ package lexikon
 
 import better.files.File
 
-sealed abstract class Options {
-  val verbose: Boolean
-  val timing: Boolean
+sealed abstract class DikoOptions extends Options {
 
   def mkCompile: CompileOptions =
     CompileOptions(verbose = verbose, timing = timing)
@@ -27,13 +25,13 @@ sealed abstract class Options {
   def mkQuery: QueryOptions =
     QueryOptions(verbose = verbose, timing = timing)
 
-  def mkVerbose: Options
-  def mkTimed: Options
+  def mkVerbose: DikoOptions
+  def mkTimed: DikoOptions
 
 }
 
 final case class NoCommandOptions(verbose: Boolean = false,
-    timing: Boolean = false) extends Options {
+    timing: Boolean = false) extends DikoOptions {
 
   def mkVerbose: NoCommandOptions =
     copy(verbose = true)
@@ -43,13 +41,19 @@ final case class NoCommandOptions(verbose: Boolean = false,
 
 }
 
-final case class CompileOptions(input: File = null,
+final case class CompileOptions(inputs: List[File] = Nil,
+    outputDir: File = File("out"),
+    generateLemmas: Boolean = false,
+    generateInflections: Boolean = false,
+    generateDeflexions: Boolean = false,
     occupation: Int = 70,
-    output: File = File("dikput.diko"),
-    saveNFst: Option[File] = None,
-    saveFst: Option[File] = None,
+    lemmasFile: String = "lemmas",
+    inflectionsFile: String = "inflections",
+    deflexionsFile: String = "deflexions",
+    saveNFst: Boolean = false,
+    saveFst: Boolean = false,
     verbose: Boolean = false,
-    timing: Boolean = false) extends Options {
+    timing: Boolean = false) extends DikoOptions {
 
   def mkVerbose: CompileOptions =
     copy(verbose = true)
@@ -62,7 +66,7 @@ final case class CompileOptions(input: File = null,
 final case class QueryOptions(input: File = null,
     query: String = null,
     verbose: Boolean = false,
-    timing: Boolean = false) extends Options {
+    timing: Boolean = false) extends DikoOptions {
 
   def mkVerbose: QueryOptions =
     copy(verbose = true)

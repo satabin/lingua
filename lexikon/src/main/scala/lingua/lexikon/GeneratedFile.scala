@@ -14,13 +14,18 @@
  */
 package lingua
 package lexikon
-package phases
 
-import compiled.fst.CompiledFst
+import better.files.File
 
-class Lookup(fst: CompiledFst) extends Phase[QueryOptions, Set[AnnotatedLemma]](Some("lookup")) {
-
-  def process(options: QueryOptions, reporter: Reporter): Set[AnnotatedLemma] =
-    fst.lookup(options.query)
-
+import fst.{
+  PSubFst,
+  QPFst
 }
+
+sealed trait GeneratedFile
+
+final case class PSubFstFile(file: File, fst: PSubFst[Char, Out]) extends GeneratedFile
+
+final case class QPFstFile(file: File, fst: QPFst[Char, Out]) extends GeneratedFile
+
+final case class DotFile(file: File, dot: String) extends GeneratedFile

@@ -12,15 +12,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package lingua
-package lexikon
-package phases
+package lingua.lexikon.compiled
 
-import compiled.fst.CompiledFst
+package object fst {
 
-class Lookup(fst: CompiledFst) extends Phase[QueryOptions, Set[AnnotatedLemma]](Some("lookup")) {
+  type TransitionIndex = Long
 
-  def process(options: QueryOptions, reporter: Reporter): Set[AnnotatedLemma] =
-    fst.lookup(options.query)
+  implicit class TransitionIndexOps(val ti: TransitionIndex) extends AnyVal {
+
+    def char: Char =
+      ((ti >>> 32) & 0xffff).toChar
+
+    def transition: Int =
+      (ti & 0xffffffff).toInt
+
+  }
+
+  object TransitionIndex {
+
+    def unapply(ti: TransitionIndex): Option[(Char, Int)] =
+      Some(ti.char -> ti.transition)
+
+  }
 
 }

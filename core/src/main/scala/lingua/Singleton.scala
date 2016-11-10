@@ -13,6 +13,13 @@
  * limitations under the License.
  */
 package lingua
-package lexikon
 
-case class DikoEntry(root: String, annotations: Set[Annotation])
+object Singleton {
+
+  def unapply[T](s: Set[T]): Option[T] =
+    if (s.size == 1)
+      Some(s.head)
+    else
+      None
+
+}

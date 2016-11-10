@@ -1,4 +1,4 @@
-/* Copyright (c) 2015 Lucas Satabin
+/* Copyright (c) 2016 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,12 @@
  * limitations under the License.
  */
 package lingua.lexikon
+package compiled
+package fst
 
-package object parser {
-  type Rule = Seq[(Pattern, Replacement)]
+abstract class CompiledFst {
+
+  /** Lookup for the word in this Fst and returns the ordered sequence of outputs if it is found. */
+  def lookup(word: String): Set[AnnotatedLemma]
+
 }

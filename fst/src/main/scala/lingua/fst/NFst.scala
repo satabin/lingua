@@ -150,8 +150,8 @@ class NFst[In, Out] private[fst] (states: Set[State],
 
       for {
         (q, w) <- q2
-        if this.finals.contains(q)
-        out <- this.finals(q)
+        outs <- finals.get(q)
+        out <- if (outs.isEmpty) Set(Seq()) else outs
       } pfinals.addBinding(q2id, w ++ out)
 
       for ((q, _) <- q2) {

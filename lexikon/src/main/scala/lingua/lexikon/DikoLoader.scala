@@ -19,7 +19,7 @@ package phases
 import scala.util.Try
 import scala.util.control.NonFatal
 
-import compiled._
+import compiled.fst._
 import io._
 
 import better.files._
@@ -30,11 +30,11 @@ import java.nio.file.StandardOpenOption
 import scodec.bits._
 import scodec.Attempt
 
-class DikoLoader extends Phase[QueryOptions, CompiledPSubFst](Some("diko-loader")) {
+class DikoLoader extends Phase[QueryOptions, CompiledFst](Some("diko-loader")) {
 
   val empty = CompiledPSubFst(Vector.empty, Vector.empty, ByteVector.empty, Vector.empty, Vector.empty)
 
-  def process(options: QueryOptions, reporter: Reporter): CompiledPSubFst = {
+  def process(options: QueryOptions, reporter: Reporter): CompiledFst = {
     (for (channel <- options.input.newFileChannel(Seq(StandardOpenOption.READ)).managed) yield {
       FstProtocol.file.decodeValue(BitVector.fromChannel(channel)) match {
         case Attempt.Successful(fst) =>

@@ -14,13 +14,22 @@
  */
 package lingua
 package lexikon
-package phases
+package typed
 
-import compiled.fst.CompiledFst
+import gnieh.pp._
 
-class Lookup(fst: CompiledFst) extends Phase[QueryOptions, Set[AnnotatedLemma]](Some("lookup")) {
+/** A resolved replacement with normalized tags. */
+final case class Replacement(seq: Seq[CaseReplacement], tags: Seq[TagEmission])(val uname: String, val offset: Int) {
 
-  def process(options: QueryOptions, reporter: Reporter): Set[AnnotatedLemma] =
-    fst.lookup(options.query)
+  def pp = {
+    val annotations = tags match {
+      case Seq() => None
+      case _ => Some(text("/") :+: hsep(tags.map {
+        case (true, t)  => text(f"+${t.alias}")
+        case (false, t) => text(f"-${t.alias}")
+      }))
+    }
+    group(text(seq.mkString) :+: annotations)
+  }
 
 }

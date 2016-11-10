@@ -14,13 +14,9 @@
  */
 package lingua
 package lexikon
-package phases
 
-import compiled.fst.CompiledFst
-
-class Lookup(fst: CompiledFst) extends Phase[QueryOptions, Set[AnnotatedLemma]](Some("lookup")) {
-
-  def process(options: QueryOptions, reporter: Reporter): Set[AnnotatedLemma] =
-    fst.lookup(options.query)
-
-}
+/** A word character is defined as a character read, and the character output.
+ *
+ *  @group Ast
+ */
+final case class WordChar(in: Option[Char], out: Option[Char])

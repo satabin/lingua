@@ -1,4 +1,4 @@
-/* Copyright (c) 2015 Lucas Satabin
+/* Copyright (c) 2016 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 package lingua
-package parser
 
-case class Tag(public: Boolean, fullname: String, alias: String, children: Seq[Tag])(val offset: Int)
-
-case class Category(fullname: String, alias: String)(val offset: Int)
+abstract class Options {
+  val verbose: Boolean
+  val timing: Boolean
+}

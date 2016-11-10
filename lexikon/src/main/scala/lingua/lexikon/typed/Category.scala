@@ -12,27 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package lingua.lexikon
+package lingua
+package lexikon
+package typed
 
-package object compiled {
-
-  type TransitionIndex = Long
-
-  implicit class TransitionIndexOps(val ti: TransitionIndex) extends AnyVal {
-
-    def char: Char =
-      ((ti >>> 32) & 0xffff).toChar
-
-    def transition: Int =
-      (ti & 0xffffffff).toInt
-
-  }
-
-  object TransitionIndex {
-
-    def unapply(ti: TransitionIndex): Option[(Char, Int)] =
-      Some(ti.char -> ti.transition)
-
-  }
-
-}
+/** A typed category. */
+case class Category(alias: String, fullname: String)(val uname: String, val offset: Int)

@@ -14,13 +14,22 @@
  */
 package lingua
 package lexikon
-package phases
+package typed
 
-import compiled.fst.CompiledFst
+import gnieh.pp._
 
-class Lookup(fst: CompiledFst) extends Phase[QueryOptions, Set[AnnotatedLemma]](Some("lookup")) {
+/** A resolved pattern where category and tags are normalized. */
+final case class Pattern(seq: Seq[CasePattern], category: Option[Category], tags: Seq[TagEmission])(val uname: String, val offset: Int) {
 
-  def process(options: QueryOptions, reporter: Reporter): Set[AnnotatedLemma] =
-    fst.lookup(options.query)
+  def pp = {
+    val annotations = (category, tags) match {
+      case (None, Seq()) => None
+      case (_, _) => Some(text("/") :+: category.map(c => text(f"@${c.alias}")) :+: hsep(tags.map {
+        case (true, t)  => text(f"+${t.alias}")
+        case (false, t) => text(f"-${t.alias}")
+      }))
+    }
+    group(text(seq.mkString) :+: annotations)
+  }
 
 }

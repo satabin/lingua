@@ -12,15 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package lingua
-package lexikon
-package phases
+package lingua.lexikon
 
-import compiled.fst.CompiledFst
+package object untyped {
 
-class Lookup(fst: CompiledFst) extends Phase[QueryOptions, Set[AnnotatedLemma]](Some("lookup")) {
-
-  def process(options: QueryOptions, reporter: Reporter): Set[AnnotatedLemma] =
-    fst.lookup(options.query)
+  type TagEmission = (Boolean, String)
 
 }

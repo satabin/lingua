@@ -12,15 +12,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package lingua
-package lexikon
-package phases
+package lingua.lexikon
+package compiled
+package fst
 
-import compiled.fst.CompiledFst
-
-class Lookup(fst: CompiledFst) extends Phase[QueryOptions, Set[AnnotatedLemma]](Some("lookup")) {
-
-  def process(options: QueryOptions, reporter: Reporter): Set[AnnotatedLemma] =
-    fst.lookup(options.query)
-
-}
+/** A compiled transition.
+ *  The `out` sequence contains the indices of outputs in the outputs array of the compiled Fst.
+ *
+ *  @author Lucas Satabin
+ */
+final case class PSubTransition(in: Char, out: List[Int], target: Int)

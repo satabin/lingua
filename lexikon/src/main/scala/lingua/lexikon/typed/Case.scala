@@ -14,13 +14,11 @@
  */
 package lingua
 package lexikon
-package phases
+package typed
 
-import compiled.fst.CompiledFst
+import gnieh.pp._
 
-class Lookup(fst: CompiledFst) extends Phase[QueryOptions, Set[AnnotatedLemma]](Some("lookup")) {
-
-  def process(options: QueryOptions, reporter: Reporter): Set[AnnotatedLemma] =
-    fst.lookup(options.query)
-
+/** A resolved case with category and tags normalized in the pattern and replacement. */
+final case class Case(pattern: Pattern, replacement: Replacement) {
+  def pp = group(nest(2)("case" :+: pattern.pp :+: "=>" :|: replacement.pp))
 }

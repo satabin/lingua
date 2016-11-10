@@ -14,20 +14,21 @@
  */
 package lingua
 
-class ConsoleReporter(input: String) extends Reporter(input) {
+class ConsoleReporter(options: Options, inputs: Map[String, String]) extends Reporter(options, inputs) {
 
   import Reporter._
 
-  protected def doReport(offset: Int, level: Level.Value, msg: String, exn: Option[Throwable]): Unit = {
+  protected def doReport(name: String, offset: Int, level: Level.Value, msg: String, exn: Option[Throwable]): Unit = {
     val pos = if (offset >= 0) {
-      val (line, col) = lineColOf(offset)
-      f"[$line,$col] "
+      val (line, col) = lineColOf(name, offset)
+      f"[$line,$col] in $name:\n\t"
     } else {
       ""
     }
     val severity =
       level match {
-        case Level.INFO    => "[info]"
+        case Level.VERBOSE => f"[${Console.GREEN}verbose${Console.RESET}]"
+        case Level.INFO    => f"[${Console.BLUE}info${Console.RESET}]"
         case Level.WARNING => f"[${Console.YELLOW}warning${Console.RESET}]"
         case Level.ERROR   => f"[${Console.RED}error${Console.RESET}]"
       }
