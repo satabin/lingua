@@ -41,7 +41,7 @@ case class Diko(val alphabet: Seq[Char],
 
   /** Indicates whether `concrete` is of `target` type */
   def isA(target: Tag, concrete: ConcreteTag): Boolean = target match {
-    case AbstractTag(name, _, _)    => concrete.parent.map(_ == name).getOrElse(false)
+    case AbstractTag(name, _, _)    => concrete.parent.map(_.alias == name).getOrElse(false)
     case ConcreteTag(name, _, _, _) => concrete.alias == name
   }
 

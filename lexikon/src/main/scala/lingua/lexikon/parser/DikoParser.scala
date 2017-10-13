@@ -108,18 +108,28 @@ object DikoParser {
     keyword("separators") ~/ (!";" ~ AnyChar.!.map(_(0))).rep(min = 1) ~ ";").map(Separators)
 
   /** {{{
-   *  Categories ::= `categories' Category*
+   *  Categories ::= `categories' Category+
    *  }}}
    */
   val categories: P[Categories] = P(
     keyword("categories") ~/ category.rep(min = 1)).map(Categories)
 
   /** {{{
-   *  Tags ::= `tags' Tag*
+   *  Tags ::= `tags' Tag+
    *  }}}
    */
   val tags: P[Tags] = P(
     keyword("tags") ~/ tag.rep(min = 1)).map(Tags)
+
+  /** {{{
+   *  Morphology ::= `morphology' MorphologyRule+
+   *
+   *  MorphologyRule ::= Char+
+   *                   | Char+ `[' Char+ `]'
+   *                   | Char+ `[' `^' Char+ `]'
+   *  }}}
+   */
+  //val morphology: P[Morphology] = ???
 
   /** {{{
    *  Lexicon ::= `lexicon' Name (`@' Name)? (`+' Name | `-` Name)* `{' Word* `}'
