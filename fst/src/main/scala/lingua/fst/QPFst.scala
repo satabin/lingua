@@ -19,7 +19,8 @@ package fst
  *
  *  @author Lucas Satabin
  */
-class QPFst[In, Out](states: Set[State],
+class QPFst[In, Out](
+    states: Set[State],
     val initial: State,
     finals: Map[State, Set[Seq[Output[Out]]]],
     val transitions: Map[State, Seq[((Predicate[In], Boolean), Seq[Output[Out]], State)]]) extends Fst[QPFst, In, Output[Out]](states, Set(initial), finals) {

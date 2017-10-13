@@ -22,16 +22,17 @@ import semiring.Semiring
  *
  *  @author Lucas Satabin
  */
-class WNFst[In, Out, Weight: Semiring] private[fst] (states: Set[State],
-  initials: Map[State, Weight],
-  finals: Map[State, Set[(Weight, Seq[Out])]],
-  val transitions: Map[(State, In), Set[State]],
-  val anyTransitions: Map[State, Set[State]],
-  val outputs: Map[(State, In, State), Seq[Out]],
-  val anyOutputs: Map[(State, State), Seq[Out]],
-  val weights: Map[(State, In, State), Weight],
-  val anyWeights: Map[(State, State), Weight])
-    extends WFst(states, initials, finals) {
+class WNFst[In, Out, Weight: Semiring] private[fst] (
+    states: Set[State],
+    initials: Map[State, Weight],
+    finals: Map[State, Set[(Weight, Seq[Out])]],
+    val transitions: Map[(State, In), Set[State]],
+    val anyTransitions: Map[State, Set[State]],
+    val outputs: Map[(State, In, State), Seq[Out]],
+    val anyOutputs: Map[(State, State), Seq[Out]],
+    val weights: Map[(State, In, State), Weight],
+    val anyWeights: Map[(State, State), Weight])
+  extends WFst(states, initials, finals) {
 
   def delta(state: State, in: In): Set[State] =
     transitions.getOrElse((state, in), Set.empty) ++ anyTransitions.getOrElse(state, Set.empty)

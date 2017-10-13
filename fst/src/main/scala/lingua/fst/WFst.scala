@@ -17,7 +17,8 @@ package fst
 
 import semiring.Semiring
 
-abstract class WFst[In, Out, Weight: Semiring](val states: Set[State],
+abstract class WFst[In, Out, Weight: Semiring](
+    val states: Set[State],
     val initials: Map[State, Weight],
     val finals: Map[State, Set[(Weight, Seq[Out])]]) {
 

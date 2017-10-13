@@ -21,14 +21,15 @@ package fst
  *
  *  @author Lucas Satabin
  */
-class NFst[In, Out] private[fst] (states: Set[State],
-  initials: Set[State],
-  finals: Map[State, Set[Seq[Out]]],
-  val transitions: Map[(State, In), Set[State]],
-  val anyTransitions: Map[State, Set[State]],
-  val outputs: Map[(State, In, State), Seq[Out]],
-  val anyOutputs: Map[(State, State), Seq[Out]])
-    extends Fst[NFst, In, Out](states, initials, finals) {
+class NFst[In, Out] private[fst] (
+    states: Set[State],
+    initials: Set[State],
+    finals: Map[State, Set[Seq[Out]]],
+    val transitions: Map[(State, In), Set[State]],
+    val anyTransitions: Map[State, Set[State]],
+    val outputs: Map[(State, In, State), Seq[Out]],
+    val anyOutputs: Map[(State, State), Seq[Out]])
+  extends Fst[NFst, In, Out](states, initials, finals) {
 
   def delta(state: State, in: In): Set[State] =
     transitions.getOrElse((state, in), Set.empty) ++ anyTransitions.getOrElse(state, Set.empty)

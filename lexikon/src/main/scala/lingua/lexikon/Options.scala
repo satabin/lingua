@@ -30,7 +30,8 @@ sealed abstract class DikoOptions extends Options {
 
 }
 
-final case class NoCommandOptions(verbose: Boolean = false,
+final case class NoCommandOptions(
+    verbose: Boolean = false,
     timing: Boolean = false) extends DikoOptions {
 
   def mkVerbose: NoCommandOptions =
@@ -41,7 +42,8 @@ final case class NoCommandOptions(verbose: Boolean = false,
 
 }
 
-final case class CompileOptions(inputs: List[File] = Nil,
+final case class CompileOptions(
+    inputs: List[File] = Nil,
     outputDir: File = File("out"),
     generateLemmas: Boolean = false,
     generateInflections: Boolean = false,
@@ -63,7 +65,8 @@ final case class CompileOptions(inputs: List[File] = Nil,
 
 }
 
-final case class QueryOptions(input: File = null,
+final case class QueryOptions(
+    input: File = null,
     query: String = null,
     verbose: Boolean = false,
     timing: Boolean = false) extends DikoOptions {

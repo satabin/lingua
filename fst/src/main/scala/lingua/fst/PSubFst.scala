@@ -20,14 +20,15 @@ import scala.collection.immutable.Queue
 import scala.annotation.tailrec
 
 /** A p-subsequential finite-state transducer. */
-class PSubFst[In, Out] private[fst] (states: Set[State],
-  val initial: State,
-  finals: Map[State, Set[Seq[Out]]],
-  val transitions: Map[(State, In), State],
-  val defaultTransitions: Map[State, State],
-  val outputs: Map[(State, In), Seq[Out]],
-  val defaultOutputs: Map[State, Seq[Out]])
-    extends Fst[PSubFst, In, Out](states, Set(initial), finals) {
+class PSubFst[In, Out] private[fst] (
+    states: Set[State],
+    val initial: State,
+    finals: Map[State, Set[Seq[Out]]],
+    val transitions: Map[(State, In), State],
+    val defaultTransitions: Map[State, State],
+    val outputs: Map[(State, In), Seq[Out]],
+    val defaultOutputs: Map[State, Seq[Out]])
+  extends Fst[PSubFst, In, Out](states, Set(initial), finals) {
 
   /** The value of p */
   def p =

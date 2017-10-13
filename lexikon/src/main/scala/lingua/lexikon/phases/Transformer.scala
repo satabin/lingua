@@ -46,14 +46,7 @@ class Transformer(typed: Diko) extends Phase[CompileOptions, Seq[GeneratedFile]]
 
     val lemmasBuilder = if (options.generateLemmas) Some(new VectorBuilder[(Seq[Char], Seq[Out])]) else None
     val inflectionsBuilder = if (options.generateInflections) Some(new VectorBuilder[(Seq[Char], Seq[Out])]) else None
-    val deflexionsBuilder =
-      if (options.generateDeflexions) {
-        val b = PNFst.Builder.create[Char, Out]
-        val i = b.newState.makeInitial
-        Some(b -> i)
-      } else {
-        None
-      }
+    val deflexionsBuilder = if (options.generateDeflexions) Some(PNFst.Builder.create[Char, Out]) else None
 
     for (Word(input, cat, tags, lname) <- typed.words) {
       val builders = Seq(lemmasBuilder, inflectionsBuilder).flatten
@@ -77,7 +70,7 @@ class Transformer(typed: Diko) extends Phase[CompileOptions, Seq[GeneratedFile]]
       // invert the rule and add it to the deflexions
       // only non recursive cases are handled, emit a warning for each recursive case
       for {
-        (builder, i) <- deflexionsBuilder
+        builder <- deflexionsBuilder
         Case(p @ Pattern(pattern, cat, tags), Replacement(repl, rTags)) <- cases
       } {
         if (repl.exists(_ == RecursiveReplacement)) {
@@ -85,7 +78,7 @@ class Transformer(typed: Diko) extends Phase[CompileOptions, Seq[GeneratedFile]]
         } else {
           val tags1 = tags.collect { case (true, t @ ConcreteTag(name, _, _, _)) => t }
           val tags2 = normalizeWith(tags1, rTags).map(t => TagOut(t.alias))
-          addDeflexion(pattern, cat.map(c => CatOut(c.alias)), tags2, repl, builder, i, p.uname, p.offset, reporter)
+          addDeflexion(pattern, cat.map(c => CatOut(c.alias)), tags2, repl, builder, p.uname, p.offset, reporter)
         }
       }
 
@@ -93,7 +86,7 @@ class Transformer(typed: Diko) extends Phase[CompileOptions, Seq[GeneratedFile]]
 
     // build the NFst
     val deflexionsNFst =
-      for ((b, _) <- deflexionsBuilder) yield b.build()
+      for (b <- deflexionsBuilder) yield b.build()
 
     // generate dot files for NFsts if asked to
     val deflexionsNDot =
@@ -201,15 +194,15 @@ class Transformer(typed: Diko) extends Phase[CompileOptions, Seq[GeneratedFile]]
 
   private def buildWordChars(original: String, rewritten: String): Seq[WordChar] = {
     @tailrec
-    def loop(rewrittenIdx: Int, originalIdx: Int, indices: List[(Int, Int)], acc: List[WordChar]): List[WordChar] = indices match {
-      case (rIdx, oIdx) :: _ if rIdx > rewrittenIdx && oIdx > originalIdx =>
-        loop(rewrittenIdx + 1, originalIdx + 1, indices, WordChar(Some(rewritten(rewrittenIdx)), Some(original(originalIdx))) :: acc)
-      case (rIdx, _) :: _ if rIdx > rewrittenIdx =>
-        loop(rewrittenIdx + 1, originalIdx, indices, WordChar(Some(rewritten(rewrittenIdx)), None) :: acc)
-      case (_, oIdx) :: _ if oIdx > originalIdx =>
-        loop(rewrittenIdx, originalIdx + 1, indices, WordChar(None, Some(original(originalIdx))) :: acc)
-      case _ :: rest =>
-        loop(rewrittenIdx + 1, originalIdx + 1, rest, WordChar(Some(rewritten(rewrittenIdx)), Some(original(originalIdx))) :: acc)
+    def loop(rewrittenIdx: Int, originalIdx: Int, indices: List[Common], acc: List[WordChar]): List[WordChar] = indices match {
+      case Common(rIdx, oIdx, len) :: _ if rIdx > rewrittenIdx && oIdx > originalIdx =>
+        loop(rewrittenIdx + len, originalIdx + len, indices, WordChar(Some(rewritten(rewrittenIdx)), Some(original(originalIdx))) :: acc)
+      case Common(rIdx, _, len) :: _ if rIdx > rewrittenIdx =>
+        loop(rewrittenIdx + len, originalIdx, indices, WordChar(Some(rewritten(rewrittenIdx)), None) :: acc)
+      case Common(_, oIdx, len) :: _ if oIdx > originalIdx =>
+        loop(rewrittenIdx, originalIdx + len, indices, WordChar(None, Some(original(originalIdx))) :: acc)
+      case Common(_, _, len) :: rest =>
+        loop(rewrittenIdx + len, originalIdx + len, rest, WordChar(Some(rewritten(rewrittenIdx)), Some(original(originalIdx))) :: acc)
       case Nil if rewrittenIdx < rewritten.size && originalIdx < original.size =>
         loop(rewrittenIdx + 1, originalIdx + 1, indices, WordChar(Some(rewritten(rewrittenIdx)), Some(original(originalIdx))) :: acc)
       case Nil if rewrittenIdx < rewritten.size =>
@@ -223,7 +216,7 @@ class Transformer(typed: Diko) extends Phase[CompileOptions, Seq[GeneratedFile]]
     loop(0, 0, indices, Nil)
   }
 
-  private def addDeflexion(pattern: Seq[CasePattern], cat: Option[CatOut], tags: Seq[TagOut], repl: Seq[CaseReplacement], builder: PNFst.Builder[Char, Out], init: PNFst.StateBuilder[Char, Out], uname: String, offset: Int, reporter: Reporter): Unit = {
+  private def addDeflexion(pattern: Seq[CasePattern], cat: Option[CatOut], tags: Seq[TagOut], repl: Seq[CaseReplacement], builder: PNFst.Builder[Char, Out], uname: String, offset: Int, reporter: Reporter): Unit = {
     @tailrec
     def loop(last: PNFst.StateBuilder[Char, Out], pattern: Seq[CasePattern], repl: Seq[CaseReplacement], accOut: Seq[Out]): Unit =
       (pattern, repl) match {
@@ -261,6 +254,7 @@ class Transformer(typed: Diko) extends Phase[CompileOptions, Seq[GeneratedFile]]
         case (_, _) =>
           reporter.error("Malformed rewrite rule", uname, offset)
       }
+    val init = builder.newState.makeInitial
     loop(init, pattern, repl, Seq())
   }
 

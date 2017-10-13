@@ -141,7 +141,7 @@ object DikoMain extends App {
 
     options match {
       case options: CompileOptions =>
-        val inputs = options.inputs.map(f => (f.path.toString, f.contentAsString(codec = Codec.UTF8))).toMap
+        val inputs = options.inputs.map(f => (f.path.toString, f.contentAsString(charset = Codec.UTF8.charSet))).toMap
         val reporter = new ConsoleReporter(options, inputs)
 
         // do stuff
