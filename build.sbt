@@ -6,7 +6,7 @@ val globalSettings = Seq(
   resolvers +=
     "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
   licenses += ("The Apache Software License, Version 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
-  scalacOptions ++= Seq("-feature", "-deprecation", "-unchecked"),
+  scalacOptions ++= Seq("-feature", "-deprecation", "-unchecked", "-Ypartial-unification"),
   scalacOptions in (Compile, doc) ++= Seq("-groups"),
   scalariformAutoformat := true,
   scalariformPreferences := {
@@ -32,6 +32,7 @@ lazy val core = project.in(file("core"))
   .settings(
     version := "0.1.0-SNAPSHOT",
     libraryDependencies += "com.lihaoyi" %% "fastparse" % "1.0.0",
+    libraryDependencies += "org.typelevel" %% "cats-core" % "1.0.1",
     name := "lingua-core")
 
 lazy val lexikonDependencies = Seq(

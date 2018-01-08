@@ -13,18 +13,14 @@
  * limitations under the License.
  */
 package lingua
-package fst
 
-import semiring.Semiring
+/** The identity allows for converting an input into its identity in the output satisfying the predicate.
+ *  If no such element exists, then `None` is returned.
+ *
+ *  @author Lucas Satabin
+ */
+trait Identity[In, Out] {
 
-class WPSubFst[In, Out, Weight: Semiring] private[fst] (
-    states: Set[State],
-    initial: State,
-    val initialWeight: Weight,
-    finals: Map[State, Set[(Weight, Seq[Out])]],
-    val transitions: Map[(State, In), State],
-    val defaultTransitions: Map[State, State],
-    val outputs: Map[(State, In), Seq[Out]],
-    val defaultOutputs: Map[State, Seq[Out]],
-    val weights: Map[(State, In), Weight],
-    val defaultWeights: Map[State, Weight]) extends WFst(states, Map(initial -> initialWeight), finals)
+  def convert(in: In, pout: Predicate[Out]): Option[Out]
+
+}

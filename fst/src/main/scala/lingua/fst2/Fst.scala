@@ -1,4 +1,4 @@
-/* Copyright (c) 2016 Lucas Satabin
+/* Copyright (c) 2017 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,33 +13,29 @@
  * limitations under the License.
  */
 package lingua
-package fst
+package fst2
 
-import scala.annotation.implicitNotFound
+import scala.language.higherKinds
 
-/** A proof that some input accepts epsilons and how to extract a non-epsilon value.
- *
- *  @author Lucas Satabin
- */
-@implicitNotFound("Could not prove that ${EpsIn} accepts epsilon values")
-trait EpsilonProof[EpsIn, NoEpsIn] {
+/** Constraints an Fst must respect to be considered as such. */
+abstract class Fst[F[_, _] <: Fst[F, _, _, _], In, Out, T] {
 
-  val Eps: EpsIn
+  type Transition = T
 
-  def unapplyNoEps(in: EpsIn): Option[NoEpsIn]
+  def states: Set[State]
 
-  def applyEps(in: NoEpsIn): EpsIn
+  def initials: Set[State]
 
-  object NoEps {
+  def finals: Set[State]
 
-    @inline
-    def unapply(in: EpsIn): Option[NoEpsIn] =
-      unapplyNoEps(in)
+  def transitions: Set[Transition]
 
-    @inline
-    def apply(in: NoEpsIn): EpsIn =
-      applyEps(in)
+  def isFinal(state: State): Boolean =
+    finals.contains(state)
 
-  }
+  def isInitial(state: State): Boolean =
+    initials.contains(state)
+
+  def compose[Out2](that: F[Out, Out2]): F[In, Out2]
 
 }
