@@ -1,4 +1,4 @@
-/* Copyright (c) 2017 Lucas Satabin
+/* Copyright (c) 2018 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
 package lingua
 package fst2
 
+import filter._
+
 import scala.annotation.tailrec
 
 import scala.collection.immutable.Queue
@@ -27,11 +29,11 @@ class NFst[In, Out](
     val states: Set[State],
     val initials: Set[State],
     val finals: Set[State],
-    val transitions: Set[(State, Option[In], Option[Out], State)]) extends Fst[NFst, In, Out, (State, Option[In], Option[Out], State)] {
+    val transitions: Set[Transition[In, Out]]) extends Fst[NFst, Option[In], Out] {
 
   private val (trans, outputs) =
     transitions.foldLeft(Map.empty[(State, Option[In]), Set[State]] -> Map.empty[(State, Option[In], State), Option[Out]]) {
-      case ((trans, outputs), (src, in, out, tgt)) =>
+      case ((trans, outputs), Transition(src, in, out, tgt)) =>
         val trans1 = trans.updated((src, in), trans.getOrElse((src, in), Set.empty) + tgt)
         val outputs1 = outputs.updated((src, in, tgt), out)
         (trans1, outputs1)
@@ -43,77 +45,13 @@ class NFst[In, Out](
   def outputs(origin: State, in: Option[In], target: State): Option[Out] =
     outputs.getOrElse((origin, in, target), None)
 
-  def transitions(state: State): Set[Transition] =
-    transitions.filter(_._1 == state)
-
-  def compose[Out2](that: NFst[Out, Out2]): NFst[In, Out2] = {
-    val i1i2 =
-      for {
-        i1 <- this.initials
-        i2 <- that.initials
-      } yield (i1, i2)
-
-    val f1f2 =
-      for {
-        f1 <- this.finals
-        f2 <- that.finals
-      } yield (f1, f2)
-
-    val states = i1i2
-
-    val queue = Queue.empty ++ i1i2
-
-    val mapping = states.foldLeft(Map.empty[(State, State), State]) {
-      case (acc, q) => acc.updated(q, acc.size)
-    }
-
-    @tailrec
-    def loop(init: Set[(State, State)], finals: Set[(State, State)], states: Set[(State, State)], queue: Queue[(State, State)], trans: Set[(State, Option[In], Option[Out2], State)], mapping: Map[(State, State), State]): NFst[In, Out2] =
-      queue.dequeueOption match {
-        case Some((q @ (q1, q2), rest)) =>
-          val init1 =
-            if (i1i2.contains(q))
-              init + q
-            else
-              init
-
-          val finals1 =
-            if (f1f2.contains(q))
-              finals + q
-            else
-              finals
-
-          val e1e2 =
-            for {
-              e1 @ (_, _, o1, _) <- this.transitions(q1)
-              e2 @ (_, i2, _, _) <- that.transitions(q2)
-              if o1 == i2
-            } yield (e1, e2)
-
-          val (states1, queue1, trans1, mapping1) =
-            e1e2.foldLeft((states, queue, trans, mapping)) {
-              case ((states, queue, trans, mapping), ((src1, in1, out1, tgt1), (src2, in2, out2, tgt2))) =>
-                val (states1, queue1, mapping1) =
-                  if (queue.contains((tgt1, tgt2)))
-                    (states, queue, mapping)
-                  else
-                    (states + (tgt1 -> tgt2), queue.enqueue(tgt1 -> tgt2), mapping.updated(tgt1 -> tgt2, mapping.size))
-                (states1, queue1, trans + ((mapping1(q), in1, out2, mapping1(tgt1 -> tgt2))), mapping1)
-            }
-
-          loop(init1, finals1, states1, queue1, trans1, mapping1)
-
-        case None =>
-          new NFst(states.map(mapping(_)), init.map(mapping(_)), finals.map(mapping(_)), trans)
-      }
-
-    loop(Set.empty, Set.empty, states, queue, Set.empty, mapping)
-  }
+  def transitions(state: State): Set[Transition[In, Out]] =
+    transitions.filter(_.source == state)
 
   def accessibleStates: Set[State] = {
     val nexts =
       transitions.foldLeft(Map.empty[State, Set[State]]) {
-        case (acc, (src, _, _, tgt)) =>
+        case (acc, Transition(src, _, _, tgt)) =>
           acc.updated(src, acc.getOrElse(src, Set.empty) + tgt)
       }
     @tailrec
@@ -131,7 +69,7 @@ class NFst[In, Out](
   def coaccessibleStates: Set[State] = {
     val previous =
       transitions.foldLeft(Map.empty[State, Set[State]]) {
-        case (acc, (src, _, _, tgt)) =>
+        case (acc, Transition(src, _, _, tgt)) =>
           acc.updated(tgt, acc.getOrElse(tgt, Set.empty) + src)
       }
     @tailrec
@@ -146,4 +84,66 @@ class NFst[In, Out](
     loop(Queue.empty ++ finals, finals)
   }
 
+  def compose[Out1](that: NFst[Out, Out1], filter: Filter = EpsilonSequencingFilter): NFst[In, Out1] = {
+    val states = for {
+      i1 <- this.states
+      i2 <- that.states
+    } yield (i1, i2, filter.initial)
+    val init = states
+    val queue = Queue.empty ++ states
+    val mapping = states.foldLeft(Map.empty[(State, State, State), State]) { (acc, s) =>
+      acc.updated(s, acc.size)
+    }
+
+    val allFinals =
+      for {
+        f1 <- this.finals
+        f2 <- that.finals
+        f3 <- filter.states
+      } yield (f1, f2, f3)
+
+    val el1 =
+      (for (q <- this.states)
+        yield q -> (this.transitions(q).map(t => t.copy(out = Option(t.out))) + Transition(q, None, Some(None), q))).toMap
+
+    val el2 =
+      (for (q <- that.states)
+        yield q -> (that.transitions(q).map(t => t.copy(in = Option(t.in))) + Transition(q, Some(None), None, q))).toMap
+
+    @tailrec
+    def loop(queue: Queue[(State, State, State)], states: Set[(State, State, State)], finals: Set[(State, State, State)], transitions: Set[Transition[In, Out1]], mapping: Map[(State, State, State), State]): NFst[In, Out1] =
+      queue.dequeueOption match {
+        case Some((q @ (q1, q2, q3), rest)) =>
+          val finals1 =
+            if (allFinals.contains(q))
+              finals + q
+            else
+              finals
+
+          val m =
+            for {
+              e1 <- el1(q1)
+              e2 <- el2(q2)
+              e @ (_, _, q31) = filter.step(e1, e2, q3)
+              if q31 != filter.blocking
+            } yield e
+
+          val (states1, queue1, transitions1, mapping1) =
+            m.foldLeft((states, queue, transitions, mapping)) {
+              case ((states, queue, transitions, mapping), (e11, e21, q31)) =>
+                val q = (e11.target, e21.target, q31)
+                val (states1, queue1, mapping1) =
+                  if (!states.contains(q))
+                    (states + q, queue.enqueue(q), mapping.updated(q, mapping.size))
+                  else
+                    (states, queue, mapping)
+                val transitions1 = transitions + Transition(mapping1((q1, q2, q3)), e11.in, e21.out, mapping1(q))
+                (states1, queue1, transitions1, mapping1)
+            }
+          loop(queue1, states1, finals1, transitions1, mapping1)
+        case None =>
+          new NFst(states.map(mapping(_)), init.map(mapping(_)), finals.map(mapping(_)), transitions)
+      }
+    loop(queue, states, Set.empty, Set.empty, mapping)
+  }
 }

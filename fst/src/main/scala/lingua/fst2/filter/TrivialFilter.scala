@@ -1,4 +1,4 @@
-/* Copyright (c) 2017 Lucas Satabin
+/* Copyright (c) 2018 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,22 +14,22 @@
  */
 package lingua
 package fst2
+package filter
 
 import scala.language.higherKinds
 
-/** Constraints an Fst must respect to be considered as such. */
-abstract class Fst[F[_, _] <: Fst[F, _, _], In, Out] {
+class TrivialFilter extends Filter {
 
-  val states: Set[State]
+  val states = Set(0, -1)
 
-  val initials: Set[State]
+  val initial = 0
 
-  val finals: Set[State]
+  val blocking = -1
 
-  def isFinal(state: State): Boolean =
-    finals.contains(state)
-
-  def isInitial(state: State): Boolean =
-    initials.contains(state)
+  def step[In, Out1, Out2](t1: Transition[In, Option[Out1]], t2: Transition[Option[Out1], Out2], state: State): (Transition[In, Option[Out1]], Transition[Option[Out1], Out2], State) =
+    if (t1.out == t2.in)
+      (t1, t2, 0)
+    else
+      (t1, t2, -1)
 
 }

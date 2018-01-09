@@ -16,7 +16,7 @@ package lingua
 
 import scala.annotation.implicitNotFound
 
-/** A proof that some input accepts epsilons and how to extract a non-epsilon value.
+/** A proof that some input or output accepts epsilons and how to extract a non-epsilon value.
  *
  *  @author Lucas Satabin
  */
@@ -29,16 +29,26 @@ trait EpsilonProof[EpsIn, NoEpsIn] {
 
   def applyEps(in: NoEpsIn): EpsIn
 
-  object NoEps {
+}
 
-    @inline
-    def unapply(in: EpsIn): Option[NoEpsIn] =
-      unapplyNoEps(in)
+object EpsilonProof {
 
-    @inline
-    def apply(in: NoEpsIn): EpsIn =
-      applyEps(in)
-
+  implicit def OptionEpsilon[T]: EpsilonProof[Option[T], T] = new EpsilonProof[Option[T], T] {
+    val Eps = None
+    def unapplyNoEps(o: Option[T]) = o
+    def applyEps(t: T) = Some(t)
   }
+
+}
+
+object NoEps {
+
+  @inline
+  def unapply[EpsIn, NoEpsIn](in: EpsIn)(implicit proof: EpsilonProof[EpsIn, NoEpsIn]): Option[NoEpsIn] =
+    proof.unapplyNoEps(in)
+
+  @inline
+  def apply[EpsIn, NoEpsIn](in: NoEpsIn)(implicit proof: EpsilonProof[EpsIn, NoEpsIn]): EpsIn =
+    proof.applyEps(in)
 
 }

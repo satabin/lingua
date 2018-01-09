@@ -20,10 +20,6 @@ package object fst2 {
 
   type State = Int
 
-  type Transition[In, Out] = (In, Seq[Out], State)
-
-  type AnyTransition[Out] = (Seq[Out], State)
-
   def lcp[T](s1: Seq[T], s2: Seq[T]): Seq[T] =
     s1.zip(s2).takeWhile { case (t1, t2) => t1 == t2 }.unzip._1
 
