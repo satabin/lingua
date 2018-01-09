@@ -110,4 +110,40 @@ class NFst[In, Out](
     loop(Set.empty, Set.empty, states, queue, Set.empty, mapping)
   }
 
+  def accessibleStates: Set[State] = {
+    val nexts =
+      transitions.foldLeft(Map.empty[State, Set[State]]) {
+        case (acc, (src, _, _, tgt)) =>
+          acc.updated(src, acc.getOrElse(src, Set.empty) + tgt)
+      }
+    @tailrec
+    def loop(from: Queue[State], visited: Set[State]): Set[State] =
+      from.dequeueOption match {
+        case Some((st, rest)) =>
+          val nxts = nexts.getOrElse(st, Set.empty).diff(visited)
+          loop(rest.enqueue(nxts), visited + st)
+        case None =>
+          visited
+      }
+    loop(Queue.empty ++ initials, initials)
+  }
+
+  def coaccessibleStates: Set[State] = {
+    val previous =
+      transitions.foldLeft(Map.empty[State, Set[State]]) {
+        case (acc, (src, _, _, tgt)) =>
+          acc.updated(tgt, acc.getOrElse(tgt, Set.empty) + src)
+      }
+    @tailrec
+    def loop(from: Queue[State], visited: Set[State]): Set[State] =
+      from.dequeueOption match {
+        case Some((st, rest)) =>
+          val prev = previous.getOrElse(st, Set.empty).diff(visited)
+          loop(rest.enqueue(prev), visited + st)
+        case None =>
+          visited
+      }
+    loop(Queue.empty ++ finals, finals)
+  }
+
 }
