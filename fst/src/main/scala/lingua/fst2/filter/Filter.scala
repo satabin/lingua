@@ -18,7 +18,7 @@ package filter
 
 import scala.language.higherKinds
 
-trait Filter {
+trait Filter[T[_, _] <: TransitionLike[_, _]] {
 
   def states: Set[State]
 
@@ -26,6 +26,6 @@ trait Filter {
 
   def blocking: State
 
-  def step[In, Out1, Out2](t1: Transition[In, Option[Out1]], t2: Transition[Option[Out1], Out2], state: State): (Transition[In, Option[Out1]], Transition[Option[Out1], Out2], State)
+  def step[In, Out1, Out2](t1: T[In, Option[Out1]], t2: T[Option[Out1], Out2], state: State): (T[In, Option[Out1]], T[Option[Out1], Out2], State)
 
 }

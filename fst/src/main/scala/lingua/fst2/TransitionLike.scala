@@ -1,4 +1,4 @@
-/* Copyright (c) 2017 Lucas Satabin
+/* Copyright (c) 2018 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,19 +15,9 @@
 package lingua
 package fst2
 
-/** Constraints an Fst must respect to be considered as such. */
-abstract class Fst[In, Out] {
-
-  val states: Set[State]
-
-  val initials: Set[State]
-
-  val finals: Set[State]
-
-  def isFinal(state: State): Boolean =
-    finals.contains(state)
-
-  def isInitial(state: State): Boolean =
-    initials.contains(state)
-
+trait TransitionLike[In, Out] {
+  val source: State
+  val in: Option[In]
+  val out: Option[Out]
+  val target: State
 }

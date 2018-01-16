@@ -16,9 +16,13 @@ package lingua
 package fst2
 package filter
 
+import semiring._
+
 import scala.language.higherKinds
 
-object EpsilonSequencingFilter extends Filter {
+object EpsilonSequencingFilter extends EpsilonSequencingFilter[Transition]
+
+class EpsilonSequencingFilter[T[_, _] <: TransitionLike[_, _]] extends Filter[T] {
 
   val states = Set(0, 1, -1)
 
@@ -26,7 +30,7 @@ object EpsilonSequencingFilter extends Filter {
 
   val blocking = -1
 
-  def step[In, Out1, Out2](t1: Transition[In, Option[Out1]], t2: Transition[Option[Out1], Out2], state: State): (Transition[In, Option[Out1]], Transition[Option[Out1], Out2], State) =
+  def step[In, Out1, Out2](t1: T[In, Option[Out1]], t2: T[Option[Out1], Out2], state: State): (T[In, Option[Out1]], T[Option[Out1], Out2], State) =
     (t1.out, t2.in) match {
       case (Some(Some(x1)), Some(Some(x2))) if x1 == x2 =>
         (t1, t2, 0)
@@ -37,5 +41,11 @@ object EpsilonSequencingFilter extends Filter {
       case _ =>
         (t1, t2, -1)
     }
+
+}
+
+class WEpsilonSequencingFilter[Weight](implicit sem: Semiring[Weight]) extends EpsilonSequencingFilter[WTransition[?, ?, Weight]] with WFilter[Weight] {
+
+  def finalWeight(s: State): Weight = sem.one
 
 }

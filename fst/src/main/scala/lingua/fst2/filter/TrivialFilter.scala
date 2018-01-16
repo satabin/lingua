@@ -16,9 +16,13 @@ package lingua
 package fst2
 package filter
 
+import semiring._
+
 import scala.language.higherKinds
 
-class TrivialFilter extends Filter {
+object TrivialFilter extends TrivialFilter[Transition]
+
+class TrivialFilter[T[_, _] <: TransitionLike[_, _]] extends Filter[T] {
 
   val states = Set(0, -1)
 
@@ -26,10 +30,16 @@ class TrivialFilter extends Filter {
 
   val blocking = -1
 
-  def step[In, Out1, Out2](t1: Transition[In, Option[Out1]], t2: Transition[Option[Out1], Out2], state: State): (Transition[In, Option[Out1]], Transition[Option[Out1], Out2], State) =
+  def step[In, Out1, Out2](t1: T[In, Option[Out1]], t2: T[Option[Out1], Out2], state: State): (T[In, Option[Out1]], T[Option[Out1], Out2], State) =
     if (t1.out == t2.in)
       (t1, t2, 0)
     else
       (t1, t2, -1)
+
+}
+
+class WTrivialFilter[Weight](implicit sem: Semiring[Weight]) extends TrivialFilter[WTransition[?, ?, Weight]] with WFilter[Weight] {
+
+  def finalWeight(s: State): Weight = sem.one
 
 }

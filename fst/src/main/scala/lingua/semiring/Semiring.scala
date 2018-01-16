@@ -77,3 +77,17 @@ object Semiring {
   }
 
 }
+
+package object ops {
+
+  implicit class SemiringOps[K](val self: K) extends AnyVal {
+
+    def +(that: K)(implicit sem: Semiring[K]): K =
+      sem.plus(self, that)
+
+    def *(that: K)(implicit sem: Semiring[K]): K =
+      sem.times(self, that)
+
+  }
+
+}

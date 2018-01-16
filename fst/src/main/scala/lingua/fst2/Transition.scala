@@ -15,4 +15,4 @@
 package lingua
 package fst2
 
-case class Transition[In, Out](source: State, in: Option[In], out: Option[Out], target: State)
+case class Transition[In, Out](source: State, in: Option[In], out: Option[Out], target: State) extends TransitionLike[In, Out]

@@ -29,7 +29,7 @@ class NFst[In, Out](
     val states: Set[State],
     val initials: Set[State],
     val finals: Set[State],
-    val transitions: Set[Transition[In, Out]]) extends Fst[NFst, Option[In], Out] {
+    val transitions: Set[Transition[In, Out]]) extends Fst[Option[In], Out] {
 
   private val (trans, outputs) =
     transitions.foldLeft(Map.empty[(State, Option[In]), Set[State]] -> Map.empty[(State, Option[In], State), Option[Out]]) {
@@ -42,7 +42,7 @@ class NFst[In, Out](
   def step(state: State, in: Option[In]): Set[State] =
     trans.getOrElse(state -> in, Set.empty)
 
-  def outputs(origin: State, in: Option[In], target: State): Option[Out] =
+  def output(origin: State, in: Option[In], target: State): Option[Out] =
     outputs.getOrElse((origin, in, target), None)
 
   def transitions(state: State): Set[Transition[In, Out]] =
@@ -84,7 +84,7 @@ class NFst[In, Out](
     loop(Queue.empty ++ finals, finals)
   }
 
-  def compose[Out1](that: NFst[Out, Out1], filter: Filter = EpsilonSequencingFilter): NFst[In, Out1] = {
+  def compose[Out1](that: NFst[Out, Out1], filter: Filter[Transition] = EpsilonSequencingFilter): NFst[In, Out1] = {
     val states = for {
       i1 <- this.states
       i2 <- that.states

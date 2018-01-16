@@ -1,4 +1,4 @@
-/* Copyright (c) 2017 Lucas Satabin
+/* Copyright (c) 2018 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,12 @@
  */
 package lingua
 package fst2
+package filter
 
-/** Constraints an Fst must respect to be considered as such. */
-abstract class Fst[In, Out] {
+import scala.language.higherKinds
 
-  val states: Set[State]
+trait WFilter[Weight] extends Filter[WTransition[?, ?, Weight]] {
 
-  val initials: Set[State]
-
-  val finals: Set[State]
-
-  def isFinal(state: State): Boolean =
-    finals.contains(state)
-
-  def isInitial(state: State): Boolean =
-    initials.contains(state)
+  def finalWeight(s: State): Weight
 
 }
