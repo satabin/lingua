@@ -31,13 +31,15 @@ class NFst[In, Out](
     val finals: Set[State],
     val transitions: Set[Transition[In, Out]]) extends Fst[Option[In], Out] {
 
-  private val (trans, outputs) =
-    transitions.foldLeft(Map.empty[(State, Option[In]), Set[State]] -> Map.empty[(State, Option[In], State), Option[Out]]) {
-      case ((trans, outputs), Transition(src, in, out, tgt)) =>
+  private val (trans, outputs, eps) =
+    transitions.foldLeft((Map.empty[(State, Option[In]), Set[State]], Map.empty[(State, Option[In], State), Option[Out]], false)) {
+      case ((trans, outputs, eps), Transition(src, in, out, tgt)) =>
         val trans1 = trans.updated((src, in), trans.getOrElse((src, in), Set.empty) + tgt)
         val outputs1 = outputs.updated((src, in, tgt), out)
-        (trans1, outputs1)
+        (trans1, outputs1, eps || in.isEmpty)
     }
+
+  def hasEpsilonInput: Boolean = eps
 
   def step(state: State, in: Option[In]): Set[State] =
     trans.getOrElse(state -> in, Set.empty)
@@ -146,4 +148,113 @@ class NFst[In, Out](
       }
     loop(queue, states, Set.empty, Set.empty, mapping)
   }
+
+  def determinize: PSubFst[In, Out] = {
+
+    val initial = for (i <- initials) yield (i, Seq.empty[Out])
+
+    val mapping = Map(initial -> 0)
+
+    val queue = Queue(initial)
+
+    val deferredNexts = epsilonReachable
+
+    @tailrec
+    def loop(finals: Set[State], transitions: Set[PTransition[In, Out]], finalOutputs: Map[State, Set[Seq[Out]]], queue: Queue[Set[(State, Seq[Out])]], mapping: Map[Set[(State, Seq[Out])], State]): PSubFst[In, Out] =
+      queue.dequeueOption match {
+        case Some((q2, rest)) =>
+          val (finals1, finalOutputs1) =
+            q2.foldLeft((finals, finalOutputs)) {
+              case ((finals, finalOutputs), (q, w)) if this.finals.contains(q) =>
+                val q1 = mapping(q2)
+                (finals + q1, finalOutputs.updated(q1, finalOutputs.getOrElse(q1, Set.empty) + w))
+              case (acc, _) =>
+                acc
+            }
+
+          val outputs = q2.foldLeft(Map.empty[In, Set[(State, Seq[Out])]]) {
+            case (acc, (q, outs)) =>
+              deferredNexts(q).foldLeft(acc) {
+                case (acc, (in, set)) =>
+                  acc.updated(in, acc.getOrElse(in, Set.empty) ++ set.map { case (outs1, st) => (st, outs ++ outs1) })
+              }
+          }
+
+          val (transitions1, mapping1, rest1) =
+            outputs.foldLeft((transitions, mapping, rest)) {
+              case ((transitions, mapping, rest), (in, set)) =>
+                // compute the longest common prefix of all outgoing transitions
+                // for this input character
+                val l = lcp(set.map(_._2))
+                val ls = l.size
+                // the rest is the set of state with outputs without lcp
+                val set1 = set.map { case (tgt, out) => (tgt, out.drop(ls)) }
+                // if this results in a new state, then add it to the rest queue
+                val (mapping1, rest1) =
+                  if (rest.contains(set1))
+                    (mapping, rest)
+                  else
+                    (mapping.updated(set1, mapping.size), rest :+ set1)
+                // add the transition with accumulated prefix
+                val transitions1 = transitions + PTransition(mapping1(q2), in, l, mapping1(set1))
+                (transitions1, mapping1, rest1)
+            }
+          loop(finals1, transitions1, finalOutputs1, rest1, mapping1)
+        case None =>
+          new PSubFst(mapping.values.toSet, 0, finals, transitions, finalOutputs)
+      }
+
+    loop(Set.empty, Set.empty, Map.empty, queue, mapping)
+  }
+
+  private def epsilonReachable: Map[State, Map[In, Set[(Seq[Out], State)]]] =
+    reverseTopologicalEpsilon.foldLeft(Map.empty[State, Map[In, Set[(Seq[Out], State)]]]) { (acc, state) =>
+      val trans =
+        transitions.foldLeft(Map.empty[In, Set[(Seq[Out], State)]]) {
+          case (trans, Transition(`state`, Some(in), out, tgt)) =>
+            // add the transition to the accumulator for this state
+            trans.updated(in, trans.getOrElse(in, Set.empty) + ((out.toSeq, tgt)))
+          case (trans, Transition(`state`, None, out, tgt)) =>
+            // ask reachable elements from the acc for tgt
+            // we know it as been treated because states are in reverse topological order
+            // prepend the output of the epsilon transition
+            acc(tgt).foldLeft(trans) {
+              case (acc, (in, set)) =>
+                trans.updated(in, trans.getOrElse(in, Set.empty) ++ set.map { case (out1, tgt) => (out.toSeq ++ out1, tgt) })
+            }
+          case (trans, _) =>
+            trans
+        }
+      acc.updated(state, trans)
+    }
+
+  // returns the states in reverse topological order taking only epsilon transitions
+  private def reverseTopologicalEpsilon: Seq[State] = {
+    @tailrec
+    def loop(todo: Seq[Seq[State]], temporary: Set[State], permanently: Set[State], acc: Seq[State]): Seq[State] = {
+      todo match {
+        case (hd +: tl) +: rest =>
+          if (permanently(hd)) {
+            // already done, go to next
+            loop(tl +: rest, temporary, permanently, acc)
+          } else if (temporary(hd)) {
+            // cycle!!
+            throw new IllegalArgumentException("This non-deterministic Fst cannot be determinized because it contains epsilon-cycles.")
+          } else {
+            // add this state to the result, and then process the next ones
+            val nexts = step(hd, None)
+            loop(nexts.toSeq +: todo, temporary + hd, permanently, hd +: acc)
+          }
+        case Seq() +: (hd +: tl) +: rest =>
+          // all epsilon-reachable states of a state have been treated, it can be marked permanently
+          loop(tl +: rest, temporary - hd, permanently + hd, acc)
+        case Seq() +: Seq() =>
+          // all done!
+          acc
+      }
+    }
+
+    loop(Seq(states.toSeq), Set.empty, Set.empty, Seq())
+  }
+
 }
