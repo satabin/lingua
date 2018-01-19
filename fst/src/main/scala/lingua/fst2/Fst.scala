@@ -15,19 +15,9 @@
 package lingua
 package fst2
 
+import scala.language.higherKinds
+
 /** Constraints an Fst must respect to be considered as such. */
-abstract class Fst[In, Out] {
-
-  val states: Set[State]
-
-  val initials: Set[State]
-
-  val finals: Set[State]
-
-  def isFinal(state: State): Boolean =
-    finals.contains(state)
-
-  def isInitial(state: State): Boolean =
-    initials.contains(state)
+trait Fst[F[_, _]] {
 
 }

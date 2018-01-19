@@ -18,7 +18,7 @@ package filter
 
 import scala.language.higherKinds
 
-trait Filter[T[_, _] <: TransitionLike[_, _]] {
+trait Filter[T[_, _]] {
 
   def states: Set[State]
 

@@ -18,7 +18,7 @@ package filter
 
 import scala.language.higherKinds
 
-trait WFilter[Weight] extends Filter[WTransition[?, ?, Weight]] {
+trait WFilter[T[_, _], Weight] extends Filter[T] {
 
   def finalWeight(s: State): Weight
 

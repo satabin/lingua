@@ -28,9 +28,7 @@ class PSubFst[In, Out](
     val initial: State,
     val finals: Set[State],
     val transitions: Set[PTransition[In, Out]],
-    val finalOutputs: Map[State, Set[Seq[Out]]]) extends Fst[In, Out] {
-
-  val initials = Set(initial)
+    val finalOutputs: Map[State, Set[Seq[Out]]]) {
 
   val p = math.max(1, finalOutputs.values.map(_.size).max)
 
@@ -41,6 +39,12 @@ class PSubFst[In, Out](
         val outputs1 = outputs.updated((src, in), out)
         (trans1, outputs1)
     }
+
+  def isFinal(state: State): Boolean =
+    finals.contains(state)
+
+  def isInitial(state: State): Boolean =
+    state == initial
 
   def step(state: State, in: In): Option[State] =
     trans.get(state -> in)

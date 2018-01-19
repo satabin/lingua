@@ -20,9 +20,11 @@ import semiring._
 
 import scala.language.higherKinds
 
-object EpsilonMatchingFilter extends EpsilonMatchingFilter[Transition]
+object EpsilonMatchingFilter extends EpsilonMatchingFilter[NTransition]
 
-class EpsilonMatchingFilter[T[_, _] <: TransitionLike[_, _]] extends Filter[T] {
+class EpsilonMatchingFilter[T[_, _]](implicit trans: Transition[T, Option, Option]) extends Filter[T] {
+
+  import Transition._
 
   val states = Set(0, 1, 2, -1)
 
@@ -46,7 +48,7 @@ class EpsilonMatchingFilter[T[_, _] <: TransitionLike[_, _]] extends Filter[T] {
 
 }
 
-class WEpsilonMatchingFilter[Weight](implicit sem: Semiring[Weight]) extends EpsilonMatchingFilter[WTransition[?, ?, Weight]] with WFilter[Weight] {
+class WEpsilonMatchingFilter[T[_, _], Weight](implicit trans: Transition[T, Option, Option], sem: Semiring[Weight]) extends EpsilonMatchingFilter[T] with WFilter[T, Weight] {
 
   def finalWeight(s: State): Weight = sem.one
 

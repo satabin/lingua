@@ -20,9 +20,11 @@ import semiring._
 
 import scala.language.higherKinds
 
-object EpsilonSequencingFilter extends EpsilonSequencingFilter[Transition]
+object EpsilonSequencingFilter extends EpsilonSequencingFilter[NTransition]
 
-class EpsilonSequencingFilter[T[_, _] <: TransitionLike[_, _]] extends Filter[T] {
+class EpsilonSequencingFilter[T[_, _]](implicit trans: Transition[T, Option, Option]) extends Filter[T] {
+
+  import Transition._
 
   val states = Set(0, 1, -1)
 
@@ -44,7 +46,7 @@ class EpsilonSequencingFilter[T[_, _] <: TransitionLike[_, _]] extends Filter[T]
 
 }
 
-class WEpsilonSequencingFilter[Weight](implicit sem: Semiring[Weight]) extends EpsilonSequencingFilter[WTransition[?, ?, Weight]] with WFilter[Weight] {
+class WEpsilonSequencingFilter[T[_, _], Weight](implicit trans: Transition[T, Option, Option], sem: Semiring[Weight]) extends EpsilonSequencingFilter[T] with WFilter[T, Weight] {
 
   def finalWeight(s: State): Weight = sem.one
 

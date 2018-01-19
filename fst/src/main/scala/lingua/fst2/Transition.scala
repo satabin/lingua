@@ -15,4 +15,46 @@
 package lingua
 package fst2
 
-case class Transition[In, Out](source: State, in: Option[In], out: Option[Out], target: State) extends TransitionLike[In, Out]
+import scala.language.higherKinds
+
+import scala.annotation.implicitNotFound
+
+@implicitNotFound("Cannot prove that ${T} is a transition for inputs ${I} and outputs ${O}.")
+trait Transition[T[_, _], I[_], O[_]] {
+
+  def source[In, Out](t: T[In, Out]): State
+
+  def in[In, Out](t: T[In, Out]): I[In]
+
+  def out[In, Out](t: T[In, Out]): O[Out]
+
+  def target[In, Out](t: T[In, Out]): State
+
+}
+
+object Transition {
+
+  implicit class TransitionOps[T[_, _], I[_], O[_], In, Out](val t: T[In, Out]) extends AnyVal {
+
+    @inline
+    def source(implicit trans: Transition[T, I, O]): State =
+      trans.source(t)
+
+    @inline
+    def in(implicit trans: Transition[T, I, O]): I[In] =
+      trans.in(t)
+
+    @inline
+    def out(implicit trans: Transition[T, I, O]): O[Out] =
+      trans.out(t)
+
+    @inline
+    def target(implicit trans: Transition[T, I, O]): State =
+      trans.target(t)
+
+  }
+
+  def unapply[T[_, _], I[_], O[_], In, Out](t: T[In, Out])(implicit trans: Transition[T, I, O]): Option[(State, I[In], O[Out], State)] =
+    Some((t.source, t.in, t.out, t.target))
+
+}

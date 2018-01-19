@@ -15,4 +15,17 @@
 package lingua
 package fst2
 
+import cats._
+
 case class PTransition[In, Out](source: State, in: In, out: Seq[Out], target: State)
+
+object PTransition {
+
+  implicit object PTransitionTransition extends Transition[PTransition, Id, Seq] {
+    def in[In, Out](t: PTransition[In, Out]): In = t.in
+    def out[In, Out](t: PTransition[In, Out]): Seq[Out] = t.out
+    def source[In, Out](t: PTransition[In, Out]): State = t.source
+    def target[In, Out](t: PTransition[In, Out]): State = t.target
+  }
+
+}

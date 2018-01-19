@@ -20,9 +20,11 @@ import semiring._
 
 import scala.language.higherKinds
 
-object TrivialFilter extends TrivialFilter[Transition]
+object TrivialFilter extends TrivialFilter[NTransition, Option, Option]
 
-class TrivialFilter[T[_, _] <: TransitionLike[_, _]] extends Filter[T] {
+class TrivialFilter[T[_, _], I[_], O[_]](implicit trans: Transition[T, I, O]) extends Filter[T] {
+
+  import Transition._
 
   val states = Set(0, -1)
 
@@ -38,7 +40,7 @@ class TrivialFilter[T[_, _] <: TransitionLike[_, _]] extends Filter[T] {
 
 }
 
-class WTrivialFilter[Weight](implicit sem: Semiring[Weight]) extends TrivialFilter[WTransition[?, ?, Weight]] with WFilter[Weight] {
+class WTrivialFilter[Weight](implicit sem: Semiring[Weight]) extends TrivialFilter[WTransition[?, ?, Weight], Option, Option] with WFilter[WTransition[?, ?, Weight], Weight] {
 
   def finalWeight(s: State): Weight = sem.one
 

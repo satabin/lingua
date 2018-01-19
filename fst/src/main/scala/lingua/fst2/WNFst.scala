@@ -33,7 +33,7 @@ class WNFst[In, Out, Weight](
     val finals: Set[State],
     val transitions: Set[WTransition[In, Out, Weight]],
     val initialWeights: Map[State, Weight],
-    val finalWeights: Map[State, Weight])(implicit semiring: Semiring[Weight]) extends Fst[Option[In], Out] {
+    val finalWeights: Map[State, Weight])(implicit semiring: Semiring[Weight]) {
 
   private val (trans, outputs, weights) =
     transitions.foldLeft((Map.empty[(State, Option[In]), Set[State]], Map.empty[(State, Option[In], State), Option[Out]], Map.empty[(State, Option[In], State), Weight])) {
@@ -43,6 +43,12 @@ class WNFst[In, Out, Weight](
         val weights1 = weights.updated((src, in, tgt), w)
         (trans1, outputs1, weights1)
     }
+
+  def isFinal(state: State): Boolean =
+    finals.contains(state)
+
+  def isInitial(state: State): Boolean =
+    initials.contains(state)
 
   def step(state: State, in: Option[In]): Set[State] =
     trans.getOrElse(state -> in, Set.empty)
@@ -62,7 +68,7 @@ class WNFst[In, Out, Weight](
   def transitions(state: State): Set[WTransition[In, Out, Weight]] =
     transitions.filter(_.source == state)
 
-  def compose[Out1](that: WNFst[Out, Out1, Weight], filter: WFilter[Weight] = new WEpsilonSequencingFilter): WNFst[In, Out1, Weight] = {
+  def compose[Out1](that: WNFst[Out, Out1, Weight], filter: WFilter[WTransition[?, ?, Weight], Weight] = new WEpsilonSequencingFilter[WTransition[?, ?, Weight], Weight]): WNFst[In, Out1, Weight] = {
     val states = for {
       i1 <- this.states
       i2 <- that.states

@@ -15,9 +15,13 @@
 package lingua
 package fst2
 
-trait TransitionLike[In, Out] {
-  val source: State
-  val in: Option[In]
-  val out: Option[Out]
-  val target: State
+case class NTransition[In, Out](source: State, in: Option[In], out: Option[Out], target: State)
+
+object NTransition {
+  implicit object NTransitionTransition extends Transition[NTransition, Option, Option] {
+    def in[In, Out](t: NTransition[In, Out]): Option[In] = t.in
+    def out[In, Out](t: NTransition[In, Out]): Option[Out] = t.out
+    def source[In, Out](t: NTransition[In, Out]): State = t.source
+    def target[In, Out](t: NTransition[In, Out]): State = t.target
+  }
 }

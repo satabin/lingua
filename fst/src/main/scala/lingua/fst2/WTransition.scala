@@ -15,4 +15,15 @@
 package lingua
 package fst2
 
-case class WTransition[In, Out, Weight](source: State, in: Option[In], out: Option[Out], weight: Weight, target: State) extends TransitionLike[In, Out]
+case class WTransition[In, Out, Weight](source: State, in: Option[In], out: Option[Out], weight: Weight, target: State)
+
+object WTransition {
+  implicit def WTransitionTransition[Weight]: Transition[WTransition[?, ?, Weight], Option, Option] = new Transition[WTransition[?, ?, Weight], Option, Option] {
+    type I[T] = Option[T]
+    type O[T] = Option[T]
+    def in[In, Out](t: WTransition[In, Out, Weight]): Option[In] = t.in
+    def out[In, Out](t: WTransition[In, Out, Weight]): Option[Out] = t.out
+    def source[In, Out](t: WTransition[In, Out, Weight]): State = t.source
+    def target[In, Out](t: WTransition[In, Out, Weight]): State = t.target
+  }
+}

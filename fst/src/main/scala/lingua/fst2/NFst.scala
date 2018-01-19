@@ -29,11 +29,11 @@ class NFst[In, Out](
     val states: Set[State],
     val initials: Set[State],
     val finals: Set[State],
-    val transitions: Set[Transition[In, Out]]) extends Fst[Option[In], Out] {
+    val transitions: Set[NTransition[In, Out]]) {
 
   private val (trans, outputs, eps) =
     transitions.foldLeft((Map.empty[(State, Option[In]), Set[State]], Map.empty[(State, Option[In], State), Option[Out]], false)) {
-      case ((trans, outputs, eps), Transition(src, in, out, tgt)) =>
+      case ((trans, outputs, eps), NTransition(src, in, out, tgt)) =>
         val trans1 = trans.updated((src, in), trans.getOrElse((src, in), Set.empty) + tgt)
         val outputs1 = outputs.updated((src, in, tgt), out)
         (trans1, outputs1, eps || in.isEmpty)
@@ -41,19 +41,25 @@ class NFst[In, Out](
 
   def hasEpsilonInput: Boolean = eps
 
+  def isFinal(state: State): Boolean =
+    finals.contains(state)
+
+  def isInitial(state: State): Boolean =
+    initials.contains(state)
+
   def step(state: State, in: Option[In]): Set[State] =
     trans.getOrElse(state -> in, Set.empty)
 
   def output(origin: State, in: Option[In], target: State): Option[Out] =
     outputs.getOrElse((origin, in, target), None)
 
-  def transitions(state: State): Set[Transition[In, Out]] =
+  def transitions(state: State): Set[NTransition[In, Out]] =
     transitions.filter(_.source == state)
 
   def accessibleStates: Set[State] = {
     val nexts =
       transitions.foldLeft(Map.empty[State, Set[State]]) {
-        case (acc, Transition(src, _, _, tgt)) =>
+        case (acc, NTransition(src, _, _, tgt)) =>
           acc.updated(src, acc.getOrElse(src, Set.empty) + tgt)
       }
     @tailrec
@@ -71,7 +77,7 @@ class NFst[In, Out](
   def coaccessibleStates: Set[State] = {
     val previous =
       transitions.foldLeft(Map.empty[State, Set[State]]) {
-        case (acc, Transition(src, _, _, tgt)) =>
+        case (acc, NTransition(src, _, _, tgt)) =>
           acc.updated(tgt, acc.getOrElse(tgt, Set.empty) + src)
       }
     @tailrec
@@ -86,7 +92,7 @@ class NFst[In, Out](
     loop(Queue.empty ++ finals, finals)
   }
 
-  def compose[Out1](that: NFst[Out, Out1], filter: Filter[Transition] = EpsilonSequencingFilter): NFst[In, Out1] = {
+  def compose[Out1](that: NFst[Out, Out1], filter: Filter[NTransition] = EpsilonSequencingFilter): NFst[In, Out1] = {
     val states = for {
       i1 <- this.states
       i2 <- that.states
@@ -106,14 +112,14 @@ class NFst[In, Out](
 
     val el1 =
       (for (q <- this.states)
-        yield q -> (this.transitions(q).map(t => t.copy(out = Option(t.out))) + Transition(q, None, Some(None), q))).toMap
+        yield q -> (this.transitions(q).map(t => t.copy(out = Option(t.out))) + NTransition(q, None, Some(None), q))).toMap
 
     val el2 =
       (for (q <- that.states)
-        yield q -> (that.transitions(q).map(t => t.copy(in = Option(t.in))) + Transition(q, Some(None), None, q))).toMap
+        yield q -> (that.transitions(q).map(t => t.copy(in = Option(t.in))) + NTransition(q, Some(None), None, q))).toMap
 
     @tailrec
-    def loop(queue: Queue[(State, State, State)], states: Set[(State, State, State)], finals: Set[(State, State, State)], transitions: Set[Transition[In, Out1]], mapping: Map[(State, State, State), State]): NFst[In, Out1] =
+    def loop(queue: Queue[(State, State, State)], states: Set[(State, State, State)], finals: Set[(State, State, State)], transitions: Set[NTransition[In, Out1]], mapping: Map[(State, State, State), State]): NFst[In, Out1] =
       queue.dequeueOption match {
         case Some((q @ (q1, q2, q3), rest)) =>
           val finals1 =
@@ -139,7 +145,7 @@ class NFst[In, Out](
                     (states + q, queue.enqueue(q), mapping.updated(q, mapping.size))
                   else
                     (states, queue, mapping)
-                val transitions1 = transitions + Transition(mapping1((q1, q2, q3)), e11.in, e21.out, mapping1(q))
+                val transitions1 = transitions + NTransition(mapping1((q1, q2, q3)), e11.in, e21.out, mapping1(q))
                 (states1, queue1, transitions1, mapping1)
             }
           loop(queue1, states1, finals1, transitions1, mapping1)
@@ -211,10 +217,10 @@ class NFst[In, Out](
     reverseTopologicalEpsilon.foldLeft(Map.empty[State, Map[In, Set[(Seq[Out], State)]]]) { (acc, state) =>
       val trans =
         transitions.foldLeft(Map.empty[In, Set[(Seq[Out], State)]]) {
-          case (trans, Transition(`state`, Some(in), out, tgt)) =>
+          case (trans, NTransition(`state`, Some(in), out, tgt)) =>
             // add the transition to the accumulator for this state
             trans.updated(in, trans.getOrElse(in, Set.empty) + ((out.toSeq, tgt)))
-          case (trans, Transition(`state`, None, out, tgt)) =>
+          case (trans, NTransition(`state`, None, out, tgt)) =>
             // ask reachable elements from the acc for tgt
             // we know it as been treated because states are in reverse topological order
             // prepend the output of the epsilon transition
