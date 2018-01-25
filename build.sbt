@@ -19,7 +19,7 @@ val globalSettings = Seq(
 lazy val root = project.in(file("."))
   .enablePlugins(ScalaUnidocPlugin)
   .settings(globalSettings: _*)
-  .aggregate(core, fst, lexikon)
+  .aggregate(core, cascade, fst, lexikon)
 
 lazy val fst = project.in(file("fst"))
   .settings(globalSettings: _*)
@@ -28,6 +28,13 @@ lazy val fst = project.in(file("fst"))
     name := "lingua-fst",
     addCompilerPlugin("org.spire-math" % "kind-projector" % "0.9.4" cross CrossVersion.binary),
     libraryDependencies += "org.typelevel" %% "cats-core" % "1.0.1")
+  .dependsOn(cascade)
+
+lazy val cascade = project.in(file("cascade"))
+  .settings(globalSettings)
+  .settings(
+    version := "0.1.0-SNAPSHOT",
+    name := "lingua-cascade")
 
 lazy val core = project.in(file("core"))
   .settings(globalSettings: _*)
