@@ -264,3 +264,62 @@ class NFst[In, Out](
   }
 
 }
+
+object NFst {
+
+  object Builder {
+
+    def create[In, Out]: Builder[In, Out] =
+      new Builder
+
+  }
+
+  class Builder[In, Out] private {
+
+    import scala.collection.{ mutable => mu }
+
+    private var nextStateId = 0
+
+    private val transitions = mu.Set.empty[NTransition[In, Out]]
+
+    private val finals = mu.Set.empty[Int]
+
+    private val initials = mu.Set.empty[Int]
+
+    class State private[NFst] (private val id: Int) {
+
+      def addTransition(in: Option[In], out: Option[Out], target: State): this.type = {
+        transitions += NTransition(id, in, out, target.id)
+        this
+      }
+
+      def isInitial: Boolean =
+        initials.contains(id)
+
+      def isFinal: Boolean =
+        finals.contains(id)
+
+      def makeInitial: this.type = {
+        initials += id
+        this
+      }
+
+      def makeFinal: this.type = {
+        finals += id
+        this
+      }
+
+    }
+
+    def newState: State = {
+      val s = new State(nextStateId)
+      nextStateId += 1
+      s
+    }
+
+    def result: NFst[In, Out] =
+      new NFst((0 until nextStateId).toSet, initials.toSet, finals.toSet, transitions.toSet)
+
+  }
+
+}
