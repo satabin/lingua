@@ -52,7 +52,7 @@ package object fst {
             if (size1 == size2) {
               // both are equal
               0
-            } else if (size > size1) {
+            } else if (size2 > size1) {
               // first is prefix of second, then it is smaller
               -1
             } else {
