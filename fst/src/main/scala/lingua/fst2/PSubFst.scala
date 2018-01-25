@@ -21,6 +21,9 @@ import scala.annotation.tailrec
 
 import scala.collection.immutable.Queue
 
+import cats.Show
+import cats.implicits._
+
 /** A p-subsequential Fst implementation.
  */
 class PSubFst[In, Out](
@@ -51,5 +54,74 @@ class PSubFst[In, Out](
 
   def output(state: State, in: In): Seq[Out] =
     outputs.getOrElse(state -> in, Seq.empty)
+
+}
+
+object PSubFst {
+
+  implicit def PSubFstDotShow[In, Out](implicit inShow: Show[In], outShow: Show[Out]): Show[PSubFst[In, Out]] = new Show[PSubFst[In, Out]] {
+
+    def show(pfst: PSubFst[In, Out]): String = {
+      val builder = new StringBuilder
+      builder.append("""digraph {
+                         |  rankdir = LR
+                         |""".stripMargin)
+
+      for (state <- pfst.states) {
+        builder.append("  q").append(state).append("[shape=")
+        if (pfst.isFinal(state))
+          builder.append("doublecircle")
+        else
+          builder.append("circle")
+        builder.append(", label=\"\"];\n")
+        if (pfst.isInitial(state))
+          builder
+            .append("  start")
+            .append(state)
+            .append("[shape=plaintext, label=\"\"];\n  start")
+            .append(state)
+            .append("->q")
+            .append(state)
+            .append(";\n")
+        for {
+          (out, idx) <- pfst.finalOutputs.getOrElse(state, Set.empty).zipWithIndex
+          if out.nonEmpty
+        } builder
+          .append("  end")
+          .append(state)
+          .append("_")
+          .append(idx)
+          .append("[shape=plaintext, label=\"\"];\n  q")
+          .append(state)
+          .append("->end")
+          .append(state)
+          .append("_")
+          .append(idx)
+          .append("[label=\"")
+          .append(out.map(_.show).mkString)
+          .append("\"];\n")
+      }
+
+      builder.append("\n")
+
+      for (PTransition(src, in, out, tgt) <- pfst.transitions) {
+        builder
+          .append("  q")
+          .append(src)
+          .append("->q")
+          .append(tgt)
+          .append("[label=\"")
+          .append(in.show)
+          .append(":")
+          .append(out.map(_.show).mkString)
+          .append("\"];\n")
+      }
+
+      builder.append("}")
+
+      builder.toString
+    }
+
+  }
 
 }

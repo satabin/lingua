@@ -21,6 +21,9 @@ import scala.annotation.tailrec
 
 import scala.collection.immutable.Queue
 
+import cats.Show
+import cats.implicits._
+
 /** A non-deterministic Fst implementation. Multi-Fst cannot be represented by this Fst.
  *  A multi-Fst is an Fst for which there are several transitions from the same state for
  *  the same input symbol leading to the same target state.
@@ -321,5 +324,54 @@ object NFst {
       new NFst((0 until nextStateId).toSet, initials.toSet, finals.toSet, transitions.toSet)
 
   }
+
+  implicit def NFstDotShow[In, Out](implicit inShow: Show[In], outShow: Show[Out]): Show[NFst[In, Out]] =
+    new Show[NFst[In, Out]] {
+
+      def show(nfst: NFst[In, Out]): String = {
+        val builder = new StringBuilder
+        builder.append("""digraph {
+                         |  rankdir = LR
+                         |""".stripMargin)
+
+        for (state <- nfst.states) {
+          builder.append("  q").append(state).append("[shape=")
+          if (nfst.isFinal(state))
+            builder.append("doublecircle")
+          else
+            builder.append("circle")
+          builder.append(", label=\"\"];\n")
+          if (nfst.isInitial(state))
+            builder
+              .append("  start")
+              .append(state)
+              .append("[shape=plaintext, label=\"\"];\n  start")
+              .append(state)
+              .append("->q")
+              .append(state)
+              .append(";\n")
+        }
+
+        builder.append("\n")
+
+        for (NTransition(src, in, out, tgt) <- nfst.transitions) {
+          builder
+            .append("  q")
+            .append(src)
+            .append("->q")
+            .append(tgt)
+            .append("[label=\"")
+            .append(in.show)
+            .append(":")
+            .append(out.show)
+            .append("\"];\n")
+        }
+
+        builder.append("}")
+
+        builder.toString
+      }
+
+    }
 
 }
