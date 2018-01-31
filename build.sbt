@@ -1,5 +1,7 @@
 import scalariform.formatter.preferences._
 
+enablePlugins(PublishingPlugin)
+
 val globalSettings = Seq(
   organization := "org.gnieh",
   scalaVersion := "2.12.4",
