@@ -1,7 +1,7 @@
 import scalariform.formatter.preferences._
 
 val globalSettings = Seq(
-  organization := "lingua",
+  organization := "org.gnieh",
   scalaVersion := "2.12.4",
   resolvers +=
     "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
@@ -16,6 +16,41 @@ val globalSettings = Seq(
       .setPreference(MultilineScaladocCommentsStartOnFirstLine, true)
   })
 
+lazy val publishSettings = Seq(
+  publishMavenStyle := true,
+  publishArtifact in Test := false,
+  // The Nexus repo we're publishing to.
+  publishTo := Some(
+  if (isSnapshot.value)
+    Opts.resolver.sonatypeSnapshots
+  else
+    Opts.resolver.sonatypeStaging
+  ),
+  pomIncludeRepository := { x => false },
+  pomExtra := (
+    <scm>
+      <url>https://github.com/satabin/lingua</url>
+      <connection>scm:git:git://github.com/satabin/lingua.git</connection>
+      <developerConnection>scm:git:git@github.com:satabin/lingua.git</developerConnection>
+      <tag>HEAD</tag>
+    </scm>
+    <developers>
+      <developer>
+        <id>satabin</id>
+        <name>Lucas Satabin</name>
+        <email>lucas.satabin@gnieh.org</email>
+      </developer>
+    </developers>
+    <ciManagement>
+      <system>travis</system>
+      <url>https://travis-ci.org/#!/satabin/lingua</url>
+    </ciManagement>
+    <issueManagement>
+      <system>github</system>
+      <url>https://github.com/satabin/lingua/issues</url>
+    </issueManagement>
+  )
+)
 lazy val root = project.in(file("."))
   .enablePlugins(ScalaUnidocPlugin)
   .settings(globalSettings: _*)
@@ -23,6 +58,7 @@ lazy val root = project.in(file("."))
 
 lazy val fst = project.in(file("fst"))
   .settings(globalSettings: _*)
+  .settings(publishSettings: _*)
   .settings(
     version := "0.1.0-SNAPSHOT",
     name := "lingua-fst",
@@ -32,6 +68,7 @@ lazy val fst = project.in(file("fst"))
 
 lazy val cascade = project.in(file("cascade"))
   .settings(globalSettings)
+  .settings(publishSettings: _*)
   .settings(
     version := "0.1.0-SNAPSHOT",
     name := "lingua-cascade")
