@@ -15,7 +15,7 @@
 package lingua
 package cascade
 
-class Cascade[In, Inner, Out](head: Layer[In, Inner], tail: Transformer[Inner, Out]) extends Transformer[In, Out] {
+class Cascade[In, Inner, Ctx, Out](head: Layer[In, Inner, Ctx], tail: Transformer[Inner, Out]) extends Transformer[In, Out] {
 
   def transform(s: Stream[In]): Stream[Out] =
     tail.transform(head.transform(s))
