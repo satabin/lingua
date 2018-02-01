@@ -25,12 +25,16 @@ abstract class Layer[In, Out, Ctx] extends Transformer[In, Out] {
 
   /** For each unmatched input element, how it is
    *  passed through to the output stream.
+   *  Context may be used to construct the value, and new, potentially
+   *  modified, context is returned
    */
   protected def passThrough(ctx: Ctx, in: In): (Ctx, Out)
 
   /** For each matched sequence of input, reduce to the produced
    *  out value.
    *  If the matching values must be dropped then, return `None`.
+   *  Context may be used to construct the value, and new, potentially
+   *  modified, context is returned
    */
   protected def reduce(ctx: Ctx, ins: Seq[In]): (Ctx, Option[Out])
 
@@ -75,5 +79,29 @@ abstract class Layer[In, Out, Ctx] extends Transformer[In, Out] {
 
   final def andThen[Out1](that: Transformer[Out, Out1]): Transformer[In, Out1] =
     new Cascade(this, that)
+
+}
+
+/** A [[Layer]] with no context. */
+abstract class Layer0[In, Out] extends Layer[In, Out, Unit] {
+
+  override final def makeContext = ()
+
+  /** For each unmatched input element, how it is
+   *  passed through to the output stream.
+   */
+  protected def passThrough(in: In): Out
+
+  override final protected def passThrough(ctx: Unit, in: In): (Unit, Out) =
+    ((), passThrough(in))
+
+  /** For each matched sequence of input, reduce to the produced
+   *  out value.
+   *  If the matching values must be dropped then, return `None`.
+   */
+  protected def reduce(ins: Seq[In]): Option[Out]
+
+  override final protected def reduce(ctx: Unit, ins: Seq[In]): (Unit, Option[Out]) =
+    ((), reduce(ins))
 
 }
