@@ -29,13 +29,6 @@ package object fst2 {
       case (Some(s1), s2) => Some(lcp(s1, s2))
     }.getOrElse(Seq.empty[T])
 
-  implicit def OptionEpsilon[T]: EpsilonProof[Option[T], T] =
-    new EpsilonProof[Option[T], T] {
-      val Eps = None
-      def unapplyNoEps(in: Option[T]): Option[T] = in
-      def applyEps(in: T): Option[T] = Option(in)
-    }
-
   implicit def SeqOrdering[T: Ordering]: Ordering[Seq[T]] =
     new Ordering[Seq[T]] {
       def compare(seq1: Seq[T], seq2: Seq[T]): Int = {

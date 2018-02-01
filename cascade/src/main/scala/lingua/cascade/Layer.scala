@@ -23,6 +23,8 @@ package cascade
  */
 abstract class Layer[In, Out, Ctx] extends Transformer[In, Out] {
 
+  type Context = Ctx
+
   /** For each unmatched input element, how it is
    *  passed through to the output stream.
    *  Context may be used to construct the value, and new, potentially
@@ -42,8 +44,10 @@ abstract class Layer[In, Out, Ctx] extends Transformer[In, Out] {
    *  If the head can be processed by this layer, then
    *  returns the matched sequence and the rest stream,
    *  otherwise, returns `None`.
+   *  Context may be used to match the value, and new, potentially
+   *  modified, context is returned
    */
-  protected def one(s: Stream[In]): Option[(Seq[In], Stream[In])]
+  protected def one(ctx: Ctx, s: Stream[In]): (Ctx, Option[(Seq[In], Stream[In])])
 
   /** Creates a new context for this layer.
    *  This is called whenever transformation of a stream begins.
@@ -56,15 +60,15 @@ abstract class Layer[In, Out, Ctx] extends Transformer[In, Out] {
   final def transform(s: Stream[In]): Stream[Out] = {
     val ctx = makeContext
     def loop(ctx: Ctx, s: Stream[In]): Stream[Out] =
-      one(s) match {
-        case Some((seq, rest)) =>
+      one(ctx, s) match {
+        case (ctx, Some((seq, rest))) =>
           // this layer matched the head of the current stream
           // reduce it and process further
           reduce(ctx, seq) match {
             case (ctx, Some(out)) => out #:: loop(ctx, rest)
             case (ctx, None)      => loop(ctx, rest)
           }
-        case None =>
+        case (ctx, None) =>
           // this layer did not match the head of the current stream
           // pass through the first element and process further
           s match {
@@ -103,5 +107,15 @@ abstract class Layer0[In, Out] extends Layer[In, Out, Unit] {
 
   override final protected def reduce(ctx: Unit, ins: Seq[In]): (Unit, Option[Out]) =
     ((), reduce(ins))
+
+  /** Process one step of this layer on the current stream.
+   *  If the head can be processed by this layer, then
+   *  returns the matched sequence and the rest stream,
+   *  otherwise, returns `None`.
+   */
+  protected def one(s: Stream[In]): Option[(Seq[In], Stream[In])]
+
+  override final protected def one(ctx: Unit, s: Stream[In]): (Unit, Option[(Seq[In], Stream[In])]) =
+    ((), one(s))
 
 }

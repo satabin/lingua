@@ -55,6 +55,9 @@ class PSubFst[In, Out](
   def output(state: State, in: In): Seq[Out] =
     outputs.getOrElse(state -> in, Seq.empty)
 
+  def finalOutput(state: State): Set[Seq[Out]] =
+    finalOutputs.getOrElse(state, Set.empty)
+
 }
 
 object PSubFst {

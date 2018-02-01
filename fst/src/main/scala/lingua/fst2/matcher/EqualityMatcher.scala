@@ -13,23 +13,12 @@
  * limitations under the License.
  */
 package lingua
-package cascade
+package fst2
+package matcher
 
-/** A transformer is used to process stream and transform into
- *  another stream of data.
+/** A simple matcher that simply is the identity.
  */
-abstract class Transformer[In, Out] {
-  self =>
-
-  /** Transforms the input stream into an output stream
-   *  according to the semantics of this transformer.
-   */
-  def transform(s: Stream[In]): Stream[Out]
-
-  def andThen[Out1](that: Transformer[Out, Out1]): Transformer[In, Out1]
-
+class EqualityMatcher[In] extends Matcher[In, In] {
   @inline
-  def ~>:[In1, Ctx](layer: Layer[In1, In, Ctx]): Transformer[In1, Out] =
-    layer.andThen(this)
-
+  def extract(in: In) = Seq(in)
 }
