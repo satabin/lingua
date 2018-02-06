@@ -26,20 +26,20 @@ import scala.annotation.tailrec
  */
 abstract class PSubLayer[In, FstIn, FstOut, Out](pfst: PSubFst[FstIn, FstOut], matcher: Matcher[In, FstIn]) extends Layer[In, Out, (State, Seq[FstOut])] {
 
-  override final protected def passThrough(ctx: Context, in: In): (Context, Out) =
+  override final protected def passThrough(ctx: Context, in: In): (Context, Seq[Out]) =
     (makeContext, passThrough(in))
 
   /** For each unmatched input element, how it is
    *  passed through to the output stream.
    */
-  protected def passThrough(in: In): Out
+  protected def passThrough(in: In): Seq[Out]
 
   /** For each input matched by the [[PSubFst]], there are up to `p`
    *  output sequences, reduce these to the output of the layer.
    */
-  protected def reduce(ins: Seq[In], outs: Set[Seq[FstOut]]): Option[Out]
+  protected def reduce(ins: Seq[In], outs: Set[Seq[FstOut]]): Seq[Out]
 
-  override final protected def reduce(ctx: Context, ins: Seq[In]): (Context, Option[Out]) = {
+  override final protected def reduce(ctx: Context, ins: Seq[In]): (Context, Seq[Out]) = {
     val (state, out) = ctx
     val finals = pfst.finalOutput(state)
     val outs =

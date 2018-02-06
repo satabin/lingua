@@ -30,7 +30,7 @@ abstract class Layer[In, Out, Ctx] extends Transformer[In, Out] {
    *  Context may be used to construct the value, and new, potentially
    *  modified, context is returned
    */
-  protected def passThrough(ctx: Ctx, in: In): (Ctx, Out)
+  protected def passThrough(ctx: Ctx, in: In): (Ctx, Seq[Out])
 
   /** For each matched sequence of input, reduce to the produced
    *  out value.
@@ -38,7 +38,7 @@ abstract class Layer[In, Out, Ctx] extends Transformer[In, Out] {
    *  Context may be used to construct the value, and new, potentially
    *  modified, context is returned
    */
-  protected def reduce(ctx: Ctx, ins: Seq[In]): (Ctx, Option[Out])
+  protected def reduce(ctx: Ctx, ins: Seq[In]): (Ctx, Seq[Out])
 
   /** Process one step of this layer on the current stream.
    *  If the head can be processed by this layer, then
@@ -64,17 +64,15 @@ abstract class Layer[In, Out, Ctx] extends Transformer[In, Out] {
         case (ctx, Some((seq, rest))) =>
           // this layer matched the head of the current stream
           // reduce it and process further
-          reduce(ctx, seq) match {
-            case (ctx, Some(out)) => out #:: loop(ctx, rest)
-            case (ctx, None)      => loop(ctx, rest)
-          }
+          val (ctx1, outs) = reduce(ctx, seq)
+          outs.toStream ++ loop(ctx1, rest)
         case (ctx, None) =>
           // this layer did not match the head of the current stream
           // pass through the first element and process further
           s match {
             case h #:: rest =>
               val (ctx1, o) = passThrough(ctx, h)
-              o #:: loop(ctx1, rest)
+              o.toStream ++ loop(ctx1, rest)
             case _ => Stream.Empty
           }
       }
@@ -94,18 +92,18 @@ abstract class Layer0[In, Out] extends Layer[In, Out, Unit] {
   /** For each unmatched input element, how it is
    *  passed through to the output stream.
    */
-  protected def passThrough(in: In): Out
+  protected def passThrough(in: In): Seq[Out]
 
-  override final protected def passThrough(ctx: Unit, in: In): (Unit, Out) =
+  override final protected def passThrough(ctx: Unit, in: In): (Unit, Seq[Out]) =
     ((), passThrough(in))
 
   /** For each matched sequence of input, reduce to the produced
    *  out value.
    *  If the matching values must be dropped then, return `None`.
    */
-  protected def reduce(ins: Seq[In]): Option[Out]
+  protected def reduce(ins: Seq[In]): Seq[Out]
 
-  override final protected def reduce(ctx: Unit, ins: Seq[In]): (Unit, Option[Out]) =
+  override final protected def reduce(ctx: Unit, ins: Seq[In]): (Unit, Seq[Out]) =
     ((), reduce(ins))
 
   /** Process one step of this layer on the current stream.
