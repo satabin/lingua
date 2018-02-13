@@ -56,6 +56,8 @@ lazy val publishSettings = Seq(
 lazy val root = project.in(file("."))
   .enablePlugins(ScalaUnidocPlugin)
   .settings(globalSettings: _*)
+  .settings(
+    publishArtifact := false)
   .aggregate(core, cascade, fst, lexikon)
 
 lazy val fst = project.in(file("fst"))
@@ -80,6 +82,7 @@ lazy val core = project.in(file("core"))
   .settings(
     version := "0.1.0-SNAPSHOT",
     libraryDependencies += "com.lihaoyi" %% "fastparse" % "1.0.0",
+    publishArtifact := false,
     name := "lingua-core")
 
 lazy val lexikonDependencies = Seq(
@@ -94,6 +97,7 @@ lazy val lexikon = project.in(file("lexikon"))
   .settings(
     version := "0.1.0-SNAPSHOT",
     name := "lingua-lexikon",
+    publishArtifact := false,
     libraryDependencies ++= lexikonDependencies,
     buildInfoKeys := Seq[BuildInfoKey](version),
     buildInfoPackage := "lingua.lexikon")
