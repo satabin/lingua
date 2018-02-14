@@ -16,7 +16,7 @@ val globalSettings = Seq(
       .setPreference(AlignSingleLineCaseStatements, true)
       .setPreference(DoubleIndentConstructorArguments, true)
       .setPreference(MultilineScaladocCommentsStartOnFirstLine, true)
-  })
+  }) ++ publishSettings
 
 lazy val publishSettings = Seq(
   publishMavenStyle := true,
@@ -62,7 +62,6 @@ lazy val root = project.in(file("."))
 
 lazy val fst = project.in(file("fst"))
   .settings(globalSettings: _*)
-  .settings(publishSettings: _*)
   .settings(
     version := "0.1.0-SNAPSHOT",
     name := "lingua-fst",
@@ -72,7 +71,6 @@ lazy val fst = project.in(file("fst"))
 
 lazy val cascade = project.in(file("cascade"))
   .settings(globalSettings)
-  .settings(publishSettings: _*)
   .settings(
     version := "0.1.0-SNAPSHOT",
     name := "lingua-cascade")
