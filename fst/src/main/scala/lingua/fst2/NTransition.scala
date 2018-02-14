@@ -1,4 +1,4 @@
-/* Copyright (c) 2016 Lucas Satabin
+/* Copyright (c) 2018 Lucas Satabin
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,15 @@
  * limitations under the License.
  */
 package lingua
-package fst
+package fst2
 
-/** The identity allows for converting an input into its identity in the output satisfying the predicate.
- *  If no such element exists, then `None` is returned.
- *
- *  @author Lucas Satabin
- */
-trait Identity[In, Out] {
+case class NTransition[In, Out](source: State, in: Option[In], out: Option[Out], target: State)
 
-  def convert(in: In, pout: Predicate[Out]): Option[Out]
-
+object NTransition {
+  implicit object NTransitionTransition extends Transition[NTransition, Option, Option] {
+    def in[In, Out](t: NTransition[In, Out]): Option[In] = t.in
+    def out[In, Out](t: NTransition[In, Out]): Option[Out] = t.out
+    def source[In, Out](t: NTransition[In, Out]): State = t.source
+    def target[In, Out](t: NTransition[In, Out]): State = t.target
+  }
 }

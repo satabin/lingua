@@ -13,33 +13,14 @@
  * limitations under the License.
  */
 package lingua
-package fst
 
-import scala.annotation.implicitNotFound
-
-/** A proof that some input accepts epsilons and how to extract a non-epsilon value.
+/** The identity allows for converting an input into its identity in the output satisfying the predicate.
+ *  If no such element exists, then `None` is returned.
  *
  *  @author Lucas Satabin
  */
-@implicitNotFound("Could not prove that ${EpsIn} accepts epsilon values")
-trait EpsilonProof[EpsIn, NoEpsIn] {
+trait Identity[In, Out] {
 
-  val Eps: EpsIn
-
-  def unapplyNoEps(in: EpsIn): Option[NoEpsIn]
-
-  def applyEps(in: NoEpsIn): EpsIn
-
-  object NoEps {
-
-    @inline
-    def unapply(in: EpsIn): Option[NoEpsIn] =
-      unapplyNoEps(in)
-
-    @inline
-    def apply(in: NoEpsIn): EpsIn =
-      applyEps(in)
-
-  }
+  def convert(in: In, pout: Predicate[Out]): Option[Out]
 
 }

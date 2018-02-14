@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 package lingua
-package fst
 
 sealed abstract class Predicate[-In] extends (In => Boolean) {
 

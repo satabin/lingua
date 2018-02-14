@@ -16,13 +16,9 @@ package lingua
 
 import scala.annotation.tailrec
 
-package object fst {
+package object fst2 {
 
   type State = Int
-
-  type Transition[In, Out] = (In, Seq[Out], State)
-
-  type AnyTransition[Out] = (Seq[Out], State)
 
   def lcp[T](s1: Seq[T], s2: Seq[T]): Seq[T] =
     s1.zip(s2).takeWhile { case (t1, t2) => t1 == t2 }.unzip._1
@@ -32,13 +28,6 @@ package object fst {
       case (None, s)      => Some(s)
       case (Some(s1), s2) => Some(lcp(s1, s2))
     }.getOrElse(Seq.empty[T])
-
-  implicit def OptionEpsilon[T]: EpsilonProof[Option[T], T] =
-    new EpsilonProof[Option[T], T] {
-      val Eps = None
-      def unapplyNoEps(in: Option[T]): Option[T] = in
-      def applyEps(in: T): Option[T] = Option(in)
-    }
 
   implicit def SeqOrdering[T: Ordering]: Ordering[Seq[T]] =
     new Ordering[Seq[T]] {
@@ -76,3 +65,4 @@ package object fst {
     }
 
 }
+
