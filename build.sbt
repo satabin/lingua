@@ -8,6 +8,7 @@ val globalSettings = Seq(
   resolvers +=
     "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
   licenses += ("The Apache Software License, Version 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
+  homepage := Some(url("https://gnieh.org/satabin/lingua")),
   scalacOptions ++= Seq("-feature", "-deprecation", "-unchecked", "-Ypartial-unification"),
   scalacOptions in (Compile, doc) ++= Seq("-groups"),
   scalariformAutoformat := true,
