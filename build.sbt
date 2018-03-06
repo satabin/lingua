@@ -5,6 +5,7 @@ enablePlugins(PublishingPlugin)
 val globalSettings = Seq(
   organization := "org.gnieh",
   scalaVersion := "2.12.4",
+  version := "0.2.0-SNAPSHOT",
   resolvers +=
     "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
   licenses += ("The Apache Software License, Version 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
@@ -64,7 +65,6 @@ lazy val root = project.in(file("."))
 lazy val fst = project.in(file("fst"))
   .settings(globalSettings: _*)
   .settings(
-    version := "0.1.1",
     name := "lingua-fst",
     addCompilerPlugin("org.spire-math" % "kind-projector" % "0.9.4" cross CrossVersion.binary),
     libraryDependencies += "org.typelevel" %% "cats-core" % "1.0.1")
@@ -73,13 +73,11 @@ lazy val fst = project.in(file("fst"))
 lazy val cascade = project.in(file("cascade"))
   .settings(globalSettings)
   .settings(
-    version := "0.1.1",
     name := "lingua-cascade")
 
 lazy val core = project.in(file("core"))
   .settings(globalSettings: _*)
   .settings(
-    version := "0.1.1",
     libraryDependencies += "com.lihaoyi" %% "fastparse" % "1.0.0",
     publishArtifact := false,
     name := "lingua-core")
@@ -94,7 +92,6 @@ lazy val lexikon = project.in(file("lexikon"))
   .enablePlugins(BuildInfoPlugin)
   .settings(globalSettings: _*)
   .settings(
-    version := "0.1.1",
     name := "lingua-lexikon",
     publishArtifact := false,
     libraryDependencies ++= lexikonDependencies,

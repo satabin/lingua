@@ -17,6 +17,7 @@ package fst2
 package cascade
 
 import matcher._
+import runner._
 import lingua.cascade._
 
 import scala.annotation.tailrec
@@ -24,7 +25,7 @@ import scala.annotation.tailrec
 /** A layer wrapping a [[PSubFst p-subsequential Fst]].
  *  Fst accepting empty strings will not be considered has a match.
  */
-abstract class PSubLayer[In, FstIn, FstOut, Out](pfst: PSubFst[FstIn, FstOut], matcher: Matcher[In, FstIn]) extends Layer[In, Out, (State, Seq[FstOut])] {
+abstract class PSubLayer[In, FstIn, FstOut, Out](pfst: RunnablePSubFst[FstIn, FstOut], matcher: Matcher[In, FstIn]) extends Layer[In, Out, (State, Seq[FstOut])] {
 
   override final protected def passThrough(ctx: Context, in: In): (Context, Seq[Out]) =
     (makeContext, passThrough(in))

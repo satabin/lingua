@@ -15,7 +15,7 @@
 package lingua
 package fst2
 
-import filter._
+import runner._
 
 import scala.annotation.tailrec
 
@@ -31,7 +31,7 @@ class PSubFst[In, Out](
     val initial: State,
     val finals: Set[State],
     val transitions: Set[PTransition[In, Out]],
-    val finalOutputs: Map[State, Set[Seq[Out]]]) {
+    val finalOutputs: Map[State, Set[Seq[Out]]]) extends RunnablePSubFst[In, Out] {
 
   val p = math.max(1, finalOutputs.values.map(_.size).max)
 
