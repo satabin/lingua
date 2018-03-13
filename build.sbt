@@ -60,7 +60,7 @@ lazy val root = project.in(file("."))
   .settings(globalSettings: _*)
   .settings(
     publishArtifact := false)
-  .aggregate(core, cascade, fst, lexikon)
+  .aggregate(core, cascade, fs2, fst, lexikon)
 
 lazy val fst = project.in(file("fst"))
   .settings(globalSettings: _*)
@@ -74,6 +74,13 @@ lazy val cascade = project.in(file("cascade"))
   .settings(globalSettings)
   .settings(
     name := "lingua-cascade")
+
+lazy val fs2 = project.in(file("fs2"))
+  .settings(globalSettings)
+  .settings(
+    name := "lingua-fs2",
+    libraryDependencies += "co.fs2" %% "fs2-core" % "0.10.1")
+  .dependsOn(fst)
 
 lazy val core = project.in(file("core"))
   .settings(globalSettings: _*)
